@@ -4,6 +4,11 @@ from bs4 import BeautifulSoup, StopParsing
 import lxml
 from urllib.parse import quote
 import time
+import json
+
+# Token
+# 7982797130:AAFTvuBdm2bWhmu4UWr2g1Ptc8g7WBR_XJ8 
+# @TicketCatchingBot
 
 # url = "https://pass.rw.by/ru/route/?from=%D0%9C%D0%B8%D0%BD%D1%81%D0%BA&from_exp=2100000&from_esr=140210&to=%D0%92%D0%B8%D1%82%D0%B5%D0%B1%D1%81%D0%BA&to_exp=2100050&to_esr=160002&front_date=11+%D0%B0%D0%BF%D1%80.+2025&date=2025-04-11"
 # r = requests.get(url)
@@ -16,7 +21,7 @@ with open('test_rw_by.html', 'r') as f:
 
 soup = BeautifulSoup(string, 'lxml')
 soup.select("span")
-soup.span.contents
+soup.span.contents # type: ignore
 soup.find_all('span')
 soup.select("head > title") #найти под определённым тегом
 soup.select(".sister")#найти по классу
@@ -34,8 +39,13 @@ soup = BeautifulSoup(string, 'lxml', parse_only=only_span_tag)
 city_from = 'Минск' #input('From: ').strip().lower().capitalize()
 city_to = 'Витебск' #input('To: ').strip().lower().capitalize()
 date = '2025-04-12' #input('Дата в формате гггг-мм-дд: ')
-print(city_from, city_to)
 
+# файл для проверки наличия станции в общем списке
+with open('all_stations_list.json') as json_file:
+    stantions = json.load(json_file)
+
+
+# словарь соответствия номер-название класса
 seats_type_dict = {
     '1': 'Общий',
     '2': 'Сидячий',
