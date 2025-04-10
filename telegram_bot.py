@@ -1,8 +1,7 @@
 
-# Token
-# 7982797130:AAFTvuBdm2bWhmu4UWr2g1Ptc8g7WBR_XJ8 
-# @TicketCatchingBot
 
+# @TicketCatchingBot
+from token_info import token, bot_name
 import telebot
 import webbrowser
 from telebot import types
@@ -10,7 +9,7 @@ import sqlite3
 
 name = None
 #Создаётся объект бота, который умеет принимать сообщения от Telegram.
-bot = telebot.TeleBot('7982797130:AAFTvuBdm2bWhmu4UWr2g1Ptc8g7WBR_XJ8')
+bot = telebot.TeleBot(token)
 
 name = None
 # старт с созданием таблицы в БД и работа с ней
