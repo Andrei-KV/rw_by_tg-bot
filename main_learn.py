@@ -36,7 +36,7 @@ soup = BeautifulSoup(string, 'lxml', parse_only=only_span_tag)
 # Input rules for searching
 city_from = 'Минск' #input('From: ').strip().lower().capitalize()
 city_to = 'Витебск' #input('To: ').strip().lower().capitalize()
-date = '2025-04-12' #input('Дата в формате гггг-мм-дд: ')
+date = '2025-04-16' #input('Дата в формате гггг-мм-дд: ')
 
 # файл для проверки наличия станции в общем списке
 with open('all_stations_list.json') as json_file:
