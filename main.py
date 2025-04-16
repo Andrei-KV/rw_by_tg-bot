@@ -11,7 +11,8 @@ from token_info import token, bot_name
 import telebot
 import webbrowser
 from telebot import types
-
+#библеотека для параллельных потоков
+import threading
 
 # словарь соответствия номер-название класса
 seats_type_dict = {
@@ -29,10 +30,7 @@ seats_type_dict = {
 user_data = {}  # Ключ - chat_id, значение - словарь с данными
 
 #Подключение бота для ввода данных
-city_from = ''
-city_to = ''
-date = ''
-tracking_list = []
+
 
 #Создаётся объект бота, который умеет принимать сообщения от Telegram.
 bot = telebot.TeleBot(token)
@@ -45,22 +43,25 @@ def start(message):
     user_data[message.chat.id] = {'step': 'start'}
     
 def get_city_from(message):
-    global city_from
+    
     city_from = message.text.strip().lower().capitalize()
+    user_data[message.chat.id].update({'city_from': city_from})
     bot.send_message(message.chat.id, 'Город прибытия: ')
     #вызов следующей функции для города прибытия
     bot.register_next_step_handler(message, get_city_to)
 
 def get_city_to(message):
-    global city_to
+    
     city_to = message.text.strip().lower().capitalize()
+    user_data[message.chat.id].update({'city_to': city_to})
     bot.send_message(message.chat.id, 'Дата в формате гггг-мм-дд: ')
     #вызов следующей функции для города даты
     bot.register_next_step_handler(message, get_date)
 
 def get_date(message):
-    global date
+    
     date = message.text.strip()
+    user_data[message.chat.id].update({'date': date})
     # переход на получение списка доступных поездов
     try:
         get_trains_list(message)
@@ -69,13 +70,16 @@ def get_date(message):
         bot.send_message(message.chat.id, error_msg)
         start(message)  # Возвращаемся к началу
 
-
+#функция получения поездов по направлению
 def get_trains_list(message):
-    global city_from, city_to, date
-    encoded_from = quote(city_from)
-    encoded_to = quote(city_to)
+
+    encoded_from = quote(user_data[message.chat.id]['city_from'])
+    encoded_to = quote(user_data[message.chat.id]['city_to'])
+
+    #получение новой страницы soup
 
     # url = f'https://pass.rw.by/ru/route/?from={encoded_from}&to={encoded_to}&date={date}'
+    # user_data[message.chat.id]['url'] = url
     # r = requests.get(url)
 
     #на время тестов обращение к файлу Минск-Брест 2025-04-25
@@ -109,7 +113,7 @@ def get_trains_list(message):
 
     bot.send_message(message.chat.id, "Список доступных поездов: ", reply_markup=markup)
 
-#выбор поезда из списка (True == принимает все ответы)
+#выбор поезда из списка (добавка через _, чтобы разделить реакцию на ответы)
 @bot.callback_query_handler(func=lambda callback: callback.data.endswith('_selected')) 
 def select_train(callback): # callback == все данные ответа
     train_selected = callback.data.split('_')[0]
@@ -119,8 +123,10 @@ def select_train(callback): # callback == все данные ответа
 
     #вывод количества мест по классам или "Мест нет"
     ticket_dict = check_tickets_by_class(train_selected, soup)
+    
+    #необходимо, чтобы убрать "часики" ожидания
     # показывает всплывающее окно, если описать сообщение
-    bot.answer_callback_query(callback.id) #необходимо, чтобы убрать "часики" ожидания
+    bot.answer_callback_query(callback.id)
    
     #кнопка включения слежения за поездом
     markup = types.InlineKeyboardMarkup()
@@ -136,11 +142,48 @@ def select_train(callback): # callback == все данные ответа
 #включение отслеживания, добавление поезда в лист слежения
 @bot.callback_query_handler(func=lambda callback: callback.data.endswith('_tracking')) 
 def start_tracking_train(callback): 
-    global tracking_list
+
     train_tracking = callback.data.split('_')[0]
-    #добавление поезда в лист отслеживания
-    tracking_list.append(train_tracking)
+    chat_id = callback.message.chat.id
+    bot.send_message(chat_id, f'Обновление по {train_tracking}')
+
+    
+    #запуск отслеживания в параллельном потоке
+    def tracking_loop():
+        #проверка, что отслеживание поезда активно
+        while user_data[chat_id].get('tracking_active', {}).get(train_tracking, False):
+
+            #получение новой страницы soup
+            # user_data[chat_id ]['url']
+            # r = requests.get(user_data[chat_id ]['url'])
+
+            #на время тестов обращение к файлу Минск-Брест 2025-04-25
+            with open('test_rw_by.html', 'r+') as f:
+                r = f.read()
+
+            only_span_div_tag = SoupStrainer(['span', 'div'])
+            soup = BeautifulSoup(r, 'lxml', parse_only=only_span_div_tag) #вернуть r.text
+
+            #добавление в сессию
+            user_data[chat_id]['soup'] = soup
+
+            ticket_dict = check_tickets_by_class(train_tracking, soup)
+            bot.send_message(chat_id, f'Обновление по {train_tracking}: {ticket_dict}')
+            time.sleep(30)
+    
+    # регистрация поезда в списке отслеживания
+    if 'tracking_active' not in user_data[chat_id]:
+        user_data[chat_id]['tracking_active'] = {}
+    user_data[chat_id]['tracking_active'][train_tracking] = True
+
+    thread = threading.Thread(target=tracking_loop)
+    thread.start()
+    bot.send_message(chat_id, f'Отслеживание поезда {train_tracking} запущено.')
+  
+        
+
 #-------------------------------------
+
 
 
 #проверка наличия места
@@ -170,27 +213,8 @@ def get_tickets_by_class(train_number, soup):
             tickets_by_class[name] = seats_num
     return tickets_by_class
 
-# Цикл на ограниченное число итераций
-counter = 0
 
-# while True:
-#     counter += 1
-#     if counter == 2:
-#         break
-    
-#     r = requests.get(url)
-#     soup = BeautifulSoup(r.text, 'lxml')
-#     selling_allowed = check_selling_allowed(train_selected, soup)
-
-
-#     seats_list = []
-#     if selling_allowed:
-#         get_tickets_by_class(train_selected, soup)
-#     time.sleep(5)
-
-
-
-    
+# получение нового объекта soup (страницы на  определённую дату по маршруту)
 
 
 #останов
@@ -202,11 +226,11 @@ def stop(message):
 #для постоянной работы:
 bot.polling(non_stop=True)
 
-'''
 
+'''
 # файл для проверки наличия станции в общем списке
-with open('all_stations_list.json') as json_file:
-    stantions = json.load(json_file)
+with open('all_stations_dict.py') as py_file:
+    stantions = py_file.read()
 
 
 
