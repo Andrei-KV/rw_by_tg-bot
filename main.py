@@ -124,6 +124,15 @@ def select_train(callback): # callback == все данные ответа
     #вывод количества мест по классам или "Мест нет"
     ticket_dict = check_tickets_by_class(train_selected, soup)
     
+    #добавляем в список поездов, но здесь статус отслеживания пока что False
+    #здесь, т.к. необходимо получить список мест для контроля изменений
+    user_data[callback.message.chat.id]['tracking_active'] = {
+        train_selected: {
+            'status': False,
+            'ticket_dict': ticket_dict,
+        }
+        }
+
     #необходимо, чтобы убрать "часики" ожидания
     # показывает всплывающее окно, если описать сообщение
     bot.answer_callback_query(callback.id)
@@ -145,9 +154,10 @@ def start_tracking_train(callback):
 
     train_tracking = callback.data.split('_')[0]
     chat_id = callback.message.chat.id
-    bot.send_message(chat_id, f'Обновление по {train_tracking}')
-
     
+    # регистрация поезда в списке отслеживания
+    user_data[chat_id]['tracking_active'][train_tracking]['status'] = True
+
     #запуск отслеживания в параллельном потоке
     def tracking_loop():
         #проверка, что отслеживание поезда активно
@@ -167,21 +177,22 @@ def start_tracking_train(callback):
             #добавление в сессию
             user_data[chat_id]['soup'] = soup
 
+            #получение более свежей информации по билетам
             ticket_dict = check_tickets_by_class(train_tracking, soup)
-            bot.send_message(chat_id, f'Обновление по {train_tracking}: {ticket_dict}')
-            time.sleep(30)
+            
+            #выводить сообщение при появлении изменений в билетах
+            if ticket_dict != user_data[chat_id]['tracking_active'][train_tracking]['ticket_dict']:
+                bot.send_message(chat_id, f'Обновление по {train_tracking}: {ticket_dict}')
+                user_data[chat_id]['tracking_active'][train_tracking]['ticket_dict'] = ticket_dict
+            
+            time.sleep(10)
     
-    # регистрация поезда в списке отслеживания
-    if 'tracking_active' not in user_data[chat_id]:
-        user_data[chat_id]['tracking_active'] = {}
-    user_data[chat_id]['tracking_active'][train_tracking] = True
-
+    
+    #регистрация и запуск параллельного потока
     thread = threading.Thread(target=tracking_loop)
     thread.start()
     bot.send_message(chat_id, f'Отслеживание поезда {train_tracking} запущено.')
   
-        
-
 #-------------------------------------
 
 
@@ -220,12 +231,18 @@ def get_tickets_by_class(train_number, soup):
 #останов
 @bot.message_handler(commands=['stop'])
 def stop(message):
-    bot.send_message(message.chat.id, 'Пока. Сервер остановлен ')
+    bot.send_message(message.chat.id, 'Бот остановлен. Список отслеживания очищен ')
+    del user_data[message.chat.id] 
     bot.stop_polling()
-    sys.exit(0)
+    
 #для постоянной работы:
 bot.polling(non_stop=True)
 
+#выход из программы
+@bot.message_handler(commands=['exit_admin'])
+def exit_admin(message):
+    bot.send_message(message.chat.id, 'Выход из ПО')
+    sys.exit(0)
 
 '''
 # файл для проверки наличия станции в общем списке
@@ -234,23 +251,4 @@ with open('all_stations_dict.py') as py_file:
 
 
 
-
-def ctrl_rus(city_name):
-    ctrl_rus = 'ёйцукенгшщзхъфывапролджэячсмитьбюЁЙЦУКЕНГШЩЗХЪФЫВАПРОЛДЖЭЯЧСМИТЬБЮ'
-    if not city_name:
-        return False
-    for i in city_name:
-        if i not in ctrl_rus or not i:
-            return False
-    return True
-
-while True:
-    if not ctrl_rus(city_from):
-        city_from = input('Изменить город отправления: ').strip().lower().capitalize()
-        continue
-    elif not ctrl_rus(city_to):
-        city_to = input('Изменить город прибытия: ').strip().lower().capitalize()
-        continue
-    else:
-        break
         '''
