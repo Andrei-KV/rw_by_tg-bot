@@ -126,12 +126,14 @@ def select_train(callback): # callback == все данные ответа
     
     #добавляем в список поездов, но здесь статус отслеживания пока что False
     #здесь, т.к. необходимо получить список мест для контроля изменений
-    user_data[callback.message.chat.id]['tracking_active'] = {
-        train_selected: {
-            'status': False,
-            'ticket_dict': ticket_dict,
+    if 'tracking_active' not in user_data[callback.message.chat.id]:
+        user_data[callback.message.chat.id]['tracking_active'] = {}
+
+    user_data[callback.message.chat.id]['tracking_active'][train_selected] = {
+                'status': False,
+                'ticket_dict': ticket_dict,
         }
-        }
+
 
     #необходимо, чтобы убрать "часики" ожидания
     # показывает всплывающее окно, если описать сообщение
@@ -139,7 +141,7 @@ def select_train(callback): # callback == все данные ответа
    
     #кнопка включения слежения за поездом
     markup = types.InlineKeyboardMarkup()
-    btn_track = types.InlineKeyboardButton('Начать отслеживание', callback_data=f'{train_selected}_tracking')
+    btn_track = types.InlineKeyboardButton('Начать отслеживание', callback_data=f'{train_selected}_start_tracking')
     markup.add(btn_track)
     
     bot.send_message(
@@ -149,7 +151,7 @@ def select_train(callback): # callback == все данные ответа
     )
 
 #включение отслеживания, добавление поезда в лист слежения
-@bot.callback_query_handler(func=lambda callback: callback.data.endswith('_tracking')) 
+@bot.callback_query_handler(func=lambda callback: callback.data.endswith('_start_tracking')) 
 def start_tracking_train(callback): 
 
     train_tracking = callback.data.split('_')[0]
@@ -192,7 +194,55 @@ def start_tracking_train(callback):
     thread = threading.Thread(target=tracking_loop)
     thread.start()
     bot.send_message(chat_id, f'Отслеживание поезда {train_tracking} запущено.')
-  
+
+#отдельная функция для списка отслеживаемых поездов, т.к. используется
+#для команд Отображения и Останова
+def get_track_list(message):
+    track_list = []
+    if user_data[message.chat.id].get('tracking_active', False): 
+        for train, info in user_data[message.chat.id]['tracking_active'].items():
+            if info['status']:
+                track_list.append(train)
+        if track_list:
+            reply = '\n'.join(track_list) 
+    return track_list #для функции удаления из списка отслеживания
+
+#отображение списка отслеживаемых поездов
+@bot.message_handler(commands=['show_track_list'])
+def show_track_list(message):
+
+    reply = 'Список отслеживания пуст' #по умолчанию
+    track_list = get_track_list(message)
+    if track_list:
+        reply = '\n'.join(track_list) 
+    bot.reply_to(message, f'{reply}')
+
+#останов отслеживания конкретного поезда
+
+@bot.message_handler(commands=['stop_track_train'])
+def stop_track_train(message):
+    track_list =  get_track_list(message)
+    if track_list:
+        markup = types.InlineKeyboardMarkup()
+        for train in track_list:
+            markup.row(types.InlineKeyboardButton(
+                f'Остановить отслеживание поезда: {train}', 
+                callback_data= f'{train}_stop_tracking')
+                )
+        bot.reply_to(message, "Список отслеживания: ", reply_markup=markup)
+    else:
+        bot.reply_to(message, 'Список отслеживания пуст')
+
+#функция удаления поезда из списка отслеживания
+@bot.callback_query_handler(func=lambda callback: callback.data.endswith('_stop_tracking')) 
+def stop_tracking_train_by_number(callback):
+    train_stop_tracking = callback.data.split('_')[0]
+    chat_id = callback.message.chat.id
+    print('CONTROl')
+    user_data[chat_id]['tracking_active'][train_stop_tracking]['status'] = False
+
+    bot.send_message(chat_id, f'Отслеживание поезда {train_stop_tracking} остановлено.')
+
 #-------------------------------------
 
 
@@ -225,9 +275,6 @@ def get_tickets_by_class(train_number, soup):
     return tickets_by_class
 
 
-# получение нового объекта soup (страницы на  определённую дату по маршруту)
-
-
 #останов
 @bot.message_handler(commands=['stop'])
 def stop(message):
@@ -235,15 +282,18 @@ def stop(message):
     del user_data[message.chat.id] 
     bot.stop_polling()
     
-#для постоянной работы:
-bot.polling(non_stop=True)
+
 
 #выход из программы
 @bot.message_handler(commands=['exit_admin'])
 def exit_admin(message):
+    del user_data[message.chat.id] 
     bot.send_message(message.chat.id, 'Выход из ПО')
+    bot.stop_polling()
     sys.exit(0)
 
+#для постоянной работы:
+bot.polling(non_stop=True)
 '''
 # файл для проверки наличия станции в общем списке
 with open('all_stations_dict.py') as py_file:
