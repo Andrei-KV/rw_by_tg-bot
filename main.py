@@ -13,7 +13,9 @@ import webbrowser
 from telebot import types
 #библеотека для параллельных потоков
 import threading
-
+#список станций
+from all_stations_list import all_station_list
+from datetime import datetime
 # словарь соответствия номер-название класса
 seats_type_dict = {
     '1': 'Общий',
@@ -55,7 +57,10 @@ def start(message):
     
 def get_city_from(message):
     
-    city_from = message.text.strip().lower().capitalize()
+    city_from = normalize_city_name(message.text)
+    if city_from not in all_station_list:
+        bot.send_message(message.chat.id, 'Неправильное название станции отправления')
+        bot.register_next_step_handler(message, get_city_from)  # Возвращаемся к началу
     user_data[message.chat.id].update({'city_from': city_from})
     bot.send_message(message.chat.id, 'Город прибытия: ')
     #вызов следующей функции для города прибытия
@@ -63,23 +68,23 @@ def get_city_from(message):
 
 def get_city_to(message):
     
-    city_to = message.text.strip().lower().capitalize()
+    city_to = normalize_city_name(message.text)
+    if city_to not in all_station_list:
+        bot.send_message(message.chat.id, 'Неправильное название станции назначения')
+        bot.register_next_step_handler(message, get_city_to)  # Возвращаемся к началу
     user_data[message.chat.id].update({'city_to': city_to})
     bot.send_message(message.chat.id, 'Дата в формате гггг-мм-дд: ')
     #вызов следующей функции для города даты
     bot.register_next_step_handler(message, get_date)
 
 def get_date(message):
-    
-    date = message.text.strip()
-    user_data[message.chat.id].update({'date': date})
-    # переход на получение списка доступных поездов
     try:
+        date = normalize_date(message.text)
+        user_data[message.chat.id].update({'date': date})
         get_trains_list(message)
-    except Exception as e:
-        error_msg = f"Ошибка: {str(e)}\nДавайте начнем заново."
-        bot.send_message(message.chat.id, error_msg)
-        start(message)  # Возвращаемся к началу
+    except ValueError as e:
+        bot.send_message(message.chat.id, f"Ошибка. Повторите ввод даты:")
+        bot.register_next_step_handler(message, get_date)
 
 #функция получения поездов по направлению
 def get_trains_list(message):
@@ -91,7 +96,12 @@ def get_trains_list(message):
 
     # url = f'https://pass.rw.by/ru/route/?from={encoded_from}&to={encoded_to}&date={date}'
     # user_data[message.chat.id]['url'] = url
-    # r = requests.get(url)
+    # try:
+    #     # r = requests.get(url)
+    # except Exception as e:
+    #     error_msg = f"Ошибка: {str(e)}\nДавайте начнем заново."
+    #     bot.send_message(message.chat.id, error_msg)
+    #     start(message)  # Возвращаемся к началу
 
     #на время тестов обращение к файлу Минск-Брест 2025-04-25
     with open('test_rw_by.html', 'r+') as f:
@@ -280,8 +290,28 @@ def stop_tracking_train_by_number(callback):
 
 #-------------------------------------
 
+#нормализация ввода города
+def normalize_city_name(name):
+    return name.strip().lower().capitalize()
 
-
+#нормализация ввода даты с контролем "сегодня и далее"
+def normalize_date(date_str):
+    formats = ['%d.%m.%Y', '%d/%m/%Y', '%d-%m-%Y', '%Y-%m-%d', '%d %m %Y',
+               '%Y %m %d']
+    today = datetime.today().date()
+    for fmt in formats:
+        try:
+            dt = datetime.strptime(date_str.strip(), fmt)
+            #"сегодня и далее":
+            if dt < today:
+                raise ValueError("Введена прошедшая дата")
+            return dt.strftime('%Y-%m-%d')  # Стандартный формат
+        except ValueError:
+            # Если ни один формат не подошёл:
+            raise ValueError("Неверный формат даты. Примеры: 20.04.2025, 2025-04-20")
+    
+   
+    
 #проверка наличия места
 def check_tickets_by_class(train_number, soup):
     train_info = soup.select(f'div.sch-table__row[data-train-number="{train_number}"]') # type: ignore
@@ -335,11 +365,3 @@ def exit_admin(message):
 
 #для постоянной работы:
 bot.polling(non_stop=True)
-'''
-# файл для проверки наличия станции в общем списке
-with open('all_stations_dict.py') as py_file:
-    stantions = py_file.read()
-
-
-
-        '''
