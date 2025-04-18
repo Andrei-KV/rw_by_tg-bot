@@ -29,6 +29,17 @@ seats_type_dict = {
 # В начале кода создаем словарь для хранения данных
 user_data = {}  # Ключ - chat_id, значение - словарь с данными
 
+# ========================
+# Декоратор: Проверка старта для избежания ошибок
+# ========================
+def ensure_start(func):
+    def wrapper(message):
+        if message.chat.id not in user_data:
+            bot.send_message(message.chat.id, "Сначала введите /start")
+            return
+        return func(message)
+    return wrapper
+
 #Подключение бота для ввода данных
 
 
@@ -161,37 +172,59 @@ def start_tracking_train(callback):
     user_data[chat_id]['tracking_active'][train_tracking]['status'] = True
 
     #запуск отслеживания в параллельном потоке
-    def tracking_loop():
+    #лучше передавать аргументы, а не использовать внешние
+    def tracking_loop(chat_id, train_tracking):
         #проверка, что отслеживание поезда активно
-        while user_data[chat_id].get('tracking_active', {}).get(train_tracking, False):
+        try:
+            if chat_id not in user_data or \
+            'tracking_active' not in user_data[chat_id] or \
+            train_tracking not in user_data[chat_id]['tracking_active']:
+                print(f"[thread skip] Данные не найдены для {chat_id}, {train_tracking}")
+                return
+            while user_data[chat_id].get('tracking_active', {}).get(train_tracking, False):
 
-            #получение новой страницы soup
-            # user_data[chat_id ]['url']
-            # r = requests.get(user_data[chat_id ]['url'])
+                #получение новой страницы soup
+                # user_data[chat_id ]['url']
+                # r = requests.get(user_data[chat_id ]['url'])
 
-            #на время тестов обращение к файлу Минск-Брест 2025-04-25
-            with open('test_rw_by.html', 'r+') as f:
-                r = f.read()
+                #на время тестов обращение к файлу Минск-Брест 2025-04-25
+                with open('test_rw_by.html', 'r+') as f:
+                    r = f.read()
 
-            only_span_div_tag = SoupStrainer(['span', 'div'])
-            soup = BeautifulSoup(r, 'lxml', parse_only=only_span_div_tag) #вернуть r.text
+                only_span_div_tag = SoupStrainer(['span', 'div'])
+                soup = BeautifulSoup(r, 'lxml', parse_only=only_span_div_tag) #вернуть r.text
 
-            #добавление в сессию
-            user_data[chat_id]['soup'] = soup
+                #добавление в сессию
+                user_data[chat_id]['soup'] = soup
 
-            #получение более свежей информации по билетам
-            ticket_dict = check_tickets_by_class(train_tracking, soup)
-            
-            #выводить сообщение при появлении изменений в билетах
-            if ticket_dict != user_data[chat_id]['tracking_active'][train_tracking]['ticket_dict']:
-                bot.send_message(chat_id, f'Обновление по {train_tracking}: {ticket_dict}')
-                user_data[chat_id]['tracking_active'][train_tracking]['ticket_dict'] = ticket_dict
-            
-            time.sleep(10)
+                #получение более свежей информации по билетам
+                ticket_dict = check_tickets_by_class(train_tracking, soup)
+                
+                #выводить сообщение при появлении изменений в билетах
+                if ticket_dict != user_data[chat_id]['tracking_active'][train_tracking]['ticket_dict']:
+                    bot.send_message(chat_id, f'Обновление по {train_tracking}: {ticket_dict}')
+                    user_data[chat_id]['tracking_active'][train_tracking]['ticket_dict'] = ticket_dict
+                
+                #отслеживание активных потоков для отладки
+                print("⚙️ Активные потоки:")
+                for thread in threading.enumerate():
+                    print(f"  🔸 {thread.name} (ID: {thread.ident})")
+
+                time.sleep(10)
+        except KeyError:
+            print(f"[thread error] KeyError — {chat_id}, поезд {train_tracking}")
     
+    #регистрация и запуск параллельного потока с заданным именем и аргументами, 
+    #чтобы не быть в ситуации, когда функция запустится через секунду-другую, 
+    # а к этому времени переменные уже будут другими. 
+    # Например, другой пользователь вызовет бота, и chat_id перезапишется, 
+    # а старый поток будет отслеживать не того юзера.
+    thread = threading.Thread(
+        target=tracking_loop, 
+        args=(chat_id, train_tracking), 
+        name=f"tracking_{train_tracking}_{chat_id}"
+        )
     
-    #регистрация и запуск параллельного потока
-    thread = threading.Thread(target=tracking_loop)
     thread.start()
     bot.send_message(chat_id, f'Отслеживание поезда {train_tracking} запущено.')
 
@@ -209,6 +242,7 @@ def get_track_list(message):
 
 #отображение списка отслеживаемых поездов
 @bot.message_handler(commands=['show_track_list'])
+@ensure_start
 def show_track_list(message):
 
     reply = 'Список отслеживания пуст' #по умолчанию
@@ -220,6 +254,7 @@ def show_track_list(message):
 #останов отслеживания конкретного поезда
 
 @bot.message_handler(commands=['stop_track_train'])
+@ensure_start
 def stop_track_train(message):
     track_list =  get_track_list(message)
     if track_list:
@@ -238,7 +273,7 @@ def stop_track_train(message):
 def stop_tracking_train_by_number(callback):
     train_stop_tracking = callback.data.split('_')[0]
     chat_id = callback.message.chat.id
-    print('CONTROl')
+
     user_data[chat_id]['tracking_active'][train_stop_tracking]['status'] = False
 
     bot.send_message(chat_id, f'Отслеживание поезда {train_stop_tracking} остановлено.')
@@ -275,22 +310,28 @@ def get_tickets_by_class(train_number, soup):
     return tickets_by_class
 
 
-#останов
+#останов сессии для юзера
 @bot.message_handler(commands=['stop'])
+@ensure_start
 def stop(message):
-    bot.send_message(message.chat.id, 'Бот остановлен. Список отслеживания очищен ')
-    del user_data[message.chat.id] 
-    bot.stop_polling()
-    
+    chat_id = message.chat.id
+    #для остановки параллельного потока необходимо перевести статус для 
+    #всех поездов в False
+    if chat_id in user_data and 'tracking_active' in user_data[chat_id]:
+        for train in user_data[chat_id]['tracking_active']:
+            user_data[chat_id]['tracking_active'][train]['status'] = False
+    #после остановки поездов, удалить всю сессию
+    user_data.pop(chat_id, None)
+    bot.send_message(chat_id, 'Бот остановлен. Список отслеживания очищен ')
 
 
 #выход из программы
-@bot.message_handler(commands=['exit_admin'])
+@bot.message_handler(commands=['1765362'])
 def exit_admin(message):
     del user_data[message.chat.id] 
     bot.send_message(message.chat.id, 'Выход из ПО')
     bot.stop_polling()
-    sys.exit(0)
+    sys.exit()
 
 #для постоянной работы:
 bot.polling(non_stop=True)
