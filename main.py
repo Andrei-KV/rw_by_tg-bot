@@ -18,6 +18,7 @@ from all_stations_list import all_station_list
 from datetime import datetime
 # словарь соответствия номер-название класса
 seats_type_dict = {
+    '0': 'Без нумерации мест',
     '1': 'Общий',
     '2': 'Сидячий',
     '3': 'Плацкартный',
@@ -36,8 +37,12 @@ user_data = {}  # Ключ - chat_id, значение - словарь с да�
 # ========================
 def ensure_start(func):
     def wrapper(message):
-        if message.chat.id not in user_data:
-            bot.send_message(message.chat.id, "Сначала введите /start")
+        try:
+            chat_id = message.chat.id
+        except AttributeError:
+            chat_id = message.message.chat.id #если проверяется callback
+        if chat_id not in user_data:
+            bot.send_message(chat_id, "Сначала введите /start")
             return
         return func(message)
     return wrapper
@@ -61,6 +66,7 @@ def get_city_from(message):
     if city_from not in all_station_list:
         bot.send_message(message.chat.id, 'Неправильное название станции отправления')
         bot.register_next_step_handler(message, get_city_from)  # Возвращаемся к началу
+        return
     user_data[message.chat.id].update({'city_from': city_from})
     bot.send_message(message.chat.id, 'Город прибытия: ')
     #вызов следующей функции для города прибытия
@@ -72,6 +78,7 @@ def get_city_to(message):
     if city_to not in all_station_list:
         bot.send_message(message.chat.id, 'Неправильное название станции назначения')
         bot.register_next_step_handler(message, get_city_to)  # Возвращаемся к началу
+        return
     user_data[message.chat.id].update({'city_to': city_to})
     bot.send_message(message.chat.id, 'Дата в формате гггг-мм-дд: ')
     #вызов следующей функции для города даты
@@ -83,42 +90,47 @@ def get_date(message):
         user_data[message.chat.id].update({'date': date})
         get_trains_list(message)
     except ValueError as e:
-        bot.send_message(message.chat.id, f"Ошибка. Повторите ввод даты:")
+        bot.send_message(message.chat.id, f"Ошибка: {e}. Повторите ввод даты:")
         bot.register_next_step_handler(message, get_date)
+        return
 
 #функция получения поездов по направлению
 def get_trains_list(message):
 
     encoded_from = quote(user_data[message.chat.id]['city_from'])
     encoded_to = quote(user_data[message.chat.id]['city_to'])
-
+    date = user_data[message.chat.id]['date']
     #получение новой страницы soup
 
-    # url = f'https://pass.rw.by/ru/route/?from={encoded_from}&to={encoded_to}&date={date}'
-    # user_data[message.chat.id]['url'] = url
-    # try:
-    #     # r = requests.get(url)
-    # except Exception as e:
-    #     error_msg = f"Ошибка: {str(e)}\nДавайте начнем заново."
-    #     bot.send_message(message.chat.id, error_msg)
-    #     start(message)  # Возвращаемся к началу
+    url = f'https://pass.rw.by/ru/route/?from={encoded_from}&to={encoded_to}&date={date}'
+    user_data[message.chat.id]['url'] = url
+    try:
+        r = requests.get(url)
+    except Exception as e:
+        error_msg = f"Ошибка: {str(e)}\nДавайте начнем заново."
+        bot.send_message(message.chat.id, error_msg)
+        start(message)  # Возвращаемся к началу
 
     #на время тестов обращение к файлу Минск-Брест 2025-04-25
-    with open('test_rw_by.html', 'r+') as f:
-        r = f.read()
+    # with open('test_rw_by.html', 'r+') as f:
+    #     r = f.read()
 
     only_span_div_tag = SoupStrainer(['span', 'div'])
-    soup = BeautifulSoup(r, 'lxml', parse_only=only_span_div_tag) #вернуть r.text
+    soup = BeautifulSoup(r.text, 'lxml', parse_only=only_span_div_tag) #вернуть r.text
 
     #добавление в сессию
     user_data[message.chat.id]['soup'] = soup
 
-    train_id_list = [i.text for i in soup.find_all('span', class_="train-number")] 
+    train_id_list = [i.text for i in soup.find_all('span', class_="train-number")]
+    
     trains_list = []
     # получение времени отправления и прибытия
     for train in train_id_list:
-        time_depart = soup.select(f'[data-train-number="{train}"] [data-sort="departure"]')[0].text.strip()
-        time_arriv = soup.select(f'[data-train-number="{train}"] [data-sort="arrival"]')[0].text.strip()
+        try:
+            time_depart = soup.select(f'[data-train-number^="{train}"] [data-sort="departure"]')[0].text.strip()
+            time_arriv = soup.select(f'[data-train-number^="{train}"] [data-sort="arrival"]')[0].text.strip()
+        except Exception as e:
+            time_depart, time_arriv = ('Нет данных', 'Нет данных',)
         trains_list.append([train, time_depart, time_arriv])
     
     #получение списка доступных поездов
@@ -135,22 +147,23 @@ def get_trains_list(message):
     bot.send_message(message.chat.id, "Список доступных поездов: ", reply_markup=markup)
 
 #выбор поезда из списка (добавка через _, чтобы разделить реакцию на ответы)
-@bot.callback_query_handler(func=lambda callback: callback.data.endswith('_selected')) 
+@bot.callback_query_handler(func=lambda callback: callback.data.endswith('_selected'))
+@ensure_start 
 def select_train(callback): # callback == все данные ответа
     train_selected = callback.data.split('_')[0]
-
+    chat_id = callback.message.chat.id
     # получаем из сессии здесь, т.к. дальше не передаётся объект message
-    soup = user_data[callback.message.chat.id]['soup']
+    soup = user_data[chat_id]['soup']
 
     #вывод количества мест по классам или "Мест нет"
-    ticket_dict = check_tickets_by_class(train_selected, soup)
+    ticket_dict = check_tickets_by_class(train_selected, soup, chat_id)
     
     #добавляем в список поездов, но здесь статус отслеживания пока что False
     #здесь, т.к. необходимо получить список мест для контроля изменений
-    if 'tracking_active' not in user_data[callback.message.chat.id]:
-        user_data[callback.message.chat.id]['tracking_active'] = {}
+    if 'tracking_active' not in user_data[chat_id]:
+        user_data[chat_id]['tracking_active'] = {}
 
-    user_data[callback.message.chat.id]['tracking_active'][train_selected] = {
+    user_data[chat_id]['tracking_active'][train_selected] = {
                 'status': False,
                 'ticket_dict': ticket_dict,
         }
@@ -162,7 +175,18 @@ def select_train(callback): # callback == все данные ответа
    
     #кнопка включения слежения за поездом
     markup = types.InlineKeyboardMarkup()
-    btn_track = types.InlineKeyboardButton('Начать отслеживание', callback_data=f'{train_selected}_start_tracking')
+    
+    #если 'Без нумерованных мест' возврат на выбор поезда
+    if seats_type_dict['0'] in ticket_dict:
+        btn_track = types.InlineKeyboardButton(
+        'Отслеживание недоступно.\nВернуться к списку поездов', 
+        callback_data='re_get_trains_list'
+        )
+    else:
+        btn_track = types.InlineKeyboardButton(
+        'Начать отслеживание', 
+        callback_data=f'{train_selected}_start_tracking'
+        )
     markup.add(btn_track)
     
     bot.send_message(
@@ -170,9 +194,16 @@ def select_train(callback): # callback == все данные ответа
         text=f'Поезд №{train_selected}\n{ticket_dict}',
         reply_markup=markup
     )
+#обработка возврата к списку поездов, если поезд без нумерации мест
+@bot.callback_query_handler(func=lambda callback: callback.data == 're_get_trains_list')
+@ensure_start 
+def re_get_trains_list(callback):
+    get_trains_list(callback.message)
+    pass
 
 #включение отслеживания, добавление поезда в лист слежения
-@bot.callback_query_handler(func=lambda callback: callback.data.endswith('_start_tracking')) 
+@bot.callback_query_handler(func=lambda callback: callback.data.endswith('_start_tracking'))
+@ensure_start 
 def start_tracking_train(callback): 
 
     train_tracking = callback.data.split('_')[0]
@@ -186,43 +217,51 @@ def start_tracking_train(callback):
     def tracking_loop(chat_id, train_tracking):
         #проверка, что отслеживание поезда активно
         try:
-            if chat_id not in user_data or \
-            'tracking_active' not in user_data[chat_id] or \
-            train_tracking not in user_data[chat_id]['tracking_active']:
-                print(f"[thread skip] Данные не найдены для {chat_id}, {train_tracking}")
-                return
-            while user_data[chat_id].get('tracking_active', {}).get(train_tracking, False):
+            while True:
+                
+                tracking_data = user_data.get(chat_id, {}).get('tracking_active', {}).get(train_tracking)
 
+                #проверка, что данные существуют и отслеживаются активно
+                if not tracking_data or not tracking_data.get('status'):
+                    print(f"[thread exit] Поток завершён: {train_tracking} для {chat_id}")
+                    return
+                
                 #получение новой страницы soup
-                # user_data[chat_id ]['url']
-                # r = requests.get(user_data[chat_id ]['url'])
+                try:
+                    user_data[chat_id ]['url']
+                    r = requests.get(user_data[chat_id ]['url'])
+                except Exception as e:
+                    error_msg = f"Ошибка: {str(e)}\nДавайте начнем заново."
+                    bot.send_message(chat_id, error_msg)
+                    start(chat_id)  # Возвращаемся к началу
 
                 #на время тестов обращение к файлу Минск-Брест 2025-04-25
-                with open('test_rw_by.html', 'r+') as f:
-                    r = f.read()
+                # with open('test_rw_by.html', 'r+') as f:
+                #     r = f.read()
 
                 only_span_div_tag = SoupStrainer(['span', 'div'])
-                soup = BeautifulSoup(r, 'lxml', parse_only=only_span_div_tag) #вернуть r.text
+                soup = BeautifulSoup(r.text, 'lxml', parse_only=only_span_div_tag) #вернуть r.text
 
                 #добавление в сессию
                 user_data[chat_id]['soup'] = soup
 
                 #получение более свежей информации по билетам
-                ticket_dict = check_tickets_by_class(train_tracking, soup)
+                ticket_dict = check_tickets_by_class(train_tracking, soup, chat_id)
                 
                 #выводить сообщение при появлении изменений в билетах
-                if ticket_dict != user_data[chat_id]['tracking_active'][train_tracking]['ticket_dict']:
+                if ticket_dict != tracking_data.get('ticket_dict'):
                     bot.send_message(chat_id, f'Обновление по {train_tracking}: {ticket_dict}')
-                    user_data[chat_id]['tracking_active'][train_tracking]['ticket_dict'] = ticket_dict
+                    tracking_data['ticket_dict'] = ticket_dict
                 
                 #отслеживание активных потоков для отладки
                 print("⚙️ Активные потоки:")
                 for thread in threading.enumerate():
                     print(f"  🔸 {thread.name} (ID: {thread.ident})")
 
-                time.sleep(10)
-        except KeyError:
-            print(f"[thread error] KeyError — {chat_id}, поезд {train_tracking}")
+                time.sleep(15)
+        
+        except Exception as e:
+            print(f"[thread error] {chat_id}, {train_tracking}: {str(e)}")
     
     #регистрация и запуск параллельного потока с заданным именем и аргументами, 
     #чтобы не быть в ситуации, когда функция запустится через секунду-другую, 
@@ -280,6 +319,7 @@ def stop_track_train(message):
 
 #функция удаления поезда из списка отслеживания
 @bot.callback_query_handler(func=lambda callback: callback.data.endswith('_stop_tracking')) 
+@ensure_start
 def stop_tracking_train_by_number(callback):
     train_stop_tracking = callback.data.split('_')[0]
     chat_id = callback.message.chat.id
@@ -303,28 +343,32 @@ def normalize_date(date_str):
         try:
             dt = datetime.strptime(date_str.strip(), fmt)
             #"сегодня и далее":
-            if dt < today:
+            if dt.date() < today:
                 raise ValueError("Введена прошедшая дата")
-            return dt.strftime('%Y-%m-%d')  # Стандартный формат
+            return dt.strftime('%Y-%m-%d')  # возвращаем нормализованный формат
         except ValueError:
-            # Если ни один формат не подошёл:
-            raise ValueError("Неверный формат даты. Примеры: 20.04.2025, 2025-04-20")
-    
-   
+            continue  # пробуем следующий формат
+
+    # Если ни один формат не подошёл и дата в прошлом:
+    raise ValueError(f"Неверный формат даты. Примеры: {today.strftime('%Y-%m-%d')}, {today.strftime('%d %m %Y')}")
+
     
 #проверка наличия места
-def check_tickets_by_class(train_number, soup):
-    train_info = soup.select(f'div.sch-table__row[data-train-number="{train_number}"]') # type: ignore
+def check_tickets_by_class(train_number, soup, chat_id):
+    train_info = soup.select(f'div.sch-table__row[data-train-number^="{train_number}"]')
     selling_allowed = train_info[0]['data-ticket_selling_allowed']
     if selling_allowed == 'true':
         return get_tickets_by_class(train_number, soup)
-    return 'Мест нет'
+    elif selling_allowed == 'false':
+        return 'Мест нет'
+    else:
+        return 'Ошибка получения информации о поезде'
 
 #получение количества мест
 def get_tickets_by_class(train_number, soup):
 
     # информация о наличии мест и классов вагонов
-    train_info = soup.select(f'div.sch-table__row[data-train-number="{train_number}"]') # type: ignore
+    train_info = soup.select(f'div.sch-table__row[data-train-number^="{train_number}"]')
     # доступные классы вагонов и места
     class_names = train_info[0].find_all(class_="sch-table__t-quant js-train-modal dash")
     # вывод словаря с заменой номера на имя класса обслуживания
@@ -332,7 +376,12 @@ def get_tickets_by_class(train_number, soup):
     tickets_by_class = {}
     for class_n in class_names:
         name = seats_type_dict[class_n['data-car-type']] # type: ignore
-        seats_num = int(class_n.select_one('span').text) # type: ignore
+        try:
+            seats_num = int(class_n.select_one('span').text) # type: ignore
+        except ValueError:
+            seats_num = 'Без нумерации мест'
+            tickets_by_class[name] = '\u221e'
+            continue
         if name in tickets_by_class:
             tickets_by_class[name] += seats_num
         else:
