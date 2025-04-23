@@ -9,8 +9,8 @@ encoded_to = quote("Витебск")
 date = "2025-04-26"
 # получение новой страницы soup
 
+url = f"https://pass.rw.by/ru/route/?from={"Минск"}&to={"Витебск"}&date={"2025-12-26"}"
 url = f"https://pass.rw.by/ru/route/?from={encoded_from}&to={encoded_to}&date={date}"
-
 
 r = requests.get(url)
 

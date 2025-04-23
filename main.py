@@ -1,4 +1,4 @@
-import sys
+import os
 
 # Библиотека для параллельных потоков
 import threading
@@ -20,6 +20,17 @@ from telebot import types
 # Список станций
 from all_stations_list import all_station_list
 from token_info import stop_code, token
+
+
+# Класс ошибки для "Дата в прошлом"
+class PastDateError(ValueError):
+    pass
+
+
+# Класс ошибки для "Дата в далеко в будущем"
+class FutureDateError(ValueError):
+    pass
+
 
 # Словарь соответствия номер-название класса
 seats_type_dict = {
@@ -107,8 +118,8 @@ def get_date(message):
         date = normalize_date(message.text)
         user_data[message.chat.id].update({"date": date})
         get_trains_list(message)
-    except ValueError as e:
-        bot.send_message(message.chat.id, f"Ошибка: {e}. Повторите ввод даты")
+    except (PastDateError, FutureDateError, ValueError) as e:
+        bot.send_message(message.chat.id, f"{e}.\nПовторите ввод даты")
         # Возврат при ошибке ввода
         bot.register_next_step_handler(message, get_date)
         return
@@ -276,6 +287,13 @@ def start_tracking_train(callback):
     train_tracking = callback.data.split("_")[0]
     chat_id = callback.message.chat.id
 
+    # Проверка отслеживания поезда, чтобы не запустить излишний поток
+    if user_data[chat_id]["tracking_active"][train_tracking]["status"]:
+        bot.send_message(
+            chat_id, f"Отслеживание поезда {train_tracking} уже запущено."
+        )
+        return
+
     # Регистрация поезда в списке отслеживания
     user_data[chat_id]["tracking_active"][train_tracking]["status"] = True
 
@@ -294,8 +312,8 @@ def start_tracking_train(callback):
                 # иначе останов сессии
                 if not tracking_data or not tracking_data.get("status"):
                     print(
-                        f"[thread exit] Поток завершён: \
-                          {train_tracking} для {chat_id}"
+                        f"[thread exit] Поток завершён:/"
+                        f"{train_tracking} для {chat_id}"
                     )
                     return
 
@@ -320,12 +338,12 @@ def start_tracking_train(callback):
                 if check_depart_time(train_tracking, soup) < 600:
                     bot.send_message(
                         chat_id,
-                        f"Отслеживание завершёно за 10 мин \
-                                     до отправления поезда {train_tracking}",
+                        f"Отслеживание завершёно за 10 мин"
+                        f"до отправления поезда {train_tracking}",
                     )
                     print(
-                        f"[thread exit] Поток завершён за 10 мин \
-                          до отпр.: {train_tracking} для {chat_id}"
+                        f"[thread exit] Поток завершён за 10 мин/"
+                        f"до отпр.: {train_tracking} для {chat_id}"
                     )
                     return
 
@@ -352,7 +370,13 @@ def start_tracking_train(callback):
                 # Отслеживание активных потоков для отладки
                 print("⚙️ Активные потоки:")
                 for thread in threading.enumerate():
-                    print(f"  🔸 {thread.name} (ID: {thread.ident})")
+                    print(
+                        f"  🔸 {thread.name}/"
+                        f"{user_data[chat_id]['city_from']}/"
+                        f"{user_data[chat_id]['city_to']}/"
+                        f"{user_data[chat_id]['date']} "
+                        f"(ID: {thread.ident})"
+                    )
 
                 time.sleep(randint(240, 300))
 
@@ -428,6 +452,7 @@ def stop_track_train(message):
 )
 @ensure_start
 def stop_tracking_train_by_number(callback):
+    bot.answer_callback_query(callback.id)
     train_stop_tracking = callback.data.split("_")[0]
     chat_id = callback.message.chat.id
 
@@ -465,17 +490,30 @@ def normalize_date(date_str):
             dt = datetime.strptime(date_str.strip(), fmt)
             # Дата в прошлом
             if dt.date() < today:
-                raise ValueError("Дата в прошлом.")
+                raise PastDateError("Дата в прошлом")
+            # До отправления более 59 суток
+            if (dt.date() - today).days > 59:
+                raise FutureDateError("Отслеживание доступно за 60 суток")
             # Возвращаем нормализованный формат
             return dt.strftime("%Y-%m-%d")
         # Для отлавливания "Дата в прошлом"
-        except ValueError as e:
-            last_error = e
+        except PastDateError as e:
+            # Вывод ошибки в функцию ввода даты
+            raise e
+
+        except FutureDateError as e:
+            # Вывод ошибки в функцию ввода даты
+            raise e
+
+        except ValueError:
+            continue
+
     # Если ни один формат не подошёл:
-    raise last_error or ValueError(
-        f"Неверный формат даты. \
-            Примеры: {today.strftime('%Y-%m-%d')}, \
-                {today.strftime('%d %m %Y')}"
+    raise ValueError(
+        f"Неверный формат.\n\
+Примеры: {today.strftime('%Y-%m-%d')}, \
+{today.strftime('%d %m %Y')}, \
+{today.strftime('%Y %m %d')}"
     )
 
 
@@ -560,11 +598,18 @@ def stop(message):
 # Выход из программы
 @bot.message_handler(commands=[stop_code])
 def exit_admin(message):
-    if message.chat.id in user_data:
-        del user_data[message.chat.id]
-    bot.send_message(message.chat.id, "Выход из ПО")
-    bot.stop_polling()
-    sys.exit()
+    chat_id = message.chat.id
+    if chat_id in user_data:
+        for train in user_data[chat_id]["tracking_active"]:
+            user_data[chat_id]["tracking_active"][train]["status"] = False
+    user_data.pop(chat_id, None)
+    bot.send_message(chat_id, "Выход из ПО")
+
+    def stop_bot():
+        bot.stop_polling()
+        os._exit(0)  # Принудительный выход
+
+    threading.Thread(target=stop_bot).start()
 
 
 # =============================================================================
