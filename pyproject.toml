@@ -20,3 +20,22 @@ dependencies = [
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+# Aвтоматически форматирует код по своему строгому стилю (PEP8+)
+[tool.black]
+line-length = 79
+target-version = ['py312'] # Под какую версию Python оптимизировать
+skip-string-normalization = true # Не заменять двойные кавычки на одинарные и наоборот
+
+# Автоматически упорядочивает import-ы по алфавиту и группам. Работает в связке с black
+[tool.isort]
+profile = "black" # Форматирует импорты так, чтобы не конфликтовать с black
+line_length = 79
+multi_line_output = 3 # Cтиль вывода длинных импортов. 3 == каждый импорт в новой строке
+include_trailing_comma = true # Добавляет запятую в конце последнего импорта
+force_grid_wrap = 0 # Красиво разнесёнными по строкам
+use_parentheses = true # Делает длинные импорты обёрнутыми в скобки
+
+# Проверяет стиль, простые ошибки (неиспользуемые переменные, длину строк, отступы и пр.)
+[tool.flake8]
+max-line-length = 79

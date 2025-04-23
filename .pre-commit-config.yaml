@@ -4,7 +4,9 @@ exclude: |
       example_chat_gpt\.py|
       deep_seek_format\.py|
       example\.html|
+      example\.py|
       main_learn\.py|
+      test\.py|
       tests_for_bot\.txt|
       test_bot\.sql|
       telegram_bot\.py
@@ -32,6 +34,3 @@ repos:
     rev: 6.0.1
     hooks:
       - id: isort
-        language_version: python3.12
-        files: "\\.(py)$"
-        args: [ --settings-path=pyproject.toml ]
