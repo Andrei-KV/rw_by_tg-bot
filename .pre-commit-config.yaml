@@ -1,0 +1,37 @@
+exclude: |
+  (?x)^(
+      token_info\.py|
+      example_chat_gpt\.py|
+      deep_seek_format\.py|
+      example\.html|
+      main_learn\.py|
+      tests_for_bot\.txt|
+      test_bot\.sql|
+      telegram_bot\.py
+  )$
+
+repos:
+  - repo: https://github.com/psf/black
+    rev: 25.1.0
+    hooks:
+      - id: black
+
+  - repo: https://github.com/PyCQA/flake8
+    rev: 7.2.0
+    hooks:
+      - id: flake8
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+
+  - repo: https://github.com/pycqa/isort
+    rev: 6.0.1
+    hooks:
+      - id: isort
+        language_version: python3.12
+        files: "\\.(py)$"
+        args: [ --settings-path=pyproject.toml ]
