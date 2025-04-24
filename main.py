@@ -105,7 +105,7 @@ CREATE TABLE IF NOT EXISTS tracking (
     chat_id INTEGER NOT NULL,
     train_id INTEGER NOT NULL,
     json_ticket_dict TEXT,
-    status TEXT DEFAULT False,
+    status INTEGER DEFAULT 0,
     FOREIGN KEY (chat_id) REFERENCES users(chat_id),
     FOREIGN KEY (train_id) REFERENCES trains(train_id)
     UNIQUE (chat_id, train_id)
@@ -205,7 +205,8 @@ def add_tracking_db(chat_id, train_selected, ticket_dict, url, status=False):
         # Вставка в список слежения с выбранным статусом
         cursor.execute(
             """
-            INSERT INTO tracking (chat_id, train_id, json_ticket_dict, status)
+            INSERT OR IGNORE INTO tracking
+            (chat_id, train_id, json_ticket_dict, status)
             VALUES (?, ?, ?, ?)
             """,
             (chat_id, train_id, json_ticket_dict, status),
@@ -229,7 +230,8 @@ def get_trains_list_db(url):
         cursor.execute(
             """
         SELECT train_number, time_depart, time_arriv FROM trains
-        WHERE route_id = ?""",
+        WHERE route_id = ?
+        ORDER BY time_depart""",
             (route_id,),
         )
         trains_list = cursor.fetchall()
@@ -342,7 +344,7 @@ def get_trains_list(message):
         bot.send_message(chat_id, error_msg)
         start(message)  # Возвращаемся к началу
 
-    # Добавляет маршрут в БД и возвращает route_id
+    # Добавляет маршрут в БД
     add_route_db(
         user_data[chat_id]["city_from"],
         user_data[chat_id]["city_to"],
@@ -361,7 +363,7 @@ def get_trains_list(message):
     ]
 
     trains_list = []
-    # получение времени отправления и прибытия
+    # Получение времени отправления и прибытия
     for train in train_id_list:
         try:
             time_depart = soup.select(
@@ -380,7 +382,8 @@ def get_trains_list(message):
         trains_list.append([train, time_depart, time_arriv])
         # Добавить поезда в БД
         add_train_db(train, time_depart, time_arriv, url)
-        show_train_list(message)
+        # Отобразить список поездов
+    show_train_list(message)
 
 
 def show_train_list(message):
@@ -423,14 +426,6 @@ def select_train(callback):
 
     # Добавляем в список поездов, но здесь статус отслеживания пока что False
     # Здесь, т.к. необходимо получить список мест для контроля изменений
-    if "tracking_active" not in user_data[chat_id]:
-        user_data[chat_id]["tracking_active"] = {}
-
-    user_data[chat_id]["tracking_active"][train_selected] = {
-        "status": False,
-        "ticket_dict": ticket_dict,
-    }
-
     # Добавить поезд в список отслеживания
 
     url = user_data[chat_id]['url']
@@ -481,12 +476,7 @@ def re_get_trains_list(callback):
 @ensure_start
 def add_track_train(message):
     if message.text == "/add_train_new_route":
-        # В разработке. Пока возврат к предыдущему маршруту
-        bot.send_message(
-            message.chat.id,
-            "Функция в разработке. Возврат к сущетвующему маршруту",
-        )
-        get_trains_list(message)
+        start(message)
         pass
 
         # bot.send_message(message.chat.id, "Город отправления: ")
@@ -508,40 +498,108 @@ def start_tracking_train(callback):
 
     train_tracking = callback.data.split("_")[0]
     chat_id = callback.message.chat.id
+    url = user_data[chat_id]['url']
 
-    # Проверка отслеживания поезда, чтобы не запустить излишний поток
-    if user_data[chat_id]["tracking_active"][train_tracking]["status"]:
-        bot.send_message(
-            chat_id, f"Отслеживание поезда {train_tracking} уже запущено."
+    # Изменение статуса в БД
+    conn = sqlite3.connect('tracking_train.sqlite3')
+    cursor = conn.cursor()
+    try:
+
+        # Получить route_id по известному URL
+        cursor.execute("SELECT route_id FROM routes WHERE url = ?", (url,))
+        route_id = cursor.fetchone()[0]
+
+        # Получить train_id по route_id и train_tracking
+        cursor.execute(
+            """
+        SELECT train_id FROM trains
+        WHERE route_id = ? AND train_number = ?
+        """,
+            (route_id, train_tracking),
         )
-        return
+        train_id = cursor.fetchone()[0]
 
-    # Регистрация поезда в списке отслеживания
-    user_data[chat_id]["tracking_active"][train_tracking]["status"] = True
+        # Проверка отслеживания поезда, чтобы не запустить излишний поток
+        cursor.execute(
+            """SELECT status FROM tracking
+        WHERE chat_id = ? AND train_id = ?
+            """,
+            (
+                chat_id,
+                train_id,
+            ),
+        )
+        status = cursor.fetchone()[0]
+
+        if status == '1':
+            bot.send_message(
+                chat_id, f"Отслеживание поезда {train_tracking} уже запущено."
+            )
+            return
+
+        # Вставка в список слежения с выбранным статусом
+        cursor.execute(
+            """
+            UPDATE tracking SET status = ?
+            WHERE chat_id = ? AND train_id = ?
+            """,
+            (
+                True,
+                chat_id,
+                train_id,
+            ),
+        )
+
+        conn.commit()
+    finally:
+        cursor.close()
+        conn.close()
 
     # Запуск отслеживания в параллельном потоке
     # Лучше передавать аргументы, а не использовать внешние
-    def tracking_loop(chat_id, train_tracking):
+    def tracking_loop(chat_id, train_tracking, train_id, route_id, url):
         try:
+            conn = sqlite3.connect('tracking_train.sqlite3')
+            cursor = conn.cursor()
             while True:
-                tracking_data = (
-                    user_data.get(chat_id, {})
-                    .get("tracking_active", {})
-                    .get(train_tracking)
-                )
 
-                # Проверка, что данные существуют и отслеживаются активно,
-                # иначе останов сессии
-                if not tracking_data or not tracking_data.get("status"):
+                cursor.execute(
+                    """SELECT json_ticket_dict, status FROM tracking
+                    WHERE chat_id = ? AND train_id = ?
+                        """,
+                    (
+                        chat_id,
+                        train_id,
+                    ),
+                )
+                result = cursor.fetchone()
+                if result:
+                    json_str, status = result  # Распаковываем кортеж
+                    memory_ticket_dict = json.loads(
+                        json_str
+                    )  # Декодируем JSON строку
+                    status = bool(int(status))
+                else:
+                    # Обработка случая, когда запись не найдена
+                    memory_ticket_dict = {}
+                    status = False
+
+                if not status:
                     print(
                         f"[thread exit] Поток завершён:/"
                         f"{train_tracking} для {chat_id}"
                     )
                     return
-
                 # Получение новой страницы "soup"
                 try:
-                    r = requests.get(user_data[chat_id]["url"])
+                    cursor.execute(
+                        """SELECT url FROM routes
+                    WHERE route_id = ?""",
+                        (route_id,),
+                    )
+                    url = cursor.fetchone()[0]
+                    r = requests.get(url)
+
                 except Exception as e:
                     error_msg = f"Ошибка: {str(e)}\nДавайте начнем заново."
                     bot.send_message(chat_id, error_msg)
@@ -551,9 +609,6 @@ def start_tracking_train(callback):
                 soup = BeautifulSoup(
                     r.text, "lxml", parse_only=only_span_div_tag
                 )
-
-                # Добавление в сессию
-                user_data[chat_id]["soup"] = soup
 
                 # Проверка времени
                 # (прекратить отслеживание за 10 мин до отправления)
@@ -576,7 +631,8 @@ def start_tracking_train(callback):
 
                 # Выводить сообщение при появлении изменений в билетах
                 #  + быстрая ссылка
-                if ticket_dict != tracking_data.get("ticket_dict"):
+
+                if ticket_dict != memory_ticket_dict:
                     markup_url = types.InlineKeyboardMarkup()  # объект кнопки
                     url_to_ticket = types.InlineKeyboardButton(
                         "Перейти на сайт", url=user_data[chat_id]["url"]
@@ -587,7 +643,19 @@ def start_tracking_train(callback):
                         f"Обновление по {train_tracking}: {ticket_dict}",
                         reply_markup=markup_url,
                     )
-                    tracking_data["ticket_dict"] = ticket_dict
+
+                    json_ticket_dict = json.dumps(memory_ticket_dict)
+                    cursor.execute(
+                        """
+                        UPDATE tracking SET json_ticket_dict = ?
+                        WHERE chat_id = ? AND train_id = ?
+                        """,
+                        (
+                            json_ticket_dict,
+                            chat_id,
+                            train_id,
+                        ),
+                    )
 
                 # Отслеживание активных потоков для отладки
                 print("⚙️ Активные потоки:")
@@ -599,11 +667,13 @@ def start_tracking_train(callback):
                         f"{user_data[chat_id]['date']} "
                         f"(ID: {thread.ident})"
                     )
-
+                conn.commit()
                 time.sleep(randint(240, 300))
-
         except Exception as e:
             print(f"[thread error] {chat_id}, {train_tracking}: {str(e)}")
+        finally:
+            cursor.close()
+            conn.close()
 
     # Регистрация и запуск параллельного потока с заданным именем
     # и аргументами, чтобы не быть в ситуации, когда
@@ -613,7 +683,7 @@ def start_tracking_train(callback):
     # а старый поток будет отслеживать не того юзера.
     thread = threading.Thread(
         target=tracking_loop,
-        args=(chat_id, train_tracking),
+        args=(chat_id, train_tracking, train_id, route_id, url),
         name=f"tracking_{train_tracking}_{chat_id}",
     )
 
@@ -629,12 +699,30 @@ def start_tracking_train(callback):
 # Отдельная функция для списка отслеживаемых поездов, т.к. используется
 # для команд Отображения и Останова
 def get_track_list(message):
-    track_list = []
+
     chat_id = message.chat.id
-    if user_data[chat_id].get("tracking_active", False):
-        for train, info in user_data[chat_id]["tracking_active"].items():
-            if info["status"]:
-                track_list.append(train)
+    conn = sqlite3.connect('tracking_train.sqlite3')
+    cursor = conn.cursor()
+    try:
+        # Получить route_id по известному URL
+        cursor.execute(
+            """
+            SELECT  tracking_id, t.train_number, r.date, status
+            FROM tracking tr
+            JOIN trains t ON tr.train_id = t.train_id
+            JOIN routes r ON t.route_id = r.route_id
+            WHERE tr.chat_id = ?
+        """,
+            (chat_id,),
+        )
+
+        track_list = cursor.fetchall()
+
+        conn.commit()
+    finally:
+        cursor.close()
+        conn.close()
+
     return track_list  # для функции удаления из списка отслеживания
 
 
@@ -643,9 +731,12 @@ def get_track_list(message):
 @ensure_start
 def show_track_list(message):
     reply = "Список отслеживания пуст"  # по умолчанию
-    track_list = get_track_list(message)
+    track_list = list(filter(lambda x: x[3] == '1', get_track_list(message)))
+    # tracking_id, t.train_number, r.date, status
+
     if track_list:
-        reply = "\n".join(track_list)
+        reply_edit = map(lambda x: '  '.join(x[1:3]), track_list)
+        reply = "\n".join(reply_edit)
     bot.reply_to(message, f"{reply}")
 
 
@@ -653,14 +744,18 @@ def show_track_list(message):
 @bot.message_handler(commands=["stop_track_train"])
 @ensure_start
 def stop_track_train(message):
-    track_list = get_track_list(message)
+    track_list = list(filter(lambda x: x[3] == '1', get_track_list(message)))
+    # tracking_id, t.train_number, r.date, status
     if track_list:
         markup = types.InlineKeyboardMarkup()
         for train in track_list:
+            # Для отображения в сообщении
+            reply = ' '.join(train[1:])
+            a, b, c, d = train
             markup.row(
                 types.InlineKeyboardButton(
-                    f"Остановить отслеживание поезда: {train}",
-                    callback_data=f"{train}_stop_tracking",
+                    f"Остановить отслеживание поезда: {reply}",
+                    callback_data=f"{a}:{b}:{c}_stop_tracking",
                 )
             )
         bot.reply_to(message, "Список отслеживания: ", reply_markup=markup)
@@ -675,15 +770,34 @@ def stop_track_train(message):
 @ensure_start
 def stop_tracking_train_by_number(callback):
     bot.answer_callback_query(callback.id)
-    train_stop_tracking = callback.data.split("_")[0]
+    # tracking_id, t.train_number, r.date
+    train_stop_tracking = callback.data.split("_")[0].split(':')
     chat_id = callback.message.chat.id
+    tracking_id = train_stop_tracking[0]
+    train_number = train_stop_tracking[1]
+    date = train_stop_tracking[2]
 
-    user_data[chat_id]["tracking_active"][train_stop_tracking][
-        "status"
-    ] = False
+    conn = sqlite3.connect('tracking_train.sqlite3')
+    cursor = conn.cursor()
+    try:
+        # Поменять статус отслеживания и удалить из списка
+        cursor.execute(
+            """
+            UPDATE tracking SET status = ?
+            WHERE tracking_id = ?
+        """,
+            (
+                False,
+                tracking_id,
+            ),
+        )
+        conn.commit()
+    finally:
+        cursor.close()
+        conn.close()
 
     bot.send_message(
-        chat_id, f"Отслеживание поезда {train_stop_tracking} остановлено."
+        chat_id, f"Отслеживание поезда {train_number}/{date} остановлено."
     )
 
 
@@ -809,11 +923,32 @@ def stop(message):
     chat_id = message.chat.id
     # для остановки параллельного потока необходимо перевести статус для
     # всех поездов в False
-    if chat_id in user_data and "tracking_active" in user_data[chat_id]:
-        for train in user_data[chat_id]["tracking_active"]:
-            user_data[chat_id]["tracking_active"][train]["status"] = False
     # после остановки поездов, удалить всю сессию
-    user_data.pop(chat_id, None)
+    conn = sqlite3.connect('tracking_train.sqlite3')
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            """
+            UPDATE tracking SET status = ?
+            WHERE chat_id = ?
+        """,
+            (
+                False,
+                chat_id,
+            ),
+        )
+        cursor.execute("DELETE FROM tracking WHERE chat_id = ?", (chat_id,))
+        cursor.execute("DELETE FROM users WHERE chat_id = ?", (chat_id,))
+        conn.commit()
+    finally:
+        cursor.close()
+        conn.close()
+
+    # if chat_id in user_data and "tracking_active" in user_data[chat_id]:
+    #     for train in user_data[chat_id]["tracking_active"]:
+    #         user_data[chat_id]["tracking_active"][train]["status"] = False
+
+    # user_data.pop(chat_id, None)
     bot.send_message(chat_id, "Бот остановлен. Список отслеживания очищен")
 
 
@@ -821,10 +956,31 @@ def stop(message):
 @bot.message_handler(commands=[stop_code])
 def exit_admin(message):
     chat_id = message.chat.id
-    if chat_id in user_data:
-        for train in user_data[chat_id]["tracking_active"]:
-            user_data[chat_id]["tracking_active"][train]["status"] = False
-    user_data.pop(chat_id, None)
+    # if chat_id in user_data:
+    #     for train in user_data[chat_id]["tracking_active"]:
+    #         user_data[chat_id]["tracking_active"][train]["status"] = False
+    # user_data.pop(chat_id, None)
+
+    conn = sqlite3.connect('tracking_train.sqlite3')
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            """
+            UPDATE tracking SET status = ?
+            WHERE chat_id = ?
+        """,
+            (
+                False,
+                chat_id,
+            ),
+        )
+        cursor.execute("DELETE FROM tracking WHERE chat_id = ?", (chat_id,))
+        cursor.execute("DELETE FROM users WHERE chat_id = ?", (chat_id,))
+        conn.commit()
+    finally:
+        cursor.close()
+        conn.close()
+
     bot.send_message(chat_id, "Выход из ПО")
 
     def stop_bot():
