@@ -1,8 +1,11 @@
+import json
 import os
+import sqlite3
 
 # Библиотека для параллельных потоков
 import threading
 import time
+from collections import defaultdict
 from datetime import datetime
 from random import randint
 from urllib.parse import quote
@@ -44,8 +47,201 @@ seats_type_dict = {
 }
 
 
-# В начале кода создаем словарь для хранения данных
-user_data = {}  # Ключ - chat_id, значение - словарь с данными
+# В начале кода создаем словарь для временного хранения вводимых данных
+user_data = defaultdict(
+    lambda: {}
+)  # Ключ - chat_id, значение - словарь с данными
+
+# -----------------------------------------------------------------------------
+# Создание БД и подключение
+
+conn = sqlite3.connect('tracking_train.sqlite3')
+
+# Курсор для выполнения команд
+cursor = conn.cursor()
+
+# Создание таблицы пользователей
+cursor.execute(
+    """
+CREATE TABLE IF NOT EXISTS users (
+    chat_id INTEGER PRIMARY KEY
+)
+"""
+)
+
+# Создание таблицы маршрутов
+cursor.execute(
+    """
+CREATE TABLE IF NOT EXISTS routes (
+    route_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    city_from TEXT,
+    city_to TEXT,
+    date TEXT,
+    url TEXT UNIQUE
+)
+"""
+)
+
+# Создание таблицы поездов по каждому маршруту
+cursor.execute(
+    """
+CREATE TABLE IF NOT EXISTS trains (
+    train_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    route_id INTEGER NOT NULL,
+    train_number TEXT,
+    time_depart TEXT,
+    time_arriv TEXT,
+    FOREIGN KEY (route_id) REFERENCES routes(route_id)
+    UNIQUE (route_id, train_number, time_depart, time_arriv)
+)
+"""
+)
+
+# Создание таблицы отслеживания пользователем поезда
+cursor.execute(
+    """
+CREATE TABLE IF NOT EXISTS tracking (
+    tracking_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    chat_id INTEGER NOT NULL,
+    train_id INTEGER NOT NULL,
+    json_ticket_dict TEXT,
+    status TEXT DEFAULT False,
+    FOREIGN KEY (chat_id) REFERENCES users(chat_id),
+    FOREIGN KEY (train_id) REFERENCES trains(train_id)
+    UNIQUE (chat_id, train_id)
+)
+"""
+)
+
+# Синхронизация именений
+conn.commit()
+# Закрыть соединение с таблицей
+cursor.close()
+# Закрыть соединение с БД
+conn.close()
+
+
+# ----------------------------------------------------------------------------
+# Функции для работы с БД
+def add_user_db(chat_id):
+    conn = sqlite3.connect('tracking_train.sqlite3')
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            """
+            INSERT OR IGNORE INTO users (chat_id)
+            VALUES (?)
+        """,
+            (chat_id,),
+        )
+        conn.commit()
+    finally:
+        cursor.close()
+        conn.close()
+
+
+def add_route_db(city_from, city_to, date, url):
+    conn = sqlite3.connect('tracking_train.sqlite3')
+    cursor = conn.cursor()
+    try:
+        # Благодаря URL UNIQUE не будет повторной записи
+        cursor.execute(
+            """
+            INSERT OR IGNORE INTO routes (city_from, city_to, date, url)
+            VALUES (?, ?, ? , ?)
+        """,
+            (city_from, city_to, date, url),
+        )
+        # cursor.execute("SELECT route_id FROM routes WHERE url = ?", (url,))
+        # route_id = cursor.fetchone()[0]
+        conn.commit()
+    finally:
+        cursor.close()
+        conn.close()
+
+
+def add_train_db(train, time_depart, time_arriv, url):
+    conn = sqlite3.connect('tracking_train.sqlite3')
+    cursor = conn.cursor()
+    try:
+        # Выбор соответствующего маршрута
+        cursor.execute("SELECT route_id FROM routes WHERE url = ?", (url,))
+        route_id = cursor.fetchone()[0]
+        cursor.execute(
+            """
+            INSERT OR IGNORE INTO trains
+            (route_id, train_number, time_depart, time_arriv)
+            VALUES (?, ?, ?, ?)
+        """,
+            (route_id, train, time_depart, time_arriv),
+        )
+        conn.commit()
+    finally:
+        cursor.close()
+        conn.close()
+
+
+def add_tracking_db(chat_id, train_selected, ticket_dict, url, status=False):
+    conn = sqlite3.connect('tracking_train.sqlite3')
+    cursor = conn.cursor()
+    try:
+        # Получить route_id по известному URL
+        cursor.execute("SELECT route_id FROM routes WHERE url = ?", (url,))
+        route_id = cursor.fetchone()[0]
+
+        # Получить train_id по route_id и train_selected
+        cursor.execute(
+            """
+        SELECT train_id FROM trains
+        WHERE route_id = ? AND train_number = ?
+        """,
+            (route_id, train_selected),
+        )
+        train_id = cursor.fetchone()[0]
+
+        # Преобразование словаря билетов в JSON
+        json_ticket_dict = json.dumps(ticket_dict)
+
+        # Вставка в список слежения с выбранным статусом
+        cursor.execute(
+            """
+            INSERT INTO tracking (chat_id, train_id, json_ticket_dict, status)
+            VALUES (?, ?, ?, ?)
+            """,
+            (chat_id, train_id, json_ticket_dict, status),
+        )
+
+        conn.commit()
+    finally:
+        cursor.close()
+        conn.close()
+
+
+# Получить список поездов по заданному маршруту из БД
+def get_trains_list_db(url):
+    conn = sqlite3.connect('tracking_train.sqlite3')
+    cursor = conn.cursor()
+    try:
+        # Получить route_id по известному URL
+        cursor.execute("SELECT route_id FROM routes WHERE url = ?", (url,))
+        route_id = cursor.fetchone()[0]
+        # Получить trains_list по route_id
+        cursor.execute(
+            """
+        SELECT train_number, time_depart, time_arriv FROM trains
+        WHERE route_id = ?""",
+            (route_id,),
+        )
+        trains_list = cursor.fetchall()
+
+        conn.commit()
+    finally:
+        cursor.close()
+        conn.close()
+    return trains_list
+
+
+# ----------------------------------------------------------------------------
 
 
 # Декоратор: Проверка "start" для избежания ошибок
@@ -74,52 +270,55 @@ bot = telebot.TeleBot(token, threaded=True, num_threads=5)
 # Запуск чата. Запрос города отправления
 @bot.message_handler(commands=["start"])
 def start(message):
-    bot.send_message(message.chat.id, "Город отправления: ")
+    chat_id = message.chat.id
+    bot.send_message(chat_id, "Город отправления: ")
     # Регистрация следующей функции для города отправления
     bot.register_next_step_handler(message, get_city_from)
-    user_data[message.chat.id] = {"step": "start"}
+    user_data[chat_id] = {"step": "start"}
+
+    # Добавить пользователя в БД
+    add_user_db(chat_id)
 
 
 # Получение города отправления. Проверка наличия в списке станций
 def get_city_from(message):
+    chat_id = message.chat.id
     city_from = normalize_city_name(message.text)
     if city_from not in all_station_list:
-        bot.send_message(
-            message.chat.id, "Неправильное название станции отправления"
-        )
+        bot.send_message(chat_id, "Неправильное название станции отправления")
         # Возврат при ошибке ввода
         bot.register_next_step_handler(message, get_city_from)
         return
-    user_data[message.chat.id].update({"city_from": city_from})
-    bot.send_message(message.chat.id, "Город прибытия: ")
+    user_data[chat_id].update({"city_from": city_from})
+    bot.send_message(chat_id, "Город прибытия: ")
     # Регистрация следующей функции для города прибытия
     bot.register_next_step_handler(message, get_city_to)
 
 
 # Получение города прибытия. Проверка наличия в списке станций
 def get_city_to(message):
+    chat_id = message.chat.id
     city_to = normalize_city_name(message.text)
     if city_to not in all_station_list:
-        bot.send_message(
-            message.chat.id, "Неправильное название станции назначения"
-        )
+        bot.send_message(chat_id, "Неправильное название станции назначения")
         # Возврат при ошибке ввода
         bot.register_next_step_handler(message, get_city_to)
         return
-    user_data[message.chat.id].update({"city_to": city_to})
-    bot.send_message(message.chat.id, "Дата в формате гггг-мм-дд: ")
+    user_data[chat_id].update({"city_to": city_to})
+    bot.send_message(chat_id, "Дата в формате гггг-мм-дд: ")
     # Регистрация следующей функции для даты
     bot.register_next_step_handler(message, get_date)
 
 
 # Получение даты отправления
 def get_date(message):
+    chat_id = message.chat.id
     try:
         date = normalize_date(message.text)
-        user_data[message.chat.id].update({"date": date})
+        user_data[chat_id].update({"date": date})
         get_trains_list(message)
     except (PastDateError, FutureDateError, ValueError) as e:
-        bot.send_message(message.chat.id, f"{e}.\nПовторите ввод даты")
+        bot.send_message(chat_id, f"{e}.\nПовторите ввод даты")
         # Возврат при ошибке ввода
         bot.register_next_step_handler(message, get_date)
         return
@@ -127,10 +326,11 @@ def get_date(message):
 
 # Функция получения поездов по маршруту
 def get_trains_list(message):
-    q_from = quote(user_data[message.chat.id]["city_from"])
-    q_to = quote(user_data[message.chat.id]["city_to"])
-    date = user_data[message.chat.id]["date"]
     chat_id = message.chat.id
+    q_from = quote(user_data[chat_id]["city_from"])
+    q_to = quote(user_data[chat_id]["city_to"])
+    date = user_data[chat_id]["date"]
+    chat_id = chat_id
 
     # Получение новой страницы "soup"
     url = f"https://pass.rw.by/ru/route/?from={q_from}&to={q_to}&date={date}"
@@ -141,6 +341,14 @@ def get_trains_list(message):
         error_msg = f"Ошибка: {str(e)}\nДавайте начнем заново."
         bot.send_message(chat_id, error_msg)
         start(message)  # Возвращаемся к началу
+
+    # Добавляет маршрут в БД и возвращает route_id
+    add_route_db(
+        user_data[chat_id]["city_from"],
+        user_data[chat_id]["city_to"],
+        date,
+        url,
+    )
 
     only_span_div_tag = SoupStrainer(["span", "div"])
     soup = BeautifulSoup(r.text, "lxml", parse_only=only_span_div_tag)
@@ -170,7 +378,15 @@ def get_trains_list(message):
                 "Нет данных",
             )
         trains_list.append([train, time_depart, time_arriv])
+        # Добавить поезда в БД
+        add_train_db(train, time_depart, time_arriv, url)
+        show_train_list(message)
 
+
+def show_train_list(message):
+    chat_id = message.chat.id
+    url = user_data[chat_id]["url"]
+    trains_list = get_trains_list_db(url)
     markup = types.InlineKeyboardMarkup()
     # Отображение кнопок выбора поезда из доступного списка
     for train in trains_list:
@@ -180,10 +396,11 @@ def get_trains_list(message):
                 callback_data=f"{train[0]}_selected",
             )
         )
-    # вместо глобальной soup используем пользовательские данные бота
 
     bot.send_message(
-        chat_id, "Список доступных поездов: ", reply_markup=markup
+        chat_id,
+        "Список доступных поездов: ",
+        reply_markup=markup,
     )
 
 
@@ -213,6 +430,11 @@ def select_train(callback):
         "status": False,
         "ticket_dict": ticket_dict,
     }
+
+    # Добавить поезд в список отслеживания
+
+    url = user_data[chat_id]['url']
+    add_tracking_db(chat_id, train_selected, ticket_dict, url, status=False)
 
     # Кнопка включения слежения за поездом
     markup = types.InlineKeyboardMarkup()
@@ -250,7 +472,7 @@ def select_train(callback):
 @ensure_start
 def re_get_trains_list(callback):
     bot.answer_callback_query(callback.id)  # Для имитации ответа в Телеграм
-    get_trains_list(callback.message)
+    show_train_list(callback.message)
     pass
 
 
@@ -272,7 +494,7 @@ def add_track_train(message):
         # bot.register_next_step_handler(message, get_city_from)
         # pass
     elif message.text == "/add_train_last_route":
-        get_trains_list(message)
+        show_train_list(message)
         pass
 
 
