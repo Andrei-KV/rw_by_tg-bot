@@ -13,7 +13,8 @@ dependencies = [
     "lxml (>=5.3.2,<6.0.0)",
     "html5lib (>=1.1,<2.0)",
     "python-telegram-bot (==20.3)",
-    "pytelegrambotapi (>=4.26.0,<5.0.0)"
+    "pytelegrambotapi (>=4.26.0,<5.0.0)",
+    "python-dotenv (>=1.1.0,<2.0.0)"
 ]
 
 

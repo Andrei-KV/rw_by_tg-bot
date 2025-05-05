@@ -21,7 +21,7 @@ from bs4 import BeautifulSoup
 
 # Для парсинга страниц
 from bs4.filter import SoupStrainer
-from telebot import types
+from telebot import apihelper, types
 
 # Список станций
 from all_stations_list import all_station_list
@@ -374,7 +374,7 @@ def ensure_start(func):
 
 
 # Создаётся объект бота, который умеет принимать сообщения от Telegram.
-bot = telebot.TeleBot(token, threaded=True, num_threads=5)
+bot = telebot.TeleBot(token, threaded=True)
 
 
 # Запуск чата. Запрос города отправления
@@ -463,7 +463,7 @@ def get_date(message):
         bot.register_next_step_handler(message, get_date)
         return
     except Exception as e:
-        print(f"Ошибка выполнения get_trains_list(): {e}")
+        logging.warning(f"Ошибка выполнения get_trains_list(): {e}")
         bot.send_message(chat_id, "❌ Ошибка сервера.\nПоробуйте позже")
         # Останов бота
         bot.register_next_step_handler(message, stop)
@@ -497,14 +497,13 @@ def get_trains_list(message):
     try:
         r = requests.get(url)
         response_time = r.elapsed.total_seconds()  # время в секундах
-        print(
+        logging.info(
             f"Запрос {user_data[chat_id]}\
                выполнен за {response_time:.3f} секунд"
         )
 
     except Exception as e:
-        error_msg = f"⚠️ Ошибка: {str(e)}"
-        print(f'[{error_msg}]: ', error_msg)
+        logging.error(f"Server request error: {e}")
         bot.send_message(
             chat_id, "⚠️ Ошибка запроса на сервер.\nПовторите ввод маршрута"
         )
@@ -557,7 +556,6 @@ def show_train_list(message):
     chat_id = message.chat.id
     url = user_data[chat_id]["url"]
     trains_list = get_trains_list_db(url)
-    print(trains_list)
     markup = types.InlineKeyboardMarkup()
     # Отображение кнопок выбора поезда из доступного списка
     for train in trains_list:
@@ -826,7 +824,7 @@ def start_tracking_train(callback):
                                 f"Отслеживание завершёно за 10 мин"
                                 f"до отправления поезда {train_tracking}",
                             )
-                            print(
+                            logging.info(
                                 f"[thread exit] Поток завершён за 10 мин/"
                                 f"до отпр.: {train_tracking} для {chat_id}"
                             )
@@ -1318,6 +1316,15 @@ def stop(message):
 #         logging.error(f"Ошибка очистки чата: {e}")
 
 
+@bot.callback_query_handler(func=lambda call: call.data == "cancel_stop")
+def cancel_stop(call):
+    chat_id = call.message.chat.id
+
+    # Удаляем сообщение с кнопками
+    bot.delete_message(chat_id, call.message.message_id)
+    bot.send_message(chat_id, "🟢 Бот в работе")
+
+
 @bot.callback_query_handler(func=lambda call: call.data == "confirm_stop")
 def confirm_stop(call):
     chat_id = call.message.chat.id
@@ -1419,11 +1426,35 @@ def exit_admin(message):
 if __name__ == "__main__":
     # Проверка устаревших маршрутов и отслеживание потоков
     start_background_tasks()
-    logging.info("Бот запущен...")
+    attempt_counter = 1
+    max_attempts = 3
+    min_delay = 15
     while True:
+        # Ограничение на 3 попытки запуска с динамическим интервалом
         try:
+            try:
+                bot.delete_webhook()  # Попытка удалить существующий webhook
+                time.sleep(1)  # Пауза для обработки запроса сервером Telegram
+            except apihelper.ApiTelegramException as e:
+                # Игнорирование ошибки "webhook не установлен"
+                if "webhook is not set" not in str(e):
+                    logging.error(f"Webhook deletion failed: {e}")
+                    raise  # Проброс других ошибок API
+            logging.info("Starting bot polling...")
             bot.polling(non_stop=True, timeout=90, long_polling_timeout=60)
+            break
+
+        # Ошибка запроса
         except requests.exceptions.ReadTimeout as e:
             logging.error(f"Timeout error: {e}. Restarting bot...")
-            # Здесь можно добавить логику перезапуска
-            time.sleep(10)
+            attempt_counter += 1
+            time.sleep(min_delay * attempt_counter)
+
+        # Остальные ошибки
+        except Exception as e:
+            logging.error(f"Attempt {attempt_counter} failed: {str(e)}")
+            attempt_counter += 1
+            time.sleep(min_delay * attempt_counter)
+        if attempt_counter > max_attempts:
+            logging.critical("Max retries exceeded")
+            raise

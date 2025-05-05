@@ -26,3 +26,1109 @@
 2025-04-26 18:59:07 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=5378635&timeout=60 HTTP/1.1" 200 23
 2025-04-26 18:59:56 - DEBUG - Starting new HTTPS connection (1): api.telegram.org:443
 2025-04-26 18:59:56 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=5378635&timeout=60 HTTP/1.1" 409 143
+2025-05-05 13:49:22 - DEBUG - Active threads: 8
+2025-05-05 13:49:22 - INFO - Бот запущен...
+2025-05-05 13:49:22 - DEBUG - Thread Thread: MainThread, ID: 123653894007680 is alive
+2025-05-05 13:49:22 - DEBUG - Thread Thread: WorkerThread1, ID: 123653840701120 is alive
+2025-05-05 13:49:22 - DEBUG - Thread Thread: WorkerThread2, ID: 123653830215360 is alive
+2025-05-05 13:49:22 - DEBUG - Thread Thread: WorkerThread3, ID: 123653819729600 is alive
+2025-05-05 13:49:22 - DEBUG - Thread Thread: WorkerThread4, ID: 123653809243840 is alive
+2025-05-05 13:49:22 - DEBUG - Thread Thread: WorkerThread5, ID: 123653798758080 is alive
+2025-05-05 13:49:22 - DEBUG - Thread Thread: route_cleanup, ID: 123653716969152 is alive
+2025-05-05 13:49:22 - DEBUG - Thread Thread: monitor_threads, ID: 123653706483392 is alive
+2025-05-05 13:49:22 - DEBUG - Starting new HTTPS connection (1): api.telegram.org:443
+2025-05-05 13:49:22 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getMe HTTP/1.1" 200 261
+2025-05-05 13:49:22 - DEBUG - Starting new HTTPS connection (1): api.telegram.org:443
+2025-05-05 13:49:23 - INFO - Удалено 1 устаревших маршрутов
+2025-05-05 13:49:23 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=1&timeout=60 HTTP/1.1" 409 154
+2025-05-05 13:49:23 - ERROR - Threaded polling exception: A request to the Telegram API was unsuccessful. Error code: 409. Description: Conflict: can't use getUpdates method while webhook is active; use deleteWebhook to delete the webhook first
+2025-05-05 13:49:23 - ERROR - Exception traceback:
+Traceback (most recent call last):
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 1234, in __threaded_polling
+    polling_thread.raise_exceptions()
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/util.py", line 111, in raise_exceptions
+    raise self.exception_info
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/util.py", line 93, in run
+    task(*args, **kwargs)
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 688, in __retrieve_updates
+    updates = self.get_updates(offset=(self.last_update_id + 1),
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 660, in get_updates
+    json_updates = apihelper.get_updates(
+                   ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 332, in get_updates
+    return _make_request(token, method_url, params=payload)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 168, in _make_request
+    json_result = _check_result(method_name, result)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 195, in _check_result
+    raise ApiTelegramException(method_name, result, result_json)
+telebot.apihelper.ApiTelegramException: A request to the Telegram API was unsuccessful. Error code: 409. Description: Conflict: can't use getUpdates method while webhook is active; use deleteWebhook to delete the webhook first
+
+2025-05-05 13:49:26 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=1&timeout=60 HTTP/1.1" 409 154
+2025-05-05 13:49:26 - ERROR - Threaded polling exception: A request to the Telegram API was unsuccessful. Error code: 409. Description: Conflict: can't use getUpdates method while webhook is active; use deleteWebhook to delete the webhook first
+2025-05-05 13:49:26 - ERROR - Exception traceback:
+Traceback (most recent call last):
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 1234, in __threaded_polling
+    polling_thread.raise_exceptions()
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/util.py", line 111, in raise_exceptions
+    raise self.exception_info
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/util.py", line 93, in run
+    task(*args, **kwargs)
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 688, in __retrieve_updates
+    updates = self.get_updates(offset=(self.last_update_id + 1),
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 660, in get_updates
+    json_updates = apihelper.get_updates(
+                   ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 332, in get_updates
+    return _make_request(token, method_url, params=payload)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 168, in _make_request
+    json_result = _check_result(method_name, result)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 195, in _check_result
+    raise ApiTelegramException(method_name, result, result_json)
+telebot.apihelper.ApiTelegramException: A request to the Telegram API was unsuccessful. Error code: 409. Description: Conflict: can't use getUpdates method while webhook is active; use deleteWebhook to delete the webhook first
+
+2025-05-05 13:49:27 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=1&timeout=60 HTTP/1.1" 409 154
+2025-05-05 13:49:27 - ERROR - Threaded polling exception: A request to the Telegram API was unsuccessful. Error code: 409. Description: Conflict: can't use getUpdates method while webhook is active; use deleteWebhook to delete the webhook first
+2025-05-05 13:49:27 - ERROR - Exception traceback:
+Traceback (most recent call last):
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 1234, in __threaded_polling
+    polling_thread.raise_exceptions()
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/util.py", line 111, in raise_exceptions
+    raise self.exception_info
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/util.py", line 93, in run
+    task(*args, **kwargs)
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 688, in __retrieve_updates
+    updates = self.get_updates(offset=(self.last_update_id + 1),
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 660, in get_updates
+    json_updates = apihelper.get_updates(
+                   ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 332, in get_updates
+    return _make_request(token, method_url, params=payload)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 168, in _make_request
+    json_result = _check_result(method_name, result)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 195, in _check_result
+    raise ApiTelegramException(method_name, result, result_json)
+telebot.apihelper.ApiTelegramException: A request to the Telegram API was unsuccessful. Error code: 409. Description: Conflict: can't use getUpdates method while webhook is active; use deleteWebhook to delete the webhook first
+
+2025-05-05 13:49:31 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=1&timeout=60 HTTP/1.1" 409 154
+2025-05-05 13:49:31 - ERROR - Threaded polling exception: A request to the Telegram API was unsuccessful. Error code: 409. Description: Conflict: can't use getUpdates method while webhook is active; use deleteWebhook to delete the webhook first
+2025-05-05 13:49:31 - ERROR - Exception traceback:
+Traceback (most recent call last):
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 1234, in __threaded_polling
+    polling_thread.raise_exceptions()
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/util.py", line 111, in raise_exceptions
+    raise self.exception_info
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/util.py", line 93, in run
+    task(*args, **kwargs)
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 688, in __retrieve_updates
+    updates = self.get_updates(offset=(self.last_update_id + 1),
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 660, in get_updates
+    json_updates = apihelper.get_updates(
+                   ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 332, in get_updates
+    return _make_request(token, method_url, params=payload)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 168, in _make_request
+    json_result = _check_result(method_name, result)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 195, in _check_result
+    raise ApiTelegramException(method_name, result, result_json)
+telebot.apihelper.ApiTelegramException: A request to the Telegram API was unsuccessful. Error code: 409. Description: Conflict: can't use getUpdates method while webhook is active; use deleteWebhook to delete the webhook first
+
+2025-05-05 13:49:33 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=1&timeout=60 HTTP/1.1" 409 154
+2025-05-05 13:49:33 - ERROR - Threaded polling exception: A request to the Telegram API was unsuccessful. Error code: 409. Description: Conflict: can't use getUpdates method while webhook is active; use deleteWebhook to delete the webhook first
+2025-05-05 13:49:33 - ERROR - Exception traceback:
+Traceback (most recent call last):
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 1234, in __threaded_polling
+    polling_thread.raise_exceptions()
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/util.py", line 111, in raise_exceptions
+    raise self.exception_info
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/util.py", line 93, in run
+    task(*args, **kwargs)
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 688, in __retrieve_updates
+    updates = self.get_updates(offset=(self.last_update_id + 1),
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 660, in get_updates
+    json_updates = apihelper.get_updates(
+                   ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 332, in get_updates
+    return _make_request(token, method_url, params=payload)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 168, in _make_request
+    json_result = _check_result(method_name, result)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 195, in _check_result
+    raise ApiTelegramException(method_name, result, result_json)
+telebot.apihelper.ApiTelegramException: A request to the Telegram API was unsuccessful. Error code: 409. Description: Conflict: can't use getUpdates method while webhook is active; use deleteWebhook to delete the webhook first
+
+2025-05-05 13:49:37 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=1&timeout=60 HTTP/1.1" 409 154
+2025-05-05 13:49:37 - ERROR - Threaded polling exception: A request to the Telegram API was unsuccessful. Error code: 409. Description: Conflict: can't use getUpdates method while webhook is active; use deleteWebhook to delete the webhook first
+2025-05-05 13:49:37 - ERROR - Exception traceback:
+Traceback (most recent call last):
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 1234, in __threaded_polling
+    polling_thread.raise_exceptions()
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/util.py", line 111, in raise_exceptions
+    raise self.exception_info
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/util.py", line 93, in run
+    task(*args, **kwargs)
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 688, in __retrieve_updates
+    updates = self.get_updates(offset=(self.last_update_id + 1),
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 660, in get_updates
+    json_updates = apihelper.get_updates(
+                   ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 332, in get_updates
+    return _make_request(token, method_url, params=payload)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 168, in _make_request
+    json_result = _check_result(method_name, result)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 195, in _check_result
+    raise ApiTelegramException(method_name, result, result_json)
+telebot.apihelper.ApiTelegramException: A request to the Telegram API was unsuccessful. Error code: 409. Description: Conflict: can't use getUpdates method while webhook is active; use deleteWebhook to delete the webhook first
+
+2025-05-05 16:22:25 - DEBUG - Active threads: 5
+2025-05-05 16:22:25 - DEBUG - Thread Thread: MainThread, ID: 129871347960704 is alive
+2025-05-05 16:22:25 - DEBUG - Thread Thread: WorkerThread1, ID: 129871294498496 is alive
+2025-05-05 16:22:25 - DEBUG - Starting new HTTPS connection (1): api.telegram.org:443
+2025-05-05 16:22:25 - DEBUG - Thread Thread: WorkerThread2, ID: 129871284012736 is alive
+2025-05-05 16:22:25 - DEBUG - Thread Thread: route_cleanup, ID: 129871273526976 is alive
+2025-05-05 16:22:25 - DEBUG - Thread Thread: monitor_threads, ID: 129871263041216 is alive
+2025-05-05 16:22:25 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getMe HTTP/1.1" 200 261
+2025-05-05 16:22:25 - DEBUG - Starting new HTTPS connection (1): api.telegram.org:443
+2025-05-05 16:22:25 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=1&timeout=60 HTTP/1.1" 409 154
+2025-05-05 16:22:25 - ERROR - Threaded polling exception: A request to the Telegram API was unsuccessful. Error code: 409. Description: Conflict: can't use getUpdates method while webhook is active; use deleteWebhook to delete the webhook first
+2025-05-05 16:22:25 - ERROR - Exception traceback:
+Traceback (most recent call last):
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 1234, in __threaded_polling
+    polling_thread.raise_exceptions()
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/util.py", line 111, in raise_exceptions
+    raise self.exception_info
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/util.py", line 93, in run
+    task(*args, **kwargs)
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 688, in __retrieve_updates
+    updates = self.get_updates(offset=(self.last_update_id + 1),
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 660, in get_updates
+    json_updates = apihelper.get_updates(
+                   ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 332, in get_updates
+    return _make_request(token, method_url, params=payload)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 168, in _make_request
+    json_result = _check_result(method_name, result)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 195, in _check_result
+    raise ApiTelegramException(method_name, result, result_json)
+telebot.apihelper.ApiTelegramException: A request to the Telegram API was unsuccessful. Error code: 409. Description: Conflict: can't use getUpdates method while webhook is active; use deleteWebhook to delete the webhook first
+
+2025-05-05 16:22:29 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=1&timeout=60 HTTP/1.1" 409 154
+2025-05-05 16:22:29 - ERROR - Threaded polling exception: A request to the Telegram API was unsuccessful. Error code: 409. Description: Conflict: can't use getUpdates method while webhook is active; use deleteWebhook to delete the webhook first
+2025-05-05 16:22:29 - ERROR - Exception traceback:
+Traceback (most recent call last):
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 1234, in __threaded_polling
+    polling_thread.raise_exceptions()
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/util.py", line 111, in raise_exceptions
+    raise self.exception_info
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/util.py", line 93, in run
+    task(*args, **kwargs)
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 688, in __retrieve_updates
+    updates = self.get_updates(offset=(self.last_update_id + 1),
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 660, in get_updates
+    json_updates = apihelper.get_updates(
+                   ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 332, in get_updates
+    return _make_request(token, method_url, params=payload)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 168, in _make_request
+    json_result = _check_result(method_name, result)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 195, in _check_result
+    raise ApiTelegramException(method_name, result, result_json)
+telebot.apihelper.ApiTelegramException: A request to the Telegram API was unsuccessful. Error code: 409. Description: Conflict: can't use getUpdates method while webhook is active; use deleteWebhook to delete the webhook first
+
+2025-05-05 16:22:29 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=1&timeout=60 HTTP/1.1" 409 154
+2025-05-05 16:22:29 - ERROR - Threaded polling exception: A request to the Telegram API was unsuccessful. Error code: 409. Description: Conflict: can't use getUpdates method while webhook is active; use deleteWebhook to delete the webhook first
+2025-05-05 16:22:29 - ERROR - Exception traceback:
+Traceback (most recent call last):
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 1234, in __threaded_polling
+    polling_thread.raise_exceptions()
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/util.py", line 111, in raise_exceptions
+    raise self.exception_info
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/util.py", line 93, in run
+    task(*args, **kwargs)
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 688, in __retrieve_updates
+    updates = self.get_updates(offset=(self.last_update_id + 1),
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 660, in get_updates
+    json_updates = apihelper.get_updates(
+                   ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 332, in get_updates
+    return _make_request(token, method_url, params=payload)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 168, in _make_request
+    json_result = _check_result(method_name, result)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 195, in _check_result
+    raise ApiTelegramException(method_name, result, result_json)
+telebot.apihelper.ApiTelegramException: A request to the Telegram API was unsuccessful. Error code: 409. Description: Conflict: can't use getUpdates method while webhook is active; use deleteWebhook to delete the webhook first
+
+2025-05-05 16:22:33 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=1&timeout=60 HTTP/1.1" 409 154
+2025-05-05 16:22:33 - ERROR - Threaded polling exception: A request to the Telegram API was unsuccessful. Error code: 409. Description: Conflict: can't use getUpdates method while webhook is active; use deleteWebhook to delete the webhook first
+2025-05-05 16:22:33 - ERROR - Exception traceback:
+Traceback (most recent call last):
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 1234, in __threaded_polling
+    polling_thread.raise_exceptions()
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/util.py", line 111, in raise_exceptions
+    raise self.exception_info
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/util.py", line 93, in run
+    task(*args, **kwargs)
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 688, in __retrieve_updates
+    updates = self.get_updates(offset=(self.last_update_id + 1),
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 660, in get_updates
+    json_updates = apihelper.get_updates(
+                   ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 332, in get_updates
+    return _make_request(token, method_url, params=payload)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 168, in _make_request
+    json_result = _check_result(method_name, result)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 195, in _check_result
+    raise ApiTelegramException(method_name, result, result_json)
+telebot.apihelper.ApiTelegramException: A request to the Telegram API was unsuccessful. Error code: 409. Description: Conflict: can't use getUpdates method while webhook is active; use deleteWebhook to delete the webhook first
+
+2025-05-05 16:22:35 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=1&timeout=60 HTTP/1.1" 409 154
+2025-05-05 16:22:35 - ERROR - Threaded polling exception: A request to the Telegram API was unsuccessful. Error code: 409. Description: Conflict: can't use getUpdates method while webhook is active; use deleteWebhook to delete the webhook first
+2025-05-05 16:22:35 - ERROR - Exception traceback:
+Traceback (most recent call last):
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 1234, in __threaded_polling
+    polling_thread.raise_exceptions()
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/util.py", line 111, in raise_exceptions
+    raise self.exception_info
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/util.py", line 93, in run
+    task(*args, **kwargs)
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 688, in __retrieve_updates
+    updates = self.get_updates(offset=(self.last_update_id + 1),
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 660, in get_updates
+    json_updates = apihelper.get_updates(
+                   ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 332, in get_updates
+    return _make_request(token, method_url, params=payload)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 168, in _make_request
+    json_result = _check_result(method_name, result)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 195, in _check_result
+    raise ApiTelegramException(method_name, result, result_json)
+telebot.apihelper.ApiTelegramException: A request to the Telegram API was unsuccessful. Error code: 409. Description: Conflict: can't use getUpdates method while webhook is active; use deleteWebhook to delete the webhook first
+
+2025-05-05 16:22:40 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=1&timeout=60 HTTP/1.1" 409 154
+2025-05-05 16:22:40 - ERROR - Threaded polling exception: A request to the Telegram API was unsuccessful. Error code: 409. Description: Conflict: can't use getUpdates method while webhook is active; use deleteWebhook to delete the webhook first
+2025-05-05 16:22:40 - ERROR - Exception traceback:
+Traceback (most recent call last):
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 1234, in __threaded_polling
+    polling_thread.raise_exceptions()
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/util.py", line 111, in raise_exceptions
+    raise self.exception_info
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/util.py", line 93, in run
+    task(*args, **kwargs)
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 688, in __retrieve_updates
+    updates = self.get_updates(offset=(self.last_update_id + 1),
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 660, in get_updates
+    json_updates = apihelper.get_updates(
+                   ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 332, in get_updates
+    return _make_request(token, method_url, params=payload)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 168, in _make_request
+    json_result = _check_result(method_name, result)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 195, in _check_result
+    raise ApiTelegramException(method_name, result, result_json)
+telebot.apihelper.ApiTelegramException: A request to the Telegram API was unsuccessful. Error code: 409. Description: Conflict: can't use getUpdates method while webhook is active; use deleteWebhook to delete the webhook first
+
+2025-05-05 16:31:09 - DEBUG - Active threads: 5
+2025-05-05 16:31:09 - DEBUG - Background tasks are started
+2025-05-05 16:31:09 - DEBUG - Thread Thread: MainThread, ID: 132680980683648 is alive
+2025-05-05 16:31:09 - DEBUG - Thread Thread: WorkerThread1, ID: 132680926627520 is alive
+2025-05-05 16:31:09 - DEBUG - Starting new HTTPS connection (1): api.telegram.org:443
+2025-05-05 16:31:09 - DEBUG - Thread Thread: WorkerThread2, ID: 132680916141760 is alive
+2025-05-05 16:31:09 - DEBUG - Thread Thread: route_cleanup, ID: 132680905656000 is alive
+2025-05-05 16:31:09 - DEBUG - Thread Thread: monitor_threads, ID: 132680895170240 is alive
+2025-05-05 16:31:10 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getMe HTTP/1.1" 200 261
+2025-05-05 16:31:10 - DEBUG - Starting new HTTPS connection (1): api.telegram.org:443
+2025-05-05 16:31:10 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=1&timeout=60 HTTP/1.1" 409 154
+2025-05-05 16:31:10 - ERROR - Threaded polling exception: A request to the Telegram API was unsuccessful. Error code: 409. Description: Conflict: can't use getUpdates method while webhook is active; use deleteWebhook to delete the webhook first
+2025-05-05 16:31:10 - ERROR - Exception traceback:
+Traceback (most recent call last):
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 1234, in __threaded_polling
+    polling_thread.raise_exceptions()
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/util.py", line 111, in raise_exceptions
+    raise self.exception_info
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/util.py", line 93, in run
+    task(*args, **kwargs)
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 688, in __retrieve_updates
+    updates = self.get_updates(offset=(self.last_update_id + 1),
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 660, in get_updates
+    json_updates = apihelper.get_updates(
+                   ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 332, in get_updates
+    return _make_request(token, method_url, params=payload)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 168, in _make_request
+    json_result = _check_result(method_name, result)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 195, in _check_result
+    raise ApiTelegramException(method_name, result, result_json)
+telebot.apihelper.ApiTelegramException: A request to the Telegram API was unsuccessful. Error code: 409. Description: Conflict: can't use getUpdates method while webhook is active; use deleteWebhook to delete the webhook first
+
+2025-05-05 16:31:13 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=1&timeout=60 HTTP/1.1" 409 154
+2025-05-05 16:31:13 - ERROR - Threaded polling exception: A request to the Telegram API was unsuccessful. Error code: 409. Description: Conflict: can't use getUpdates method while webhook is active; use deleteWebhook to delete the webhook first
+2025-05-05 16:31:13 - ERROR - Exception traceback:
+Traceback (most recent call last):
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 1234, in __threaded_polling
+    polling_thread.raise_exceptions()
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/util.py", line 111, in raise_exceptions
+    raise self.exception_info
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/util.py", line 93, in run
+    task(*args, **kwargs)
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 688, in __retrieve_updates
+    updates = self.get_updates(offset=(self.last_update_id + 1),
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 660, in get_updates
+    json_updates = apihelper.get_updates(
+                   ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 332, in get_updates
+    return _make_request(token, method_url, params=payload)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 168, in _make_request
+    json_result = _check_result(method_name, result)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 195, in _check_result
+    raise ApiTelegramException(method_name, result, result_json)
+telebot.apihelper.ApiTelegramException: A request to the Telegram API was unsuccessful. Error code: 409. Description: Conflict: can't use getUpdates method while webhook is active; use deleteWebhook to delete the webhook first
+
+2025-05-05 16:31:14 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=1&timeout=60 HTTP/1.1" 409 154
+2025-05-05 16:31:14 - ERROR - Threaded polling exception: A request to the Telegram API was unsuccessful. Error code: 409. Description: Conflict: can't use getUpdates method while webhook is active; use deleteWebhook to delete the webhook first
+2025-05-05 16:31:14 - ERROR - Exception traceback:
+Traceback (most recent call last):
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 1234, in __threaded_polling
+    polling_thread.raise_exceptions()
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/util.py", line 111, in raise_exceptions
+    raise self.exception_info
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/util.py", line 93, in run
+    task(*args, **kwargs)
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 688, in __retrieve_updates
+    updates = self.get_updates(offset=(self.last_update_id + 1),
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 660, in get_updates
+    json_updates = apihelper.get_updates(
+                   ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 332, in get_updates
+    return _make_request(token, method_url, params=payload)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 168, in _make_request
+    json_result = _check_result(method_name, result)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 195, in _check_result
+    raise ApiTelegramException(method_name, result, result_json)
+telebot.apihelper.ApiTelegramException: A request to the Telegram API was unsuccessful. Error code: 409. Description: Conflict: can't use getUpdates method while webhook is active; use deleteWebhook to delete the webhook first
+
+2025-05-05 16:32:55 - DEBUG - Active threads: 5
+2025-05-05 16:32:55 - DEBUG - Background tasks are started
+2025-05-05 16:32:55 - DEBUG - Thread Thread: MainThread, ID: 133721318689664 is alive
+2025-05-05 16:32:55 - DEBUG - Thread Thread: WorkerThread1, ID: 133721265014464 is alive
+2025-05-05 16:32:55 - DEBUG - Thread Thread: WorkerThread2, ID: 133721254528704 is alive
+2025-05-05 16:32:55 - DEBUG - Thread Thread: route_cleanup, ID: 133721244042944 is alive
+2025-05-05 16:32:55 - DEBUG - Thread Thread: monitor_threads, ID: 133721233557184 is alive
+2025-05-05 16:32:55 - DEBUG - Starting new HTTPS connection (1): api.telegram.org:443
+2025-05-05 16:32:55 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getMe HTTP/1.1" 200 261
+2025-05-05 16:32:55 - DEBUG - Starting new HTTPS connection (1): api.telegram.org:443
+2025-05-05 16:32:55 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=1&timeout=60 HTTP/1.1" 409 154
+2025-05-05 16:32:55 - ERROR - Threaded polling exception: A request to the Telegram API was unsuccessful. Error code: 409. Description: Conflict: can't use getUpdates method while webhook is active; use deleteWebhook to delete the webhook first
+2025-05-05 16:32:55 - ERROR - Exception traceback:
+Traceback (most recent call last):
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 1234, in __threaded_polling
+    polling_thread.raise_exceptions()
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/util.py", line 111, in raise_exceptions
+    raise self.exception_info
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/util.py", line 93, in run
+    task(*args, **kwargs)
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 688, in __retrieve_updates
+    updates = self.get_updates(offset=(self.last_update_id + 1),
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 660, in get_updates
+    json_updates = apihelper.get_updates(
+                   ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 332, in get_updates
+    return _make_request(token, method_url, params=payload)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 168, in _make_request
+    json_result = _check_result(method_name, result)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 195, in _check_result
+    raise ApiTelegramException(method_name, result, result_json)
+telebot.apihelper.ApiTelegramException: A request to the Telegram API was unsuccessful. Error code: 409. Description: Conflict: can't use getUpdates method while webhook is active; use deleteWebhook to delete the webhook first
+
+2025-05-05 16:32:59 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=1&timeout=60 HTTP/1.1" 409 154
+2025-05-05 16:32:59 - ERROR - Threaded polling exception: A request to the Telegram API was unsuccessful. Error code: 409. Description: Conflict: can't use getUpdates method while webhook is active; use deleteWebhook to delete the webhook first
+2025-05-05 16:32:59 - ERROR - Exception traceback:
+Traceback (most recent call last):
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 1234, in __threaded_polling
+    polling_thread.raise_exceptions()
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/util.py", line 111, in raise_exceptions
+    raise self.exception_info
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/util.py", line 93, in run
+    task(*args, **kwargs)
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 688, in __retrieve_updates
+    updates = self.get_updates(offset=(self.last_update_id + 1),
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 660, in get_updates
+    json_updates = apihelper.get_updates(
+                   ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 332, in get_updates
+    return _make_request(token, method_url, params=payload)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 168, in _make_request
+    json_result = _check_result(method_name, result)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 195, in _check_result
+    raise ApiTelegramException(method_name, result, result_json)
+telebot.apihelper.ApiTelegramException: A request to the Telegram API was unsuccessful. Error code: 409. Description: Conflict: can't use getUpdates method while webhook is active; use deleteWebhook to delete the webhook first
+
+2025-05-05 16:33:00 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=1&timeout=60 HTTP/1.1" 409 154
+2025-05-05 16:33:00 - ERROR - Threaded polling exception: A request to the Telegram API was unsuccessful. Error code: 409. Description: Conflict: can't use getUpdates method while webhook is active; use deleteWebhook to delete the webhook first
+2025-05-05 16:33:00 - ERROR - Exception traceback:
+Traceback (most recent call last):
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 1234, in __threaded_polling
+    polling_thread.raise_exceptions()
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/util.py", line 111, in raise_exceptions
+    raise self.exception_info
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/util.py", line 93, in run
+    task(*args, **kwargs)
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 688, in __retrieve_updates
+    updates = self.get_updates(offset=(self.last_update_id + 1),
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 660, in get_updates
+    json_updates = apihelper.get_updates(
+                   ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 332, in get_updates
+    return _make_request(token, method_url, params=payload)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 168, in _make_request
+    json_result = _check_result(method_name, result)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 195, in _check_result
+    raise ApiTelegramException(method_name, result, result_json)
+telebot.apihelper.ApiTelegramException: A request to the Telegram API was unsuccessful. Error code: 409. Description: Conflict: can't use getUpdates method while webhook is active; use deleteWebhook to delete the webhook first
+
+2025-05-05 16:33:04 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=1&timeout=60 HTTP/1.1" 409 154
+2025-05-05 16:33:04 - ERROR - Threaded polling exception: A request to the Telegram API was unsuccessful. Error code: 409. Description: Conflict: can't use getUpdates method while webhook is active; use deleteWebhook to delete the webhook first
+2025-05-05 16:33:04 - ERROR - Exception traceback:
+Traceback (most recent call last):
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 1234, in __threaded_polling
+    polling_thread.raise_exceptions()
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/util.py", line 111, in raise_exceptions
+    raise self.exception_info
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/util.py", line 93, in run
+    task(*args, **kwargs)
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 688, in __retrieve_updates
+    updates = self.get_updates(offset=(self.last_update_id + 1),
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 660, in get_updates
+    json_updates = apihelper.get_updates(
+                   ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 332, in get_updates
+    return _make_request(token, method_url, params=payload)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 168, in _make_request
+    json_result = _check_result(method_name, result)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 195, in _check_result
+    raise ApiTelegramException(method_name, result, result_json)
+telebot.apihelper.ApiTelegramException: A request to the Telegram API was unsuccessful. Error code: 409. Description: Conflict: can't use getUpdates method while webhook is active; use deleteWebhook to delete the webhook first
+
+2025-05-05 16:35:46 - DEBUG - Active threads: 5
+2025-05-05 16:35:46 - DEBUG - Thread Thread: MainThread, ID: 138790403144576 is alive
+2025-05-05 16:35:46 - DEBUG - Thread Thread: WorkerThread1, ID: 138790349833920 is alive
+2025-05-05 16:35:46 - DEBUG - Thread Thread: WorkerThread2, ID: 138790339348160 is alive
+2025-05-05 16:35:46 - DEBUG - Thread Thread: route_cleanup, ID: 138790255462080 is alive
+2025-05-05 16:35:46 - DEBUG - Thread Thread: monitor_threads, ID: 138790244976320 is alive
+2025-05-05 16:35:46 - DEBUG - Background tasks are started
+2025-05-05 16:35:46 - DEBUG - Starting new HTTPS connection (1): api.telegram.org:443
+2025-05-05 16:35:46 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getMe HTTP/1.1" 200 261
+2025-05-05 16:35:46 - DEBUG - Starting new HTTPS connection (1): api.telegram.org:443
+2025-05-05 16:35:46 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=1&timeout=60 HTTP/1.1" 409 154
+2025-05-05 16:35:46 - ERROR - Threaded polling exception: A request to the Telegram API was unsuccessful. Error code: 409. Description: Conflict: can't use getUpdates method while webhook is active; use deleteWebhook to delete the webhook first
+2025-05-05 16:35:46 - ERROR - Exception traceback:
+Traceback (most recent call last):
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 1234, in __threaded_polling
+    polling_thread.raise_exceptions()
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/util.py", line 111, in raise_exceptions
+    raise self.exception_info
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/util.py", line 93, in run
+    task(*args, **kwargs)
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 688, in __retrieve_updates
+    updates = self.get_updates(offset=(self.last_update_id + 1),
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 660, in get_updates
+    json_updates = apihelper.get_updates(
+                   ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 332, in get_updates
+    return _make_request(token, method_url, params=payload)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 168, in _make_request
+    json_result = _check_result(method_name, result)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 195, in _check_result
+    raise ApiTelegramException(method_name, result, result_json)
+telebot.apihelper.ApiTelegramException: A request to the Telegram API was unsuccessful. Error code: 409. Description: Conflict: can't use getUpdates method while webhook is active; use deleteWebhook to delete the webhook first
+
+2025-05-05 16:35:50 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=1&timeout=60 HTTP/1.1" 409 154
+2025-05-05 16:35:50 - ERROR - Threaded polling exception: A request to the Telegram API was unsuccessful. Error code: 409. Description: Conflict: can't use getUpdates method while webhook is active; use deleteWebhook to delete the webhook first
+2025-05-05 16:35:50 - ERROR - Exception traceback:
+Traceback (most recent call last):
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 1234, in __threaded_polling
+    polling_thread.raise_exceptions()
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/util.py", line 111, in raise_exceptions
+    raise self.exception_info
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/util.py", line 93, in run
+    task(*args, **kwargs)
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 688, in __retrieve_updates
+    updates = self.get_updates(offset=(self.last_update_id + 1),
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 660, in get_updates
+    json_updates = apihelper.get_updates(
+                   ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 332, in get_updates
+    return _make_request(token, method_url, params=payload)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 168, in _make_request
+    json_result = _check_result(method_name, result)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 195, in _check_result
+    raise ApiTelegramException(method_name, result, result_json)
+telebot.apihelper.ApiTelegramException: A request to the Telegram API was unsuccessful. Error code: 409. Description: Conflict: can't use getUpdates method while webhook is active; use deleteWebhook to delete the webhook first
+
+2025-05-05 16:35:50 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=1&timeout=60 HTTP/1.1" 409 154
+2025-05-05 16:35:50 - ERROR - Threaded polling exception: A request to the Telegram API was unsuccessful. Error code: 409. Description: Conflict: can't use getUpdates method while webhook is active; use deleteWebhook to delete the webhook first
+2025-05-05 16:35:50 - ERROR - Exception traceback:
+Traceback (most recent call last):
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 1234, in __threaded_polling
+    polling_thread.raise_exceptions()
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/util.py", line 111, in raise_exceptions
+    raise self.exception_info
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/util.py", line 93, in run
+    task(*args, **kwargs)
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 688, in __retrieve_updates
+    updates = self.get_updates(offset=(self.last_update_id + 1),
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 660, in get_updates
+    json_updates = apihelper.get_updates(
+                   ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 332, in get_updates
+    return _make_request(token, method_url, params=payload)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 168, in _make_request
+    json_result = _check_result(method_name, result)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 195, in _check_result
+    raise ApiTelegramException(method_name, result, result_json)
+telebot.apihelper.ApiTelegramException: A request to the Telegram API was unsuccessful. Error code: 409. Description: Conflict: can't use getUpdates method while webhook is active; use deleteWebhook to delete the webhook first
+
+2025-05-05 16:35:54 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=1&timeout=60 HTTP/1.1" 409 154
+2025-05-05 16:35:54 - ERROR - Threaded polling exception: A request to the Telegram API was unsuccessful. Error code: 409. Description: Conflict: can't use getUpdates method while webhook is active; use deleteWebhook to delete the webhook first
+2025-05-05 16:35:54 - ERROR - Exception traceback:
+Traceback (most recent call last):
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 1234, in __threaded_polling
+    polling_thread.raise_exceptions()
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/util.py", line 111, in raise_exceptions
+    raise self.exception_info
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/util.py", line 93, in run
+    task(*args, **kwargs)
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 688, in __retrieve_updates
+    updates = self.get_updates(offset=(self.last_update_id + 1),
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 660, in get_updates
+    json_updates = apihelper.get_updates(
+                   ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 332, in get_updates
+    return _make_request(token, method_url, params=payload)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 168, in _make_request
+    json_result = _check_result(method_name, result)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 195, in _check_result
+    raise ApiTelegramException(method_name, result, result_json)
+telebot.apihelper.ApiTelegramException: A request to the Telegram API was unsuccessful. Error code: 409. Description: Conflict: can't use getUpdates method while webhook is active; use deleteWebhook to delete the webhook first
+
+2025-05-05 16:44:32 - DEBUG - Active threads: 5
+2025-05-05 16:44:32 - DEBUG - Thread Thread: MainThread, ID: 137300500724608 is alive
+2025-05-05 16:44:32 - DEBUG - Starting new HTTPS connection (1): api.telegram.org:443
+2025-05-05 16:44:32 - DEBUG - Thread Thread: WorkerThread1, ID: 137300447069888 is alive
+2025-05-05 16:44:32 - DEBUG - Thread Thread: WorkerThread2, ID: 137300436584128 is alive
+2025-05-05 16:44:32 - DEBUG - Thread Thread: route_cleanup, ID: 137300426098368 is alive
+2025-05-05 16:44:32 - DEBUG - Thread Thread: monitor_threads, ID: 137300415612608 is alive
+2025-05-05 16:44:32 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getMe HTTP/1.1" 200 261
+2025-05-05 16:44:32 - DEBUG - Starting new HTTPS connection (1): api.telegram.org:443
+2025-05-05 16:44:32 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=1&timeout=60 HTTP/1.1" 409 154
+2025-05-05 16:44:32 - ERROR - Threaded polling exception: A request to the Telegram API was unsuccessful. Error code: 409. Description: Conflict: can't use getUpdates method while webhook is active; use deleteWebhook to delete the webhook first
+2025-05-05 16:44:32 - ERROR - Exception traceback:
+Traceback (most recent call last):
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 1234, in __threaded_polling
+    polling_thread.raise_exceptions()
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/util.py", line 111, in raise_exceptions
+    raise self.exception_info
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/util.py", line 93, in run
+    task(*args, **kwargs)
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 688, in __retrieve_updates
+    updates = self.get_updates(offset=(self.last_update_id + 1),
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 660, in get_updates
+    json_updates = apihelper.get_updates(
+                   ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 332, in get_updates
+    return _make_request(token, method_url, params=payload)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 168, in _make_request
+    json_result = _check_result(method_name, result)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 195, in _check_result
+    raise ApiTelegramException(method_name, result, result_json)
+telebot.apihelper.ApiTelegramException: A request to the Telegram API was unsuccessful. Error code: 409. Description: Conflict: can't use getUpdates method while webhook is active; use deleteWebhook to delete the webhook first
+
+2025-05-05 16:44:36 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=1&timeout=60 HTTP/1.1" 409 154
+2025-05-05 16:44:36 - ERROR - Threaded polling exception: A request to the Telegram API was unsuccessful. Error code: 409. Description: Conflict: can't use getUpdates method while webhook is active; use deleteWebhook to delete the webhook first
+2025-05-05 16:44:36 - ERROR - Exception traceback:
+Traceback (most recent call last):
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 1234, in __threaded_polling
+    polling_thread.raise_exceptions()
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/util.py", line 111, in raise_exceptions
+    raise self.exception_info
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/util.py", line 93, in run
+    task(*args, **kwargs)
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 688, in __retrieve_updates
+    updates = self.get_updates(offset=(self.last_update_id + 1),
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 660, in get_updates
+    json_updates = apihelper.get_updates(
+                   ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 332, in get_updates
+    return _make_request(token, method_url, params=payload)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 168, in _make_request
+    json_result = _check_result(method_name, result)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 195, in _check_result
+    raise ApiTelegramException(method_name, result, result_json)
+telebot.apihelper.ApiTelegramException: A request to the Telegram API was unsuccessful. Error code: 409. Description: Conflict: can't use getUpdates method while webhook is active; use deleteWebhook to delete the webhook first
+
+2025-05-05 16:44:36 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=1&timeout=60 HTTP/1.1" 409 154
+2025-05-05 16:44:36 - ERROR - Threaded polling exception: A request to the Telegram API was unsuccessful. Error code: 409. Description: Conflict: can't use getUpdates method while webhook is active; use deleteWebhook to delete the webhook first
+2025-05-05 16:44:36 - ERROR - Exception traceback:
+Traceback (most recent call last):
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 1234, in __threaded_polling
+    polling_thread.raise_exceptions()
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/util.py", line 111, in raise_exceptions
+    raise self.exception_info
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/util.py", line 93, in run
+    task(*args, **kwargs)
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 688, in __retrieve_updates
+    updates = self.get_updates(offset=(self.last_update_id + 1),
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 660, in get_updates
+    json_updates = apihelper.get_updates(
+                   ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 332, in get_updates
+    return _make_request(token, method_url, params=payload)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 168, in _make_request
+    json_result = _check_result(method_name, result)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 195, in _check_result
+    raise ApiTelegramException(method_name, result, result_json)
+telebot.apihelper.ApiTelegramException: A request to the Telegram API was unsuccessful. Error code: 409. Description: Conflict: can't use getUpdates method while webhook is active; use deleteWebhook to delete the webhook first
+
+2025-05-05 16:45:34 - DEBUG - Active threads: 5
+2025-05-05 16:45:34 - DEBUG - FLAG 4
+2025-05-05 16:45:34 - DEBUG - Thread Thread: MainThread, ID: 136492916566912 is alive
+2025-05-05 16:45:34 - DEBUG - Thread Thread: WorkerThread1, ID: 136492863194816 is alive
+2025-05-05 16:45:34 - DEBUG - Thread Thread: WorkerThread2, ID: 136492783503040 is alive
+2025-05-05 16:45:34 - DEBUG - Starting new HTTPS connection (1): api.telegram.org:443
+2025-05-05 16:45:34 - DEBUG - Thread Thread: route_cleanup, ID: 136492773017280 is alive
+2025-05-05 16:45:34 - DEBUG - Thread Thread: monitor_threads, ID: 136492762531520 is alive
+2025-05-05 16:45:34 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getMe HTTP/1.1" 200 261
+2025-05-05 16:45:34 - DEBUG - Starting new HTTPS connection (1): api.telegram.org:443
+2025-05-05 16:45:34 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=1&timeout=60 HTTP/1.1" 409 154
+2025-05-05 16:45:34 - ERROR - Threaded polling exception: A request to the Telegram API was unsuccessful. Error code: 409. Description: Conflict: can't use getUpdates method while webhook is active; use deleteWebhook to delete the webhook first
+2025-05-05 16:45:34 - ERROR - Exception traceback:
+Traceback (most recent call last):
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 1234, in __threaded_polling
+    polling_thread.raise_exceptions()
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/util.py", line 111, in raise_exceptions
+    raise self.exception_info
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/util.py", line 93, in run
+    task(*args, **kwargs)
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 688, in __retrieve_updates
+    updates = self.get_updates(offset=(self.last_update_id + 1),
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 660, in get_updates
+    json_updates = apihelper.get_updates(
+                   ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 332, in get_updates
+    return _make_request(token, method_url, params=payload)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 168, in _make_request
+    json_result = _check_result(method_name, result)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 195, in _check_result
+    raise ApiTelegramException(method_name, result, result_json)
+telebot.apihelper.ApiTelegramException: A request to the Telegram API was unsuccessful. Error code: 409. Description: Conflict: can't use getUpdates method while webhook is active; use deleteWebhook to delete the webhook first
+
+2025-05-05 16:45:37 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=1&timeout=60 HTTP/1.1" 409 154
+2025-05-05 16:45:37 - ERROR - Threaded polling exception: A request to the Telegram API was unsuccessful. Error code: 409. Description: Conflict: can't use getUpdates method while webhook is active; use deleteWebhook to delete the webhook first
+2025-05-05 16:45:37 - ERROR - Exception traceback:
+Traceback (most recent call last):
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 1234, in __threaded_polling
+    polling_thread.raise_exceptions()
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/util.py", line 111, in raise_exceptions
+    raise self.exception_info
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/util.py", line 93, in run
+    task(*args, **kwargs)
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 688, in __retrieve_updates
+    updates = self.get_updates(offset=(self.last_update_id + 1),
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 660, in get_updates
+    json_updates = apihelper.get_updates(
+                   ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 332, in get_updates
+    return _make_request(token, method_url, params=payload)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 168, in _make_request
+    json_result = _check_result(method_name, result)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 195, in _check_result
+    raise ApiTelegramException(method_name, result, result_json)
+telebot.apihelper.ApiTelegramException: A request to the Telegram API was unsuccessful. Error code: 409. Description: Conflict: can't use getUpdates method while webhook is active; use deleteWebhook to delete the webhook first
+
+2025-05-05 16:45:38 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=1&timeout=60 HTTP/1.1" 409 154
+2025-05-05 16:45:38 - ERROR - Threaded polling exception: A request to the Telegram API was unsuccessful. Error code: 409. Description: Conflict: can't use getUpdates method while webhook is active; use deleteWebhook to delete the webhook first
+2025-05-05 16:45:38 - ERROR - Exception traceback:
+Traceback (most recent call last):
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 1234, in __threaded_polling
+    polling_thread.raise_exceptions()
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/util.py", line 111, in raise_exceptions
+    raise self.exception_info
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/util.py", line 93, in run
+    task(*args, **kwargs)
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 688, in __retrieve_updates
+    updates = self.get_updates(offset=(self.last_update_id + 1),
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 660, in get_updates
+    json_updates = apihelper.get_updates(
+                   ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 332, in get_updates
+    return _make_request(token, method_url, params=payload)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 168, in _make_request
+    json_result = _check_result(method_name, result)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 195, in _check_result
+    raise ApiTelegramException(method_name, result, result_json)
+telebot.apihelper.ApiTelegramException: A request to the Telegram API was unsuccessful. Error code: 409. Description: Conflict: can't use getUpdates method while webhook is active; use deleteWebhook to delete the webhook first
+
+2025-05-05 16:45:40 - DEBUG - FLAG 5
+2025-05-05 17:01:10 - DEBUG - Active threads: 5
+2025-05-05 17:01:10 - DEBUG - Starting new HTTPS connection (1): api.telegram.org:443
+2025-05-05 17:01:10 - DEBUG - Thread Thread: MainThread, ID: 134412867558272 is alive
+2025-05-05 17:01:10 - DEBUG - Thread Thread: WorkerThread1, ID: 134412813469376 is alive
+2025-05-05 17:01:10 - DEBUG - Thread Thread: WorkerThread2, ID: 134412802983616 is alive
+2025-05-05 17:01:10 - DEBUG - Thread Thread: route_cleanup, ID: 134412792497856 is alive
+2025-05-05 17:01:10 - DEBUG - Thread Thread: monitor_threads, ID: 134412782012096 is alive
+2025-05-05 17:01:10 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/deleteWebhook HTTP/1.1" 200 61
+2025-05-05 17:01:11 - INFO - Starting bot polling...
+2025-05-05 17:01:11 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getMe HTTP/1.1" 200 261
+2025-05-05 17:01:11 - DEBUG - Starting new HTTPS connection (1): api.telegram.org:443
+2025-05-05 17:02:02 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=1&timeout=60 HTTP/1.1" 200 23
+2025-05-05 17:02:52 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=1&timeout=60 HTTP/1.1" 200 23
+2025-05-05 17:03:42 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=1&timeout=60 HTTP/1.1" 200 23
+2025-05-05 17:04:32 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=1&timeout=60 HTTP/1.1" 200 23
+2025-05-05 18:34:53 - DEBUG - Active threads: 5
+2025-05-05 18:34:53 - DEBUG - Starting new HTTPS connection (1): api.telegram.org:443
+2025-05-05 18:34:53 - DEBUG - Thread Thread: MainThread, ID: 135242410883968 is alive
+2025-05-05 18:34:53 - DEBUG - Thread Thread: WorkerThread1, ID: 135242356623040 is alive
+2025-05-05 18:34:53 - DEBUG - Thread Thread: WorkerThread2, ID: 135242276931264 is alive
+2025-05-05 18:34:53 - DEBUG - Thread Thread: route_cleanup, ID: 135242266445504 is alive
+2025-05-05 18:34:53 - DEBUG - Thread Thread: monitor_threads, ID: 135242255959744 is alive
+2025-05-05 18:34:53 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/deleteWebhook HTTP/1.1" 200 61
+2025-05-05 18:34:54 - INFO - Starting bot polling...
+2025-05-05 18:34:54 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getMe HTTP/1.1" 200 261
+2025-05-05 18:34:54 - DEBUG - Starting new HTTPS connection (1): api.telegram.org:443
+2025-05-05 18:35:45 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=1&timeout=60 HTTP/1.1" 200 23
+2025-05-05 18:36:35 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=1&timeout=60 HTTP/1.1" 200 23
+2025-05-05 18:37:25 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=1&timeout=60 HTTP/1.1" 200 23
+2025-05-05 18:38:16 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=1&timeout=60 HTTP/1.1" 200 23
+2025-05-05 18:39:06 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=1&timeout=60 HTTP/1.1" 200 23
+2025-05-05 18:39:56 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=1&timeout=60 HTTP/1.1" 200 23
+2025-05-05 18:40:46 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=1&timeout=60 HTTP/1.1" 200 23
+2025-05-05 18:41:36 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=1&timeout=60 HTTP/1.1" 200 23
+2025-05-05 18:42:20 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=1&timeout=60 HTTP/1.1" 200 312
+2025-05-05 18:42:20 - INFO - User 598702023 started the bot
+2025-05-05 18:42:20 - DEBUG - Starting new HTTPS connection (1): api.telegram.org:443
+2025-05-05 18:42:20 - DEBUG - https://api.telegram.org:443 "POST /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/sendMessage?chat_id=598702023&text=%D0%A1%D1%82%D0%B0%D0%BD%D1%86%D0%B8%D1%8F+%D0%BE%D1%82%D0%BF%D1%80%D0%B0%D0%B2%D0%BB%D0%B5%D0%BD%D0%B8%D1%8F%3A+ HTTP/1.1" 200 341
+2025-05-05 18:42:20 - INFO - User 598702023 added to database
+2025-05-05 18:42:26 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=5378645&timeout=60 HTTP/1.1" 200 278
+2025-05-05 18:42:26 - DEBUG - https://api.telegram.org:443 "POST /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/sendMessage?chat_id=598702023&text=%D0%A1%D1%82%D0%B0%D0%BD%D1%86%D0%B8%D1%8F+%D0%BF%D1%80%D0%B8%D0%B1%D1%8B%D1%82%D0%B8%D1%8F%3A+ HTTP/1.1" 200 323
+2025-05-05 18:42:29 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=5378646&timeout=60 HTTP/1.1" 200 272
+2025-05-05 18:42:29 - DEBUG - https://api.telegram.org:443 "POST /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/sendMessage?chat_id=598702023&text=%F0%9F%93%85+%D0%94%D0%B0%D1%82%D0%B0+%D0%B2+%D1%84%D0%BE%D1%80%D0%BC%D0%B0%D1%82%D0%B5+%D0%B3%D0%B3%D0%B3%D0%B3-%D0%BC%D0%BC-%D0%B4%D0%B4%3A+ HTTP/1.1" 200 370
+2025-05-05 18:42:36 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=5378647&timeout=60 HTTP/1.1" 200 258
+2025-05-05 18:42:36 - DEBUG - Starting new HTTPS connection (1): api.telegram.org:443
+2025-05-05 18:42:36 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/sendChatAction?chat_id=598702023&action=typing HTTP/1.1" 200 25
+2025-05-05 18:42:37 - DEBUG - https://api.telegram.org:443 "POST /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/sendMessage?chat_id=598702023&text=%D0%98%D0%B4%D1%91%D1%82+%D0%BF%D0%BE%D0%B8%D1%81%D0%BA+%F0%9F%94%8D HTTP/1.1" 200 299
+2025-05-05 18:42:37 - DEBUG - Starting new HTTPS connection (1): pass.rw.by:443
+2025-05-05 18:42:39 - DEBUG - https://pass.rw.by:443 "GET /ru/route/?from=%D0%9C%D0%B8%D0%BD%D1%81%D0%BA&to=%D0%9B%D0%B8%D0%B4%D0%B0&date=2025-05-05 HTTP/1.1" 200 None
+2025-05-05 18:42:39 - INFO - Запрос {'step': 'start', 'city_from': 'Минск', 'city_to': 'Лида', 'date': '2025-05-05', 'url': 'https://pass.rw.by/ru/route/?from=%D0%9C%D0%B8%D0%BD%D1%81%D0%BA&to=%D0%9B%D0%B8%D0%B4%D0%B0&date=2025-05-05'}               выполнен за 1.517 секунд
+2025-05-05 18:42:39 - INFO - Route Минск-Лида-2025-05-05 added to database
+2025-05-05 18:42:39 - INFO - Train: 687Б for route_id: 3 added to database
+2025-05-05 18:42:39 - INFO - Train: 731Ь for route_id: 3 added to database
+2025-05-05 18:42:39 - INFO - Train: 629Б for route_id: 3 added to database
+2025-05-05 18:42:40 - INFO - Train: 634Б for route_id: 3 added to database
+2025-05-05 18:42:40 - DEBUG - https://api.telegram.org:443 "POST /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/sendMessage?chat_id=598702023&text=%D0%A1%D0%BF%D0%B8%D1%81%D0%BE%D0%BA+%D0%B4%D0%BE%D1%81%D1%82%D1%83%D0%BF%D0%BD%D1%8B%D1%85+%D0%BF%D0%BE%D0%B5%D0%B7%D0%B4%D0%BE%D0%B2%3A+&reply_markup=%7B%22inline_keyboard%22%3A+%5B%5B%7B%22text%22%3A+%22%5Cud83d%5Cude86+%5Cu041f%5Cu043e%5Cu0435%5Cu0437%5Cu0434+%5Cu2116687%5Cu0411%5Cn%5Cud83d%5Cudd52+07%3A10+%5Cu27a1%5Cufe0f+10%3A04%22%2C+%22callback_data%22%3A+%22687%5Cu0411_selected%22%7D%5D%2C+%5B%7B%22text%22%3A+%22%5Cud83d%5Cude86+%5Cu041f%5Cu043e%5Cu0435%5Cu0437%5Cu0434+%5Cu2116731%5Cu042c%5Cn%5Cud83d%5Cudd52+15%3A18+%5Cu27a1%5Cufe0f+17%3A44%22%2C+%22callback_data%22%3A+%22731%5Cu042c_selected%22%7D%5D%2C+%5B%7B%22text%22%3A+%22%5Cud83d%5Cude86+%5Cu041f%5Cu043e%5Cu0435%5Cu0437%5Cu0434+%5Cu2116629%5Cu0411%5Cn%5Cud83d%5Cudd52+19%3A25+%5Cu27a1%5Cufe0f+22%3A10%22%2C+%22callback_data%22%3A+%22629%5Cu0411_selected%22%7D%5D%2C+%5B%7B%22text%22%3A+%22%5Cud83d%5Cude86+%5Cu041f%5Cu043e%5Cu0435%5Cu0437%5Cu0434+%5Cu2116634%5Cu0411%5Cn%5Cud83d%5Cudd52+23%3A16+%5Cu27a1%5Cufe0f+02%3A57%22%2C+%22callback_data%22%3A+%22634%5Cu0411_selected%22%7D%5D%5D%7D HTTP/1.1" 200 999
+2025-05-05 18:43:04 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=5378648&timeout=60 HTTP/1.1" 200 1228
+2025-05-05 18:43:04 - DEBUG - https://api.telegram.org:443 "POST /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/answerCallbackQuery?callback_query_id=2571405610790003962 HTTP/1.1" 200 25
+2025-05-05 18:43:05 - INFO - Train_id: 51 added to db_tracking_list
+2025-05-05 18:43:05 - DEBUG - https://api.telegram.org:443 "POST /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/sendMessage?chat_id=598702023&text=%F0%9F%9A%86+%D0%9F%D0%BE%D0%B5%D0%B7%D0%B4+%E2%84%96687%D0%91%0A%E2%8F%B0+%D0%A3%D0%B6%D0%B5+%D0%BE%D1%82%D0%BF%D1%80%D0%B0%D0%B2%D0%B8%D0%BB%D1%81%D1%8F&reply_markup=%7B%22inline_keyboard%22%3A+%5B%5B%7B%22text%22%3A+%22%5Cud83d%5Cudd04+%5Cu041d%5Cu0430%5Cu0437%5Cu0430%5Cu0434+%5Cu043a+%5Cu043f%5Cu043e%5Cu0435%5Cu0437%5Cu0434%5Cu0430%5Cu043c%22%2C+%22callback_data%22%3A+%22re_get_trains_list%22%7D%5D%5D%7D HTTP/1.1" 200 559
+2025-05-05 18:43:07 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=5378649&timeout=60 HTTP/1.1" 200 788
+2025-05-05 18:43:07 - DEBUG - https://api.telegram.org:443 "POST /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/answerCallbackQuery?callback_query_id=2571405612893809153 HTTP/1.1" 200 25
+2025-05-05 18:43:07 - DEBUG - https://api.telegram.org:443 "POST /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/sendMessage?chat_id=598702023&text=%D0%A1%D0%BF%D0%B8%D1%81%D0%BE%D0%BA+%D0%B4%D0%BE%D1%81%D1%82%D1%83%D0%BF%D0%BD%D1%8B%D1%85+%D0%BF%D0%BE%D0%B5%D0%B7%D0%B4%D0%BE%D0%B2%3A+&reply_markup=%7B%22inline_keyboard%22%3A+%5B%5B%7B%22text%22%3A+%22%5Cud83d%5Cude86+%5Cu041f%5Cu043e%5Cu0435%5Cu0437%5Cu0434+%5Cu2116687%5Cu0411%5Cn%5Cud83d%5Cudd52+07%3A10+%5Cu27a1%5Cufe0f+10%3A04%22%2C+%22callback_data%22%3A+%22687%5Cu0411_selected%22%7D%5D%2C+%5B%7B%22text%22%3A+%22%5Cud83d%5Cude86+%5Cu041f%5Cu043e%5Cu0435%5Cu0437%5Cu0434+%5Cu2116731%5Cu042c%5Cn%5Cud83d%5Cudd52+15%3A18+%5Cu27a1%5Cufe0f+17%3A44%22%2C+%22callback_data%22%3A+%22731%5Cu042c_selected%22%7D%5D%2C+%5B%7B%22text%22%3A+%22%5Cud83d%5Cude86+%5Cu041f%5Cu043e%5Cu0435%5Cu0437%5Cu0434+%5Cu2116629%5Cu0411%5Cn%5Cud83d%5Cudd52+19%3A25+%5Cu27a1%5Cufe0f+22%3A10%22%2C+%22callback_data%22%3A+%22629%5Cu0411_selected%22%7D%5D%2C+%5B%7B%22text%22%3A+%22%5Cud83d%5Cude86+%5Cu041f%5Cu043e%5Cu0435%5Cu0437%5Cu0434+%5Cu2116634%5Cu0411%5Cn%5Cud83d%5Cudd52+23%3A16+%5Cu27a1%5Cufe0f+02%3A57%22%2C+%22callback_data%22%3A+%22634%5Cu0411_selected%22%7D%5D%5D%7D HTTP/1.1" 200 999
+2025-05-05 18:43:09 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=5378650&timeout=60 HTTP/1.1" 200 1228
+2025-05-05 18:43:10 - DEBUG - https://api.telegram.org:443 "POST /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/answerCallbackQuery?callback_query_id=2571405610737249415 HTTP/1.1" 200 25
+2025-05-05 18:43:10 - INFO - Train_id: 52 added to db_tracking_list
+2025-05-05 18:43:10 - DEBUG - https://api.telegram.org:443 "POST /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/sendMessage?chat_id=598702023&text=%F0%9F%9A%86+%D0%9F%D0%BE%D0%B5%D0%B7%D0%B4+%E2%84%96731%D0%AC%0A%E2%8F%B0+%D0%A3%D0%B6%D0%B5+%D0%BE%D1%82%D0%BF%D1%80%D0%B0%D0%B2%D0%B8%D0%BB%D1%81%D1%8F&reply_markup=%7B%22inline_keyboard%22%3A+%5B%5B%7B%22text%22%3A+%22%5Cud83d%5Cudd04+%5Cu041d%5Cu0430%5Cu0437%5Cu0430%5Cu0434+%5Cu043a+%5Cu043f%5Cu043e%5Cu0435%5Cu0437%5Cu0434%5Cu0430%5Cu043c%22%2C+%22callback_data%22%3A+%22re_get_trains_list%22%7D%5D%5D%7D HTTP/1.1" 200 559
+2025-05-05 18:43:12 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=5378651&timeout=60 HTTP/1.1" 200 788
+2025-05-05 18:43:13 - DEBUG - https://api.telegram.org:443 "POST /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/answerCallbackQuery?callback_query_id=2571405611904564672 HTTP/1.1" 200 25
+2025-05-05 18:43:13 - DEBUG - https://api.telegram.org:443 "POST /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/sendMessage?chat_id=598702023&text=%D0%A1%D0%BF%D0%B8%D1%81%D0%BE%D0%BA+%D0%B4%D0%BE%D1%81%D1%82%D1%83%D0%BF%D0%BD%D1%8B%D1%85+%D0%BF%D0%BE%D0%B5%D0%B7%D0%B4%D0%BE%D0%B2%3A+&reply_markup=%7B%22inline_keyboard%22%3A+%5B%5B%7B%22text%22%3A+%22%5Cud83d%5Cude86+%5Cu041f%5Cu043e%5Cu0435%5Cu0437%5Cu0434+%5Cu2116687%5Cu0411%5Cn%5Cud83d%5Cudd52+07%3A10+%5Cu27a1%5Cufe0f+10%3A04%22%2C+%22callback_data%22%3A+%22687%5Cu0411_selected%22%7D%5D%2C+%5B%7B%22text%22%3A+%22%5Cud83d%5Cude86+%5Cu041f%5Cu043e%5Cu0435%5Cu0437%5Cu0434+%5Cu2116731%5Cu042c%5Cn%5Cud83d%5Cudd52+15%3A18+%5Cu27a1%5Cufe0f+17%3A44%22%2C+%22callback_data%22%3A+%22731%5Cu042c_selected%22%7D%5D%2C+%5B%7B%22text%22%3A+%22%5Cud83d%5Cude86+%5Cu041f%5Cu043e%5Cu0435%5Cu0437%5Cu0434+%5Cu2116629%5Cu0411%5Cn%5Cud83d%5Cudd52+19%3A25+%5Cu27a1%5Cufe0f+22%3A10%22%2C+%22callback_data%22%3A+%22629%5Cu0411_selected%22%7D%5D%2C+%5B%7B%22text%22%3A+%22%5Cud83d%5Cude86+%5Cu041f%5Cu043e%5Cu0435%5Cu0437%5Cu0434+%5Cu2116634%5Cu0411%5Cn%5Cud83d%5Cudd52+23%3A16+%5Cu27a1%5Cufe0f+02%3A57%22%2C+%22callback_data%22%3A+%22634%5Cu0411_selected%22%7D%5D%5D%7D HTTP/1.1" 200 999
+2025-05-05 18:43:17 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=5378652&timeout=60 HTTP/1.1" 200 1228
+2025-05-05 18:43:17 - DEBUG - https://api.telegram.org:443 "POST /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/answerCallbackQuery?callback_query_id=2571405609730066111 HTTP/1.1" 200 25
+2025-05-05 18:43:17 - INFO - Train_id: 53 added to db_tracking_list
+2025-05-05 18:43:17 - DEBUG - https://api.telegram.org:443 "POST /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/sendMessage?chat_id=598702023&text=%F0%9F%9A%86+%D0%9F%D0%BE%D0%B5%D0%B7%D0%B4+%E2%84%96629%D0%91%0A%7B%27%D0%9F%D0%BB%D0%B0%D1%86%D0%BA%D0%B0%D1%80%D1%82%D0%BD%D1%8B%D0%B9+%F0%9F%9B%8F%EF%B8%8F%27%3A+101%2C+%27%D0%9A%D1%83%D0%BF%D0%B5%D0%B9%D0%BD%D1%8B%D0%B9+%F0%9F%9A%AA%F0%9F%9B%8F%EF%B8%8F%27%3A+12%7D&reply_markup=%7B%22inline_keyboard%22%3A+%5B%5B%7B%22text%22%3A+%22%5Cud83d%5Cudd0d+%5Cu041e%5Cu0442%5Cu0441%5Cu043b%5Cu0435%5Cu0436%5Cu0438%5Cu0432%5Cu0430%5Cu0442%5Cu044c%22%2C+%22callback_data%22%3A+%22629%5Cu0411_start_tracking%22%7D%5D%5D%7D HTTP/1.1" 200 646
+2025-05-05 18:43:20 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=5378653&timeout=60 HTTP/1.1" 200 881
+2025-05-05 18:43:20 - DEBUG - https://api.telegram.org:443 "POST /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/answerCallbackQuery?callback_query_id=2571405612908081645 HTTP/1.1" 200 25
+2025-05-05 18:43:20 - INFO - Train_id: 53 start tracking for chat_id: 598702023
+2025-05-05 18:43:20 - DEBUG - Tracking train 629Б for user 598702023
+2025-05-05 18:43:20 - DEBUG - Starting new HTTPS connection (1): pass.rw.by:443
+2025-05-05 18:43:20 - DEBUG - https://api.telegram.org:443 "POST /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/sendMessage?chat_id=598702023&text=%D0%9E%D1%82%D1%81%D0%BB%D0%B5%D0%B6%D0%B8%D0%B2%D0%B0%D0%BD%D0%B8%D0%B5+%D0%BF%D0%BE%D0%B5%D0%B7%D0%B4%D0%B0+629%D0%91+%D0%B7%D0%B0%D0%BF%D1%83%D1%89%D0%B5%D0%BD%D0%BE. HTTP/1.1" 200 400
+2025-05-05 18:43:22 - DEBUG - https://pass.rw.by:443 "GET /ru/route/?from=%D0%9C%D0%B8%D0%BD%D1%81%D0%BA&to=%D0%9B%D0%B8%D0%B4%D0%B0&date=2025-05-05 HTTP/1.1" 200 None
+2025-05-05 18:44:10 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=5378654&timeout=60 HTTP/1.1" 200 23
+2025-05-05 18:45:00 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=5378654&timeout=60 HTTP/1.1" 200 23
+2025-05-05 18:45:00 - DEBUG - Starting new HTTPS connection (1): api.telegram.org:443
+2025-05-05 18:45:51 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=5378654&timeout=60 HTTP/1.1" 200 23
+2025-05-05 18:46:16 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=5378654&timeout=60 HTTP/1.1" 200 311
+2025-05-05 18:46:16 - DEBUG - https://api.telegram.org:443 "POST /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/sendMessage?chat_id=598702023&text=%E2%9D%97+%D0%92%D1%8B+%D1%83%D0%B2%D0%B5%D1%80%D0%B5%D0%BD%D1%8B%2C+%D1%87%D1%82%D0%BE+%D1%85%D0%BE%D1%82%D0%B8%D1%82%D0%B5+%D0%BE%D1%81%D1%82%D0%B0%D0%BD%D0%BE%D0%B2%D0%B8%D1%82%D1%8C+%D0%B1%D0%BE%D1%82%D0%B0%0A%D0%B8+%D0%BE%D1%87%D0%B8%D1%81%D1%82%D0%B8%D1%82%D1%8C+%D0%BF%D0%B5%D1%80%D0%B5%D0%BF%D0%B8%D1%81%D0%BA%D1%83%3F&reply_markup=%7B%22inline_keyboard%22%3A+%5B%5B%7B%22text%22%3A+%22%5Cu0414%5Cu0430%22%2C+%22callback_data%22%3A+%22confirm_stop%22%7D%2C+%7B%22text%22%3A+%22%5Cu041d%5Cu0435%5Cu0442%22%2C+%22callback_data%22%3A+%22cancel_stop%22%7D%5D%5D%7D HTTP/1.1" 200 703
+2025-05-05 18:46:20 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=5378655&timeout=60 HTTP/1.1" 200 926
+2025-05-05 18:46:20 - DEBUG - https://api.telegram.org:443 "POST /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/deleteMessage?chat_id=598702023&message_id=4415 HTTP/1.1" 200 25
+2025-05-05 18:46:20 - DEBUG - https://api.telegram.org:443 "POST /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/sendMessage?chat_id=598702023&text=%F0%9F%9B%91+%D0%91%D0%BE%D1%82+%D0%BE%D1%81%D1%82%D0%B0%D0%BD%D0%BE%D0%B2%D0%BB%D0%B5%D0%BD.+%D0%A7%D0%B0%D1%82+%D0%BE%D1%87%D0%B8%D1%89%D0%B5%D0%BD. HTTP/1.1" 200 381
+2025-05-05 18:46:20 - INFO - Бот остановлен chat_id: 598702023.                             Список отслеживания очищен
+2025-05-05 18:46:20 - ERROR - Attempt 1 failed: Cannot operate on a closed database.
+2025-05-05 18:46:28 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=5378656&timeout=60 HTTP/1.1" 200 1228
+2025-05-05 18:46:28 - DEBUG - https://api.telegram.org:443 "POST /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/answerCallbackQuery?callback_query_id=2571405610500216179 HTTP/1.1" 200 25
+2025-05-05 18:46:28 - INFO - Train_id: 52 added to db_tracking_list
+2025-05-05 18:46:28 - DEBUG - https://api.telegram.org:443 "POST /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/sendMessage?chat_id=598702023&text=%F0%9F%9A%86+%D0%9F%D0%BE%D0%B5%D0%B7%D0%B4+%E2%84%96731%D0%AC%0A%E2%8F%B0+%D0%A3%D0%B6%D0%B5+%D0%BE%D1%82%D0%BF%D1%80%D0%B0%D0%B2%D0%B8%D0%BB%D1%81%D1%8F&reply_markup=%7B%22inline_keyboard%22%3A+%5B%5B%7B%22text%22%3A+%22%5Cud83d%5Cudd04+%5Cu041d%5Cu0430%5Cu0437%5Cu0430%5Cu0434+%5Cu043a+%5Cu043f%5Cu043e%5Cu0435%5Cu0437%5Cu0434%5Cu0430%5Cu043c%22%2C+%22callback_data%22%3A+%22re_get_trains_list%22%7D%5D%5D%7D HTTP/1.1" 200 559
+2025-05-05 18:46:50 - DEBUG - Starting new HTTPS connection (1): api.telegram.org:443
+2025-05-05 18:46:50 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/deleteWebhook HTTP/1.1" 200 68
+2025-05-05 18:46:51 - INFO - Starting bot polling...
+2025-05-05 18:46:51 - DEBUG - Starting new HTTPS connection (1): api.telegram.org:443
+2025-05-05 18:46:51 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=5378657&timeout=60 HTTP/1.1" 200 4406
+2025-05-05 18:46:52 - DEBUG - https://api.telegram.org:443 "POST /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/answerCallbackQuery?callback_query_id=2571405609324592578 HTTP/1.1" 400 127
+2025-05-05 18:46:52 - ERROR - Threaded polling exception: A request to the Telegram API was unsuccessful. Error code: 400. Description: Bad Request: query is too old and response timeout expired or query ID is invalid
+2025-05-05 18:46:52 - DEBUG - https://api.telegram.org:443 "POST /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/answerCallbackQuery?callback_query_id=2571405611504193920 HTTP/1.1" 400 127
+2025-05-05 18:46:52 - ERROR - Exception traceback:
+Traceback (most recent call last):
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 1235, in __threaded_polling
+    self.worker_pool.raise_exceptions()
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/util.py", line 150, in raise_exceptions
+    raise self.exception_info
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/util.py", line 93, in run
+    task(*args, **kwargs)
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 9233, in _run_middlewares_and_handler
+    result = handler['function'](message)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/vs_code/rw_by/main.py", line 367, in wrapper
+    return func(message)
+           ^^^^^^^^^^^^^
+  File "/home/dron/vs_code/rw_by/main.py", line 590, in select_train
+    bot.answer_callback_query(callback.id)
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/__init__.py", line 6058, in answer_callback_query
+    return apihelper.answer_callback_query(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 1854, in answer_callback_query
+    return _make_request(token, method_url, params=payload, method='post')
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 168, in _make_request
+    json_result = _check_result(method_name, result)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dron/.cache/pypoetry/virtualenvs/rw-by-ZmTuEdsl-py3.12/lib/python3.12/site-packages/telebot/apihelper.py", line 195, in _check_result
+    raise ApiTelegramException(method_name, result, result_json)
+telebot.apihelper.ApiTelegramException: A request to the Telegram API was unsuccessful. Error code: 400. Description: Bad Request: query is too old and response timeout expired or query ID is invalid
+
+2025-05-05 18:46:52 - DEBUG - https://api.telegram.org:443 "POST /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/answerCallbackQuery?callback_query_id=2571405609672291447 HTTP/1.1" 400 127
+2025-05-05 18:46:52 - DEBUG - https://api.telegram.org:443 "POST /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/answerCallbackQuery?callback_query_id=2571405609255749728 HTTP/1.1" 200 25
+2025-05-05 18:46:52 - DEBUG - https://api.telegram.org:443 "POST /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/sendMessage?chat_id=598702023&text=%D0%A1%D0%BF%D0%B8%D1%81%D0%BE%D0%BA+%D0%B4%D0%BE%D1%81%D1%82%D1%83%D0%BF%D0%BD%D1%8B%D1%85+%D0%BF%D0%BE%D0%B5%D0%B7%D0%B4%D0%BE%D0%B2%3A+&reply_markup=%7B%22inline_keyboard%22%3A+%5B%5B%7B%22text%22%3A+%22%5Cud83d%5Cude86+%5Cu041f%5Cu043e%5Cu0435%5Cu0437%5Cu0434+%5Cu2116687%5Cu0411%5Cn%5Cud83d%5Cudd52+07%3A10+%5Cu27a1%5Cufe0f+10%3A04%22%2C+%22callback_data%22%3A+%22687%5Cu0411_selected%22%7D%5D%2C+%5B%7B%22text%22%3A+%22%5Cud83d%5Cude86+%5Cu041f%5Cu043e%5Cu0435%5Cu0437%5Cu0434+%5Cu2116731%5Cu042c%5Cn%5Cud83d%5Cudd52+15%3A18+%5Cu27a1%5Cufe0f+17%3A44%22%2C+%22callback_data%22%3A+%22731%5Cu042c_selected%22%7D%5D%2C+%5B%7B%22text%22%3A+%22%5Cud83d%5Cude86+%5Cu041f%5Cu043e%5Cu0435%5Cu0437%5Cu0434+%5Cu2116629%5Cu0411%5Cn%5Cud83d%5Cudd52+19%3A25+%5Cu27a1%5Cufe0f+22%3A10%22%2C+%22callback_data%22%3A+%22629%5Cu0411_selected%22%7D%5D%2C+%5B%7B%22text%22%3A+%22%5Cud83d%5Cude86+%5Cu041f%5Cu043e%5Cu0435%5Cu0437%5Cu0434+%5Cu2116634%5Cu0411%5Cn%5Cud83d%5Cudd52+23%3A16+%5Cu27a1%5Cufe0f+02%3A57%22%2C+%22callback_data%22%3A+%22634%5Cu0411_selected%22%7D%5D%5D%7D HTTP/1.1" 200 999
+2025-05-05 18:47:08 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=5378661&timeout=60 HTTP/1.1" 200 311
+2025-05-05 18:47:08 - DEBUG - https://api.telegram.org:443 "POST /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/sendMessage?chat_id=598702023&text=%E2%9D%97+%D0%92%D1%8B+%D1%83%D0%B2%D0%B5%D1%80%D0%B5%D0%BD%D1%8B%2C+%D1%87%D1%82%D0%BE+%D1%85%D0%BE%D1%82%D0%B8%D1%82%D0%B5+%D0%BE%D1%81%D1%82%D0%B0%D0%BD%D0%BE%D0%B2%D0%B8%D1%82%D1%8C+%D0%B1%D0%BE%D1%82%D0%B0%0A%D0%B8+%D0%BE%D1%87%D0%B8%D1%81%D1%82%D0%B8%D1%82%D1%8C+%D0%BF%D0%B5%D1%80%D0%B5%D0%BF%D0%B8%D1%81%D0%BA%D1%83%3F&reply_markup=%7B%22inline_keyboard%22%3A+%5B%5B%7B%22text%22%3A+%22%5Cu0414%5Cu0430%22%2C+%22callback_data%22%3A+%22confirm_stop%22%7D%2C+%7B%22text%22%3A+%22%5Cu041d%5Cu0435%5Cu0442%22%2C+%22callback_data%22%3A+%22cancel_stop%22%7D%5D%5D%7D HTTP/1.1" 200 703
+2025-05-05 18:47:10 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=5378662&timeout=60 HTTP/1.1" 200 925
+2025-05-05 18:47:12 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=5378663&timeout=60 HTTP/1.1" 200 925
+2025-05-05 18:48:02 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=5378664&timeout=60 HTTP/1.1" 200 23
+2025-05-05 18:48:52 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=5378664&timeout=60 HTTP/1.1" 200 23
+2025-05-05 18:49:15 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=5378664&timeout=60 HTTP/1.1" 200 312
+2025-05-05 18:49:15 - DEBUG - https://api.telegram.org:443 "POST /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/sendMessage?chat_id=598702023&text=%D0%92%D1%8B%D1%85%D0%BE%D0%B4+%D0%B8%D0%B7+%D0%9F%D0%9E HTTP/1.1" 200 287
+2025-05-05 18:59:14 - DEBUG - Active threads: 5
+2025-05-05 18:59:14 - DEBUG - Starting new HTTPS connection (1): api.telegram.org:443
+2025-05-05 18:59:14 - DEBUG - Thread Thread: MainThread, ID: 129255842081664 is alive
+2025-05-05 18:59:14 - DEBUG - Thread Thread: WorkerThread1, ID: 129255786677952 is alive
+2025-05-05 18:59:14 - DEBUG - Thread Thread: WorkerThread2, ID: 129255776192192 is alive
+2025-05-05 18:59:14 - DEBUG - Thread Thread: route_cleanup, ID: 129255696500416 is alive
+2025-05-05 18:59:14 - DEBUG - Thread Thread: monitor_threads, ID: 129255686014656 is alive
+2025-05-05 18:59:14 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/deleteWebhook HTTP/1.1" 200 68
+2025-05-05 18:59:15 - INFO - Starting bot polling...
+2025-05-05 18:59:15 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getMe HTTP/1.1" 200 261
+2025-05-05 18:59:15 - DEBUG - Starting new HTTPS connection (1): api.telegram.org:443
+2025-05-05 19:00:24 - DEBUG - Active threads: 5
+2025-05-05 19:00:24 - DEBUG - Thread Thread: MainThread, ID: 139352732216192 is alive
+2025-05-05 19:00:24 - DEBUG - Starting new HTTPS connection (1): api.telegram.org:443
+2025-05-05 19:00:24 - DEBUG - Thread Thread: WorkerThread1, ID: 139352678074048 is alive
+2025-05-05 19:00:24 - DEBUG - Thread Thread: WorkerThread2, ID: 139352667588288 is alive
+2025-05-05 19:00:24 - DEBUG - Thread Thread: route_cleanup, ID: 139352657102528 is alive
+2025-05-05 19:00:24 - DEBUG - Thread Thread: monitor_threads, ID: 139352646616768 is alive
+2025-05-05 19:00:24 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/deleteWebhook HTTP/1.1" 200 68
+2025-05-05 19:00:25 - INFO - Starting bot polling...
+2025-05-05 19:00:26 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getMe HTTP/1.1" 200 261
+2025-05-05 19:00:26 - DEBUG - Starting new HTTPS connection (1): api.telegram.org:443
+2025-05-05 19:00:27 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=1&timeout=60 HTTP/1.1" 200 312
+2025-05-05 19:00:27 - INFO - User 598702023 started the bot
+2025-05-05 19:00:27 - DEBUG - Starting new HTTPS connection (1): api.telegram.org:443
+2025-05-05 19:00:27 - DEBUG - https://api.telegram.org:443 "POST /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/sendMessage?chat_id=598702023&text=%D0%A1%D1%82%D0%B0%D0%BD%D1%86%D0%B8%D1%8F+%D0%BE%D1%82%D0%BF%D1%80%D0%B0%D0%B2%D0%BB%D0%B5%D0%BD%D0%B8%D1%8F%3A+ HTTP/1.1" 200 341
+2025-05-05 19:00:27 - INFO - User 598702023 added to database
+2025-05-05 19:00:55 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=5378666&timeout=60 HTTP/1.1" 200 311
+2025-05-05 19:01:28 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=5378667&timeout=60 HTTP/1.1" 200 266
+2025-05-05 19:01:28 - DEBUG - https://api.telegram.org:443 "POST /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/sendMessage?chat_id=598702023&text=%E2%9D%97+%D0%92%D1%8B+%D1%83%D0%B2%D0%B5%D1%80%D0%B5%D0%BD%D1%8B%2C+%D1%87%D1%82%D0%BE+%D1%85%D0%BE%D1%82%D0%B8%D1%82%D0%B5+%D0%BE%D1%81%D1%82%D0%B0%D0%BD%D0%BE%D0%B2%D0%B8%D1%82%D1%8C+%D0%B1%D0%BE%D1%82%D0%B0%0A%D0%B8+%D0%BE%D1%87%D0%B8%D1%81%D1%82%D0%B8%D1%82%D1%8C+%D0%BF%D0%B5%D1%80%D0%B5%D0%BF%D0%B8%D1%81%D0%BA%D1%83%3F&reply_markup=%7B%22inline_keyboard%22%3A+%5B%5B%7B%22text%22%3A+%22%5Cu0414%5Cu0430%22%2C+%22callback_data%22%3A+%22confirm_stop%22%7D%2C+%7B%22text%22%3A+%22%5Cu041d%5Cu0435%5Cu0442%22%2C+%22callback_data%22%3A+%22cancel_stop%22%7D%5D%5D%7D HTTP/1.1" 200 703
+2025-05-05 19:01:33 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=5378668&timeout=60 HTTP/1.1" 200 925
+2025-05-05 19:01:33 - DEBUG - https://api.telegram.org:443 "POST /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/deleteMessage?chat_id=598702023&message_id=4427 HTTP/1.1" 200 25
+2025-05-05 19:01:33 - DEBUG - https://api.telegram.org:443 "POST /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/sendMessage?chat_id=598702023&text=%F0%9F%9F%A2+%D0%91%D0%BE%D1%82+%D0%B2+%D1%80%D0%B0%D0%B1%D0%BE%D1%82%D0%B5 HTTP/1.1" 200 306
+2025-05-05 19:01:43 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=5378669&timeout=60 HTTP/1.1" 200 311
+2025-05-05 19:01:43 - DEBUG - Starting new HTTPS connection (1): api.telegram.org:443
+2025-05-05 19:01:43 - DEBUG - https://api.telegram.org:443 "POST /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/sendMessage?chat_id=598702023&text=%E2%9D%97+%D0%92%D1%8B+%D1%83%D0%B2%D0%B5%D1%80%D0%B5%D0%BD%D1%8B%2C+%D1%87%D1%82%D0%BE+%D1%85%D0%BE%D1%82%D0%B8%D1%82%D0%B5+%D0%BE%D1%81%D1%82%D0%B0%D0%BD%D0%BE%D0%B2%D0%B8%D1%82%D1%8C+%D0%B1%D0%BE%D1%82%D0%B0%0A%D0%B8+%D0%BE%D1%87%D0%B8%D1%81%D1%82%D0%B8%D1%82%D1%8C+%D0%BF%D0%B5%D1%80%D0%B5%D0%BF%D0%B8%D1%81%D0%BA%D1%83%3F&reply_markup=%7B%22inline_keyboard%22%3A+%5B%5B%7B%22text%22%3A+%22%5Cu0414%5Cu0430%22%2C+%22callback_data%22%3A+%22confirm_stop%22%7D%2C+%7B%22text%22%3A+%22%5Cu041d%5Cu0435%5Cu0442%22%2C+%22callback_data%22%3A+%22cancel_stop%22%7D%5D%5D%7D HTTP/1.1" 200 703
+2025-05-05 19:01:46 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/getUpdates?offset=5378670&timeout=60 HTTP/1.1" 200 926
+2025-05-05 19:01:47 - DEBUG - https://api.telegram.org:443 "POST /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/deleteMessage?chat_id=598702023&message_id=4430 HTTP/1.1" 200 25
+2025-05-05 19:01:47 - DEBUG - https://api.telegram.org:443 "POST /bot7982797130:AAE7cYKQbdo2jQB6VoyttKrSxnhNd_GbOrE/sendMessage?chat_id=598702023&text=%F0%9F%9B%91+%D0%91%D0%BE%D1%82+%D0%BE%D1%81%D1%82%D0%B0%D0%BD%D0%BE%D0%B2%D0%BB%D0%B5%D0%BD.+%D0%A7%D0%B0%D1%82+%D0%BE%D1%87%D0%B8%D1%89%D0%B5%D0%BD. HTTP/1.1" 200 381
+2025-05-05 19:01:47 - INFO - Бот остановлен chat_id: 598702023.                             Список отслеживания очищен
+2025-05-05 19:01:47 - ERROR - Attempt 1 failed: Cannot operate on a closed database.
+2025-05-05 19:11:35 - DEBUG - Active threads: 5
+2025-05-05 19:11:35 - DEBUG - Starting new HTTPS connection (1): api.telegram.org:443
+2025-05-05 19:11:35 - DEBUG - Thread Thread: MainThread, ID: 125268531514240 is alive
+2025-05-05 19:11:35 - DEBUG - Thread Thread: WorkerThread1, ID: 125268477871808 is alive
+2025-05-05 19:11:35 - DEBUG - Thread Thread: WorkerThread2, ID: 125268467386048 is alive
+2025-05-05 19:11:35 - DEBUG - Thread Thread: route_cleanup, ID: 125268456900288 is alive
+2025-05-05 19:11:35 - DEBUG - Thread Thread: monitor_threads, ID: 125268446414528 is alive
+2025-05-05 19:11:38 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAH-BPbhkgf1dzP4wYjQuf6w-JRqi3-KRQk/deleteWebhook HTTP/1.1" 200 68
+2025-05-05 19:11:39 - INFO - Starting bot polling...
+2025-05-05 19:11:39 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAH-BPbhkgf1dzP4wYjQuf6w-JRqi3-KRQk/getMe HTTP/1.1" 200 261
+2025-05-05 19:11:39 - DEBUG - Starting new HTTPS connection (1): api.telegram.org:443
+2025-05-05 19:12:24 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAH-BPbhkgf1dzP4wYjQuf6w-JRqi3-KRQk/getUpdates?offset=1&timeout=60 HTTP/1.1" 200 324
+2025-05-05 19:12:24 - DEBUG - Starting new HTTPS connection (1): api.telegram.org:443
+2025-05-05 19:12:24 - DEBUG - https://api.telegram.org:443 "POST /bot7982797130:AAH-BPbhkgf1dzP4wYjQuf6w-JRqi3-KRQk/sendMessage?chat_id=598702023&text=%D0%A1%D0%BD%D0%B0%D1%87%D0%B0%D0%BB%D0%B0+%D0%B2%D0%B2%D0%B5%D0%B4%D0%B8%D1%82%D0%B5+%2Fstart HTTP/1.1" 200 382
+2025-05-05 19:12:26 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAH-BPbhkgf1dzP4wYjQuf6w-JRqi3-KRQk/getUpdates?offset=5378672&timeout=60 HTTP/1.1" 200 312
+2025-05-05 19:12:27 - INFO - User 598702023 started the bot
+2025-05-05 19:12:27 - DEBUG - Starting new HTTPS connection (1): api.telegram.org:443
+2025-05-05 19:12:27 - DEBUG - https://api.telegram.org:443 "POST /bot7982797130:AAH-BPbhkgf1dzP4wYjQuf6w-JRqi3-KRQk/sendMessage?chat_id=598702023&text=%D0%A1%D1%82%D0%B0%D0%BD%D1%86%D0%B8%D1%8F+%D0%BE%D1%82%D0%BF%D1%80%D0%B0%D0%B2%D0%BB%D0%B5%D0%BD%D0%B8%D1%8F%3A+ HTTP/1.1" 200 341
+2025-05-05 19:12:27 - INFO - User 598702023 added to database
+2025-05-05 19:12:31 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAH-BPbhkgf1dzP4wYjQuf6w-JRqi3-KRQk/getUpdates?offset=5378673&timeout=60 HTTP/1.1" 200 278
+2025-05-05 19:12:32 - DEBUG - https://api.telegram.org:443 "POST /bot7982797130:AAH-BPbhkgf1dzP4wYjQuf6w-JRqi3-KRQk/sendMessage?chat_id=598702023&text=%D0%A1%D1%82%D0%B0%D0%BD%D1%86%D0%B8%D1%8F+%D0%BF%D1%80%D0%B8%D0%B1%D1%8B%D1%82%D0%B8%D1%8F%3A+ HTTP/1.1" 200 323
+2025-05-05 19:12:34 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAH-BPbhkgf1dzP4wYjQuf6w-JRqi3-KRQk/getUpdates?offset=5378674&timeout=60 HTTP/1.1" 200 272
+2025-05-05 19:12:34 - DEBUG - https://api.telegram.org:443 "POST /bot7982797130:AAH-BPbhkgf1dzP4wYjQuf6w-JRqi3-KRQk/sendMessage?chat_id=598702023&text=%F0%9F%93%85+%D0%94%D0%B0%D1%82%D0%B0+%D0%B2+%D1%84%D0%BE%D1%80%D0%BC%D0%B0%D1%82%D0%B5+%D0%B3%D0%B3%D0%B3%D0%B3-%D0%BC%D0%BC-%D0%B4%D0%B4%3A+ HTTP/1.1" 200 370
+2025-05-05 19:12:38 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAH-BPbhkgf1dzP4wYjQuf6w-JRqi3-KRQk/getUpdates?offset=5378675&timeout=60 HTTP/1.1" 200 258
+2025-05-05 19:12:38 - DEBUG - https://api.telegram.org:443 "POST /bot7982797130:AAH-BPbhkgf1dzP4wYjQuf6w-JRqi3-KRQk/sendMessage?chat_id=598702023&text=%E2%9C%8F%EF%B8%8F+%D0%94%D0%B0%D1%82%D0%B0+%D0%B2+%D0%BF%D1%80%D0%BE%D1%88%D0%BB%D0%BE%D0%BC.%0A%D0%9F%D0%BE%D0%B2%D1%82%D0%BE%D1%80%D0%B8%D1%82%D0%B5+%D0%B2%D0%B2%D0%BE%D0%B4+%D0%B4%D0%B0%D1%82%D1%8B HTTP/1.1" 200 425
+2025-05-05 19:12:46 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAH-BPbhkgf1dzP4wYjQuf6w-JRqi3-KRQk/getUpdates?offset=5378676&timeout=60 HTTP/1.1" 200 258
+2025-05-05 19:12:46 - DEBUG - https://api.telegram.org:443 "POST /bot7982797130:AAH-BPbhkgf1dzP4wYjQuf6w-JRqi3-KRQk/sendMessage?chat_id=598702023&text=%E2%9C%8F%EF%B8%8F+%D0%9E%D1%82%D1%81%D0%BB%D0%B5%D0%B6%D0%B8%D0%B2%D0%B0%D0%BD%D0%B8%D0%B5+%D0%B4%D0%BE%D1%81%D1%82%D1%83%D0%BF%D0%BD%D0%BE+%D0%B7%D0%B0+60+%D1%81%D1%83%D1%82%D0%BE%D0%BA.%0A%D0%9F%D0%BE%D0%B2%D1%82%D0%BE%D1%80%D0%B8%D1%82%D0%B5+%D0%B2%D0%B2%D0%BE%D0%B4+%D0%B4%D0%B0%D1%82%D1%8B HTTP/1.1" 200 519
+2025-05-05 19:12:55 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAH-BPbhkgf1dzP4wYjQuf6w-JRqi3-KRQk/getUpdates?offset=5378677&timeout=60 HTTP/1.1" 200 258
+2025-05-05 19:12:56 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAH-BPbhkgf1dzP4wYjQuf6w-JRqi3-KRQk/sendChatAction?chat_id=598702023&action=typing HTTP/1.1" 200 25
+2025-05-05 19:12:57 - DEBUG - https://api.telegram.org:443 "POST /bot7982797130:AAH-BPbhkgf1dzP4wYjQuf6w-JRqi3-KRQk/sendMessage?chat_id=598702023&text=%D0%98%D0%B4%D1%91%D1%82+%D0%BF%D0%BE%D0%B8%D1%81%D0%BA+%F0%9F%94%8D HTTP/1.1" 200 299
+2025-05-05 19:12:57 - DEBUG - Starting new HTTPS connection (1): pass.rw.by:443
+2025-05-05 19:12:58 - DEBUG - https://pass.rw.by:443 "GET /ru/route/?from=%D0%9C%D0%B8%D0%BD%D1%81%D0%BA&to=%D0%9B%D0%B8%D0%B4%D0%B0&date=2025-05-05 HTTP/1.1" 200 None
+2025-05-05 19:12:58 - INFO - Запрос {'step': 'start', 'city_from': 'Минск', 'city_to': 'Лида', 'date': '2025-05-05', 'url': 'https://pass.rw.by/ru/route/?from=%D0%9C%D0%B8%D0%BD%D1%81%D0%BA&to=%D0%9B%D0%B8%D0%B4%D0%B0&date=2025-05-05'}               выполнен за 1.298 секунд
+2025-05-05 19:12:58 - INFO - Route Минск-Лида-2025-05-05 added to database
+2025-05-05 19:12:58 - INFO - Train: 687Б for route_id: 3 added to database
+2025-05-05 19:12:58 - INFO - Train: 731Ь for route_id: 3 added to database
+2025-05-05 19:12:59 - INFO - Train: 629Б for route_id: 3 added to database
+2025-05-05 19:12:59 - INFO - Train: 634Б for route_id: 3 added to database
+2025-05-05 19:12:59 - DEBUG - https://api.telegram.org:443 "POST /bot7982797130:AAH-BPbhkgf1dzP4wYjQuf6w-JRqi3-KRQk/sendMessage?chat_id=598702023&text=%D0%A1%D0%BF%D0%B8%D1%81%D0%BE%D0%BA+%D0%B4%D0%BE%D1%81%D1%82%D1%83%D0%BF%D0%BD%D1%8B%D1%85+%D0%BF%D0%BE%D0%B5%D0%B7%D0%B4%D0%BE%D0%B2%3A+&reply_markup=%7B%22inline_keyboard%22%3A+%5B%5B%7B%22text%22%3A+%22%5Cud83d%5Cude86+%5Cu041f%5Cu043e%5Cu0435%5Cu0437%5Cu0434+%5Cu2116687%5Cu0411%5Cn%5Cud83d%5Cudd52+07%3A10+%5Cu27a1%5Cufe0f+10%3A04%22%2C+%22callback_data%22%3A+%22687%5Cu0411_selected%22%7D%5D%2C+%5B%7B%22text%22%3A+%22%5Cud83d%5Cude86+%5Cu041f%5Cu043e%5Cu0435%5Cu0437%5Cu0434+%5Cu2116731%5Cu042c%5Cn%5Cud83d%5Cudd52+15%3A18+%5Cu27a1%5Cufe0f+17%3A44%22%2C+%22callback_data%22%3A+%22731%5Cu042c_selected%22%7D%5D%2C+%5B%7B%22text%22%3A+%22%5Cud83d%5Cude86+%5Cu041f%5Cu043e%5Cu0435%5Cu0437%5Cu0434+%5Cu2116629%5Cu0411%5Cn%5Cud83d%5Cudd52+19%3A25+%5Cu27a1%5Cufe0f+22%3A10%22%2C+%22callback_data%22%3A+%22629%5Cu0411_selected%22%7D%5D%2C+%5B%7B%22text%22%3A+%22%5Cud83d%5Cude86+%5Cu041f%5Cu043e%5Cu0435%5Cu0437%5Cu0434+%5Cu2116634%5Cu0411%5Cn%5Cud83d%5Cudd52+23%3A16+%5Cu27a1%5Cufe0f+02%3A57%22%2C+%22callback_data%22%3A+%22634%5Cu0411_selected%22%7D%5D%5D%7D HTTP/1.1" 200 999
+2025-05-05 19:13:04 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAH-BPbhkgf1dzP4wYjQuf6w-JRqi3-KRQk/getUpdates?offset=5378678&timeout=60 HTTP/1.1" 200 1228
+2025-05-05 19:13:04 - DEBUG - https://api.telegram.org:443 "POST /bot7982797130:AAH-BPbhkgf1dzP4wYjQuf6w-JRqi3-KRQk/answerCallbackQuery?callback_query_id=2571405612641260499 HTTP/1.1" 200 25
+2025-05-05 19:13:04 - INFO - Train_id: 51 added to db_tracking_list
+2025-05-05 19:13:04 - DEBUG - https://api.telegram.org:443 "POST /bot7982797130:AAH-BPbhkgf1dzP4wYjQuf6w-JRqi3-KRQk/sendMessage?chat_id=598702023&text=%F0%9F%9A%86+%D0%9F%D0%BE%D0%B5%D0%B7%D0%B4+%E2%84%96687%D0%91%0A%E2%8F%B0+%D0%A3%D0%B6%D0%B5+%D0%BE%D1%82%D0%BF%D1%80%D0%B0%D0%B2%D0%B8%D0%BB%D1%81%D1%8F&reply_markup=%7B%22inline_keyboard%22%3A+%5B%5B%7B%22text%22%3A+%22%5Cud83d%5Cudd04+%5Cu041d%5Cu0430%5Cu0437%5Cu0430%5Cu0434+%5Cu043a+%5Cu043f%5Cu043e%5Cu0435%5Cu0437%5Cu0434%5Cu0430%5Cu043c%22%2C+%22callback_data%22%3A+%22re_get_trains_list%22%7D%5D%5D%7D HTTP/1.1" 200 559
+2025-05-05 19:13:08 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAH-BPbhkgf1dzP4wYjQuf6w-JRqi3-KRQk/getUpdates?offset=5378679&timeout=60 HTTP/1.1" 200 1228
+2025-05-05 19:13:08 - DEBUG - https://api.telegram.org:443 "POST /bot7982797130:AAH-BPbhkgf1dzP4wYjQuf6w-JRqi3-KRQk/answerCallbackQuery?callback_query_id=2571405612232044495 HTTP/1.1" 200 25
+2025-05-05 19:13:09 - INFO - Train_id: 52 added to db_tracking_list
+2025-05-05 19:13:09 - DEBUG - https://api.telegram.org:443 "POST /bot7982797130:AAH-BPbhkgf1dzP4wYjQuf6w-JRqi3-KRQk/sendMessage?chat_id=598702023&text=%F0%9F%9A%86+%D0%9F%D0%BE%D0%B5%D0%B7%D0%B4+%E2%84%96731%D0%AC%0A%E2%8F%B0+%D0%A3%D0%B6%D0%B5+%D0%BE%D1%82%D0%BF%D1%80%D0%B0%D0%B2%D0%B8%D0%BB%D1%81%D1%8F&reply_markup=%7B%22inline_keyboard%22%3A+%5B%5B%7B%22text%22%3A+%22%5Cud83d%5Cudd04+%5Cu041d%5Cu0430%5Cu0437%5Cu0430%5Cu0434+%5Cu043a+%5Cu043f%5Cu043e%5Cu0435%5Cu0437%5Cu0434%5Cu0430%5Cu043c%22%2C+%22callback_data%22%3A+%22re_get_trains_list%22%7D%5D%5D%7D HTTP/1.1" 200 559
+2025-05-05 19:13:10 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAH-BPbhkgf1dzP4wYjQuf6w-JRqi3-KRQk/getUpdates?offset=5378680&timeout=60 HTTP/1.1" 200 1228
+2025-05-05 19:13:10 - DEBUG - https://api.telegram.org:443 "POST /bot7982797130:AAH-BPbhkgf1dzP4wYjQuf6w-JRqi3-KRQk/answerCallbackQuery?callback_query_id=2571405609130620243 HTTP/1.1" 200 25
+2025-05-05 19:13:11 - INFO - Train_id: 53 added to db_tracking_list
+2025-05-05 19:13:11 - DEBUG - https://api.telegram.org:443 "POST /bot7982797130:AAH-BPbhkgf1dzP4wYjQuf6w-JRqi3-KRQk/sendMessage?chat_id=598702023&text=%F0%9F%9A%86+%D0%9F%D0%BE%D0%B5%D0%B7%D0%B4+%E2%84%96629%D0%91%0A%D0%9C%D0%B5%D1%81%D1%82+%D0%BD%D0%B5%D1%82&reply_markup=%7B%22inline_keyboard%22%3A+%5B%5B%7B%22text%22%3A+%22%5Cud83d%5Cudd0d+%5Cu041e%5Cu0442%5Cu0441%5Cu043b%5Cu0435%5Cu0436%5Cu0438%5Cu0432%5Cu0430%5Cu0442%5Cu044c%22%2C+%22callback_data%22%3A+%22629%5Cu0411_start_tracking%22%7D%5D%5D%7D HTTP/1.1" 200 508
+2025-05-05 19:13:15 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAH-BPbhkgf1dzP4wYjQuf6w-JRqi3-KRQk/getUpdates?offset=5378681&timeout=60 HTTP/1.1" 200 1228
+2025-05-05 19:13:15 - DEBUG - https://api.telegram.org:443 "POST /bot7982797130:AAH-BPbhkgf1dzP4wYjQuf6w-JRqi3-KRQk/answerCallbackQuery?callback_query_id=2571405609429064764 HTTP/1.1" 200 25
+2025-05-05 19:13:15 - INFO - Train_id: 54 added to db_tracking_list
+2025-05-05 19:13:15 - DEBUG - https://api.telegram.org:443 "POST /bot7982797130:AAH-BPbhkgf1dzP4wYjQuf6w-JRqi3-KRQk/sendMessage?chat_id=598702023&text=%F0%9F%9A%86+%D0%9F%D0%BE%D0%B5%D0%B7%D0%B4+%E2%84%96634%D0%91%0A%7B%27%D0%A1%D0%B8%D0%B4%D1%8F%D1%87%D0%B8%D0%B9+%F0%9F%92%BA%27%3A+29%2C+%27%D0%9F%D0%BB%D0%B0%D1%86%D0%BA%D0%B0%D1%80%D1%82%D0%BD%D1%8B%D0%B9+%F0%9F%9B%8F%EF%B8%8F%27%3A+25%2C+%27%D0%9A%D1%83%D0%BF%D0%B5%D0%B9%D0%BD%D1%8B%D0%B9+%F0%9F%9A%AA%F0%9F%9B%8F%EF%B8%8F%27%3A+46%7D&reply_markup=%7B%22inline_keyboard%22%3A+%5B%5B%7B%22text%22%3A+%22%5Cud83d%5Cudd0d+%5Cu041e%5Cu0442%5Cu0441%5Cu043b%5Cu0435%5Cu0436%5Cu0438%5Cu0432%5Cu0430%5Cu0442%5Cu044c%22%2C+%22callback_data%22%3A+%22634%5Cu0411_start_tracking%22%7D%5D%5D%7D HTTP/1.1" 200 708
+2025-05-05 19:13:19 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAH-BPbhkgf1dzP4wYjQuf6w-JRqi3-KRQk/getUpdates?offset=5378682&timeout=60 HTTP/1.1" 200 743
+2025-05-05 19:13:19 - DEBUG - https://api.telegram.org:443 "POST /bot7982797130:AAH-BPbhkgf1dzP4wYjQuf6w-JRqi3-KRQk/answerCallbackQuery?callback_query_id=2571405611626440046 HTTP/1.1" 200 25
+2025-05-05 19:13:19 - INFO - Train_id: 53 start tracking for chat_id: 598702023
+2025-05-05 19:13:19 - DEBUG - Tracking train 629Б for user 598702023
+2025-05-05 19:13:19 - DEBUG - Starting new HTTPS connection (1): pass.rw.by:443
+2025-05-05 19:13:19 - DEBUG - https://api.telegram.org:443 "POST /bot7982797130:AAH-BPbhkgf1dzP4wYjQuf6w-JRqi3-KRQk/sendMessage?chat_id=598702023&text=%D0%9E%D1%82%D1%81%D0%BB%D0%B5%D0%B6%D0%B8%D0%B2%D0%B0%D0%BD%D0%B8%D0%B5+%D0%BF%D0%BE%D0%B5%D0%B7%D0%B4%D0%B0+629%D0%91+%D0%B7%D0%B0%D0%BF%D1%83%D1%89%D0%B5%D0%BD%D0%BE. HTTP/1.1" 200 400
+2025-05-05 19:13:21 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAH-BPbhkgf1dzP4wYjQuf6w-JRqi3-KRQk/getUpdates?offset=5378683&timeout=60 HTTP/1.1" 200 943
+2025-05-05 19:13:21 - DEBUG - https://api.telegram.org:443 "POST /bot7982797130:AAH-BPbhkgf1dzP4wYjQuf6w-JRqi3-KRQk/answerCallbackQuery?callback_query_id=2571405609300075375 HTTP/1.1" 200 25
+2025-05-05 19:13:21 - DEBUG - https://pass.rw.by:443 "GET /ru/route/?from=%D0%9C%D0%B8%D0%BD%D1%81%D0%BA&to=%D0%9B%D0%B8%D0%B4%D0%B0&date=2025-05-05 HTTP/1.1" 200 None
+2025-05-05 19:13:21 - INFO - Train_id: 54 start tracking for chat_id: 598702023
+2025-05-05 19:13:21 - DEBUG - Tracking train 634Б for user 598702023
+2025-05-05 19:13:21 - DEBUG - Starting new HTTPS connection (1): pass.rw.by:443
+2025-05-05 19:13:21 - DEBUG - https://api.telegram.org:443 "POST /bot7982797130:AAH-BPbhkgf1dzP4wYjQuf6w-JRqi3-KRQk/sendMessage?chat_id=598702023&text=%D0%9E%D1%82%D1%81%D0%BB%D0%B5%D0%B6%D0%B8%D0%B2%D0%B0%D0%BD%D0%B8%D0%B5+%D0%BF%D0%BE%D0%B5%D0%B7%D0%B4%D0%B0+634%D0%91+%D0%B7%D0%B0%D0%BF%D1%83%D1%89%D0%B5%D0%BD%D0%BE. HTTP/1.1" 200 400
+2025-05-05 19:13:24 - DEBUG - https://pass.rw.by:443 "GET /ru/route/?from=%D0%9C%D0%B8%D0%BD%D1%81%D0%BA&to=%D0%9B%D0%B8%D0%B4%D0%B0&date=2025-05-05 HTTP/1.1" 200 None
+2025-05-05 19:13:25 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAH-BPbhkgf1dzP4wYjQuf6w-JRqi3-KRQk/getUpdates?offset=5378684&timeout=60 HTTP/1.1" 200 323
+2025-05-05 19:13:25 - DEBUG - https://api.telegram.org:443 "POST /bot7982797130:AAH-BPbhkgf1dzP4wYjQuf6w-JRqi3-KRQk/sendMessage?chat_id=598702023&text=%D0%A1%D0%BF%D0%B8%D1%81%D0%BE%D0%BA+%D0%BE%D1%82%D1%81%D0%BB%D0%B5%D0%B6%D0%B8%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F+%D0%BF%D1%83%D1%81%D1%82&reply_parameters=%7B%22message_id%22%3A+4453%7D HTTP/1.1" 200 652
+2025-05-05 19:13:34 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAH-BPbhkgf1dzP4wYjQuf6w-JRqi3-KRQk/getUpdates?offset=5378685&timeout=60 HTTP/1.1" 200 323
+2025-05-05 19:13:34 - DEBUG - https://api.telegram.org:443 "POST /bot7982797130:AAH-BPbhkgf1dzP4wYjQuf6w-JRqi3-KRQk/sendMessage?chat_id=598702023&text=%D0%A1%D0%BF%D0%B8%D1%81%D0%BE%D0%BA+%D0%BE%D1%82%D1%81%D0%BB%D0%B5%D0%B6%D0%B8%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F+%D0%BF%D1%83%D1%81%D1%82&reply_parameters=%7B%22message_id%22%3A+4455%7D HTTP/1.1" 200 652
+2025-05-05 19:14:24 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAH-BPbhkgf1dzP4wYjQuf6w-JRqi3-KRQk/getUpdates?offset=5378686&timeout=60 HTTP/1.1" 200 23
+2025-05-05 19:15:14 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAH-BPbhkgf1dzP4wYjQuf6w-JRqi3-KRQk/getUpdates?offset=5378686&timeout=60 HTTP/1.1" 200 23
+2025-05-05 19:16:04 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAH-BPbhkgf1dzP4wYjQuf6w-JRqi3-KRQk/getUpdates?offset=5378686&timeout=60 HTTP/1.1" 200 23
+2025-05-05 19:16:55 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAH-BPbhkgf1dzP4wYjQuf6w-JRqi3-KRQk/getUpdates?offset=5378686&timeout=60 HTTP/1.1" 200 23
+2025-05-05 19:17:45 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAH-BPbhkgf1dzP4wYjQuf6w-JRqi3-KRQk/getUpdates?offset=5378686&timeout=60 HTTP/1.1" 200 23
+2025-05-05 19:18:35 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAH-BPbhkgf1dzP4wYjQuf6w-JRqi3-KRQk/getUpdates?offset=5378686&timeout=60 HTTP/1.1" 200 23
+2025-05-05 19:19:19 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAH-BPbhkgf1dzP4wYjQuf6w-JRqi3-KRQk/getUpdates?offset=5378686&timeout=60 HTTP/1.1" 200 311
+2025-05-05 19:19:20 - DEBUG - https://api.telegram.org:443 "POST /bot7982797130:AAH-BPbhkgf1dzP4wYjQuf6w-JRqi3-KRQk/sendMessage?chat_id=598702023&text=%E2%9D%97+%D0%92%D1%8B+%D1%83%D0%B2%D0%B5%D1%80%D0%B5%D0%BD%D1%8B%2C+%D1%87%D1%82%D0%BE+%D1%85%D0%BE%D1%82%D0%B8%D1%82%D0%B5+%D0%BE%D1%81%D1%82%D0%B0%D0%BD%D0%BE%D0%B2%D0%B8%D1%82%D1%8C+%D0%B1%D0%BE%D1%82%D0%B0%0A%D0%B8+%D0%BE%D1%87%D0%B8%D1%81%D1%82%D0%B8%D1%82%D1%8C+%D0%BF%D0%B5%D1%80%D0%B5%D0%BF%D0%B8%D1%81%D0%BA%D1%83%3F&reply_markup=%7B%22inline_keyboard%22%3A+%5B%5B%7B%22text%22%3A+%22%5Cu0414%5Cu0430%22%2C+%22callback_data%22%3A+%22confirm_stop%22%7D%2C+%7B%22text%22%3A+%22%5Cu041d%5Cu0435%5Cu0442%22%2C+%22callback_data%22%3A+%22cancel_stop%22%7D%5D%5D%7D HTTP/1.1" 200 703
+2025-05-05 19:19:21 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAH-BPbhkgf1dzP4wYjQuf6w-JRqi3-KRQk/getUpdates?offset=5378687&timeout=60 HTTP/1.1" 200 926
+2025-05-05 19:19:21 - DEBUG - https://api.telegram.org:443 "POST /bot7982797130:AAH-BPbhkgf1dzP4wYjQuf6w-JRqi3-KRQk/deleteMessage?chat_id=598702023&message_id=4458 HTTP/1.1" 200 25
+2025-05-05 19:19:21 - DEBUG - https://api.telegram.org:443 "POST /bot7982797130:AAH-BPbhkgf1dzP4wYjQuf6w-JRqi3-KRQk/sendMessage?chat_id=598702023&text=%F0%9F%9B%91+%D0%91%D0%BE%D1%82+%D0%BE%D1%81%D1%82%D0%B0%D0%BD%D0%BE%D0%B2%D0%BB%D0%B5%D0%BD.+%D0%A7%D0%B0%D1%82+%D0%BE%D1%87%D0%B8%D1%89%D0%B5%D0%BD. HTTP/1.1" 200 381
+2025-05-05 19:19:21 - INFO - Бот остановлен chat_id: 598702023.                             Список отслеживания очищен
+2025-05-05 19:19:21 - ERROR - Attempt 1 failed: Cannot operate on a closed database.
+2025-05-05 19:19:27 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAH-BPbhkgf1dzP4wYjQuf6w-JRqi3-KRQk/getUpdates?offset=5378688&timeout=60 HTTP/1.1" 200 943
+2025-05-05 19:19:27 - DEBUG - https://api.telegram.org:443 "POST /bot7982797130:AAH-BPbhkgf1dzP4wYjQuf6w-JRqi3-KRQk/answerCallbackQuery?callback_query_id=2571405613128974429 HTTP/1.1" 200 25
+2025-05-05 19:19:51 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAH-BPbhkgf1dzP4wYjQuf6w-JRqi3-KRQk/deleteWebhook HTTP/1.1" 200 68
+2025-05-05 19:19:52 - INFO - Starting bot polling...
+2025-05-05 19:19:52 - DEBUG - Starting new HTTPS connection (1): api.telegram.org:443
+2025-05-05 19:19:52 - ERROR - Attempt 2 failed: 'NoneType' object is not subscriptable
+2025-05-05 19:19:52 - DEBUG - https://api.telegram.org:443 "GET /bot7982797130:AAH-BPbhkgf1dzP4wYjQuf6w-JRqi3-KRQk/getUpdates?offset=5378689&timeout=60 HTTP/1.1" 200 601
+2025-05-05 19:19:52 - DEBUG - https://api.telegram.org:443 "POST /bot7982797130:AAH-BPbhkgf1dzP4wYjQuf6w-JRqi3-KRQk/sendMessage?chat_id=598702023&text=%D0%92%D1%8B%D1%85%D0%BE%D0%B4+%D0%B8%D0%B7+%D0%9F%D0%9E HTTP/1.1" 200 287
