@@ -88,6 +88,7 @@ setup_logging()
 
 
 def get_user_data(chat_id):
+    logging.debug(f"Проверка доступа chat_id: {chat_id}")
     with user_data_lock:
         return deepcopy(user_data.get(chat_id, {}))
     # Возвращаем копию, чтобы избежать изменений без блокировки
@@ -103,6 +104,12 @@ def update_user_data(chat_id, key, value):
 def set_user_data(chat_id, data_dict):
     with user_data_lock:
         user_data[chat_id] = deepcopy(data_dict)
+
+
+def del_user_data(chat_id):
+    with user_data_lock:
+        user_data.pop(chat_id, None)
+        logging.debug(f"user_data после удаления {chat_id}: {user_data}")
 
 
 # -----------------------------------------------------------------------------
@@ -369,12 +376,31 @@ def ensure_start(func):
     return wrapper
 
 
+# Декоратор: перехват команд в ответах пользователя
+def with_command_intercept(func):
+    def wrapper(message):
+        text = message.text or ""
+        if text.startswith("/stop"):
+            stop(message)
+            return
+        if text.startswith("/start"):
+            start(message)
+            return
+        if text.startswith(f"/{stop_code}"):
+            exit_admin(message)
+            return
+        # Добавить другие команды по мере надобности
+        return func(message)
+
+    return wrapper
+
+
 # =============================================================================
 # Подключение бота для ввода данных
 
 
 # Создаётся объект бота, который умеет принимать сообщения от Telegram.
-bot = telebot.TeleBot(token, threaded=True)
+bot = telebot.TeleBot(token, threaded=True)  # type: ignore
 
 
 # Запуск чата. Запрос города отправления
@@ -385,6 +411,7 @@ def start(message):
         logging.info(f"User {chat_id} started the bot")
         bot.send_message(chat_id, "Станция отправления: ")
         # Регистрация следующей функции для города отправления
+        # "Вызвать next_step_handler после ответа пользователя"
         bot.register_next_step_handler(message, get_city_from)
         set_user_data(chat_id, {"step": "start"})
 
@@ -396,11 +423,12 @@ def start(message):
 
 
 # Получение города отправления. Проверка наличия в списке станций
+@with_command_intercept
 def get_city_from(message):
-    if message.text.startswith('/stop'):
-        # Останов бота
-        bot.register_next_step_handler(message, stop)
-        return
+    # if message.text.startswith('/stop'):
+    #     # Останов бота
+    #     bot.register_next_step_handler(message, stop)
+    #     return
     chat_id = message.chat.id
     city_from = normalize_city_name(message.text)
     if city_from not in all_station_list:
@@ -421,11 +449,12 @@ def get_city_from(message):
 
 
 # Получение города прибытия. Проверка наличия в списке станций
+@with_command_intercept
 def get_city_to(message):
-    if message.text.startswith('/stop'):
-        # Останов бота
-        bot.register_next_step_handler(message, stop)
-        return
+    # if message.text.startswith('/stop'):
+    #     # Останов бота
+    #     bot.register_next_step_handler(message, stop)
+    #     return
     chat_id = message.chat.id
     city_to = normalize_city_name(message.text)
     if city_to not in all_station_list:
@@ -446,11 +475,12 @@ def get_city_to(message):
 
 
 # Получение даты отправления
+@with_command_intercept
 def get_date(message):
-    if message.text.startswith('/stop'):
-        # Останов бота
-        bot.register_next_step_handler(message, stop)
-        return
+    # if message.text.startswith('/stop'):
+    #     # Останов бота
+    #     bot.register_next_step_handler(message, stop)
+    #     return
     chat_id = message.chat.id
     try:
         date = normalize_date(message.text)
@@ -466,7 +496,7 @@ def get_date(message):
         logging.warning(f"Ошибка выполнения get_trains_list(): {e}")
         bot.send_message(chat_id, "❌ Ошибка сервера.\nПоробуйте позже")
         # Останов бота
-        bot.register_next_step_handler(message, stop)
+        stop(message)
         return
 
 
@@ -498,8 +528,8 @@ def get_trains_list(message):
         r = requests.get(url)
         response_time = r.elapsed.total_seconds()  # время в секундах
         logging.info(
-            f"Запрос {user_data[chat_id]}\
-               выполнен за {response_time:.3f} секунд"
+            f"Запрос \n{user_data[chat_id]}"
+            f"выполнен за {response_time:.3f} секунд"
         )
 
     except Exception as e:
@@ -561,7 +591,7 @@ def show_train_list(message):
     for train in trains_list:
         markup.row(
             types.InlineKeyboardButton(
-                f"🚆 Поезд №{train[0]}\n🕒 {train[1]} ➡️ {train[2]}",
+                f"🚆 Поезд №{train[0]} 🕒 {train[1]} ➡️ {train[2]}",
                 callback_data=f"{train[0]}_selected",
             )
         )
@@ -932,7 +962,8 @@ def get_track_list(message):
             # Получить route_id по известному URL
             cursor.execute(
                 """
-                SELECT  tracking_id, t.train_number, r.date, status
+                SELECT  tracking_id, t.train_number,
+                r.city_from, r.city_to, r.date, status
                 FROM tracking tr
                 JOIN trains t ON tr.train_id = t.train_id
                 JOIN routes r ON t.route_id = r.route_id
@@ -966,11 +997,16 @@ def get_track_list(message):
 @ensure_start
 def show_track_list(message):
     reply = "Список отслеживания пуст"  # по умолчанию
-    track_list = list(filter(lambda x: x[3] == '1', get_track_list(message)))
-    # tracking_id, t.train_number, r.date, status
-
+    track_list = list(filter(lambda x: x[5] == 1, get_track_list(message)))
+    # tracking_id -> int(),
+    # t.train_number -> str(),
+    # r.city_from, r.city_to, r.date -> str(),
+    # status -> int()
     if track_list:
-        reply_edit = map(lambda x: '  '.join(x[1:3]), track_list)
+        reply_edit = map(
+            lambda x: f"🚆 {x[1]} {x[2]}➡️{x[3]}\n🕒 {x[4]} \n{'-'*5}",
+            track_list,
+        )
         reply = "\n".join(reply_edit)
     bot.reply_to(message, f"{reply}")
 
@@ -979,21 +1015,23 @@ def show_track_list(message):
 @bot.message_handler(commands=["stop_track_train"])
 @ensure_start
 def stop_track_train(message):
-    track_list = list(filter(lambda x: x[3] == '1', get_track_list(message)))
-    # tracking_id, t.train_number, r.date, status
+    track_list = list(filter(lambda x: x[5] == 1, get_track_list(message)))
+    # tracking_id -> int(),
+    # t.train_number -> str(),
+    # r.city_from, r.city_to, r.date -> str(),
+    # status -> int()
     if track_list:
         markup = types.InlineKeyboardMarkup()
-        for train in track_list:
+        for x in track_list:
             # Для отображения в сообщении
-            reply = ' '.join(train[1:])
-            a, b, c, d = train
+            reply = f"🚫 {x[1]} {x[2]}➡️{x[3]} 🕒 {x[4]}"
             markup.row(
                 types.InlineKeyboardButton(
-                    f"Не отслеживать:\n{reply}",
-                    callback_data=f"{a}:{b}:{c}_stop_tracking",
+                    f"{reply}",
+                    callback_data=f"{x[0]}:{x[1]}:{x[4]}_stop_tracking",
                 )
             )
-        bot.reply_to(message, "Список отслеживания: ", reply_markup=markup)
+        bot.reply_to(message, "Выбрать удаляемый поезд: ", reply_markup=markup)
     else:
         bot.reply_to(message, "Список отслеживания пуст")
 
@@ -1283,7 +1321,12 @@ def start_background_tasks():
 
 
 # Останов сессии для пользователя
-@bot.message_handler(commands=["stop"])
+# Универсальный фильтр для реакции на любое сообщение
+@bot.message_handler(func=lambda message: message.text.startswith('/stop'))
+def universal_stop_handler(message):
+    stop(message)
+
+
 @ensure_start
 def stop(message):
     chat_id = message.chat.id
@@ -1337,11 +1380,11 @@ def confirm_stop(call):
     # clear_chat_history(chat_id)
 
     # Останавливаем бота
-    bot.send_message(chat_id, "🛑 Бот остановлен. Чат очищен.")
 
     # для остановки параллельного потока необходимо перевести статус для
     # всех поездов в False
     # после остановки поездов, удалить всю сессию
+
     with db_lock:
         try:
             conn = sqlite3.connect('tracking_train.sqlite3')
@@ -1362,8 +1405,8 @@ def confirm_stop(call):
             cursor.execute("DELETE FROM users WHERE chat_id = ?", (chat_id,))
             conn.commit()
             logging.info(
-                f"Бот остановлен chat_id: {chat_id}. \
-                            Список отслеживания очищен"
+                f"Бот остановлен chat_id: {chat_id}."
+                f"Список отслеживания очищен"
             )
         except sqlite3.Error as e:
             logging.error(
@@ -1378,14 +1421,12 @@ def confirm_stop(call):
                     conn.close()
             except (sqlite3.Error, AttributeError) as e:
                 logging.error(f"Ошибка при закрытии БД: {e}")
-            finally:
-                cursor.close()
-                conn.close()
-    bot.send_message(chat_id, "Бот остановлен.\nСписок отслеживания очищен 🗑️")
+    del_user_data(chat_id)
+    bot.send_message(chat_id, "🛑 Бот остановлен. Чат очищен.")
 
 
 # Выход из программы
-@bot.message_handler(commands=[stop_code])
+@bot.message_handler(commands=[stop_code])  # type: ignore
 def exit_admin(message):
     chat_id = message.chat.id
 
