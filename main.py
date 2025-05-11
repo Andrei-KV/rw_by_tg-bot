@@ -8,7 +8,7 @@ import threading
 import time
 from collections import defaultdict
 from copy import deepcopy
-from datetime import datetime
+from datetime import datetime, timedelta
 from logging.handlers import RotatingFileHandler
 from random import randint
 from urllib.parse import quote
@@ -528,7 +528,7 @@ def get_trains_list(message):
         r = requests.get(url)
         response_time = r.elapsed.total_seconds()  # время в секундах
         logging.info(
-            f"Запрос \n{user_data[chat_id]}"
+            f"Запрос на сайт \n{user_data[chat_id]}"
             f"выполнен за {response_time:.3f} секунд"
         )
 
@@ -712,6 +712,8 @@ def start_tracking_train(callback):
     chat_id = callback.message.chat.id
     url = user_data[chat_id]['url']
 
+    # Время обращения к БД от пользователя для debug
+    start_time_db_track = time.time()
     # Изменение статуса в БД
     with db_lock:
         try:
@@ -743,7 +745,7 @@ def start_tracking_train(callback):
             )
             status = cursor.fetchone()[0]
 
-            if status == '1':
+            if status == 1:
                 bot.send_message(
                     chat_id,
                     f"Отслеживание поезда {train_tracking} уже запущено.",
@@ -795,12 +797,21 @@ def start_tracking_train(callback):
             except (sqlite3.Error, AttributeError) as e:
                 logging.error(f"Ошибка при закрытии БД: {e}")
 
+    end_time_db_track = time.time()
+    db_tr_time = end_time_db_track - start_time_db_track
+    logging.debug(
+        f"Время к БД для {chat_id} для добавления отслеживания \n\
+            {db_tr_time:.4f} сек"
+    )
+
     # Запуск отслеживания в параллельном потоке
     # Лучше передавать аргументы, а не использовать внешние
     def tracking_loop(chat_id, train_tracking, train_id, route_id, url):
         logging.debug(f"Tracking train {train_tracking} for user {chat_id}")
         try:
             while True:
+                # Время обращения к БД от пользователя для debug
+                start_time_db_loop = time.time()
                 with db_lock:
                     try:
                         conn = sqlite3.connect('tracking_train.sqlite3')
@@ -815,12 +826,16 @@ def start_tracking_train(callback):
                             ),
                         )
                         result = cursor.fetchone()
+                        logging.debug(f"FLAG1  result  {result}")
                         if result:
                             json_str, status = result  # Распаковываем кортеж
                             memory_ticket_dict = json.loads(
                                 json_str
                             )  # Декодируем JSON строку
                             status = bool(int(status))
+                            logging.debug(
+                                f"FG2 memory_ticket_dict {memory_ticket_dict}"
+                            )
                         else:
                             # Обработка случая, когда запись не найдена
                             memory_ticket_dict = {}
@@ -828,8 +843,8 @@ def start_tracking_train(callback):
 
                         if not status:
                             logging.info(
-                                f"Stopping tracking for train \
-                                    {train_tracking}, user {chat_id}"
+                                f"Stopping tracking for train"
+                                f"{train_tracking}, user {chat_id}"
                             )
                             return
                         # Получение новой страницы "soup"
@@ -847,15 +862,27 @@ def start_tracking_train(callback):
                         )
 
                         # Проверка времени
-                        # (прекратить отслеживание за 10 мин до отправления)
-                        if check_depart_time(train_tracking, soup) < 600:
+                        # (прекратить отслеживание за 15 мин до отправления)
+                        if check_depart_time(train_tracking, soup) < 1000:
+                            cursor.execute(
+                                """
+                                UPDATE tracking SET status = ?
+                                DELETE FROM tracking
+                                WHERE chat_id = ? AND train_id = ?
+                                """,
+                                (
+                                    False,
+                                    chat_id,
+                                    train_id,
+                                ),
+                            )
                             bot.send_message(
                                 chat_id,
-                                f"Отслеживание завершёно за 10 мин"
-                                f"до отправления поезда {train_tracking}",
+                                f"Отслеживание завершёно по расписанию"
+                                f" отправления поезда {train_tracking}",
                             )
                             logging.info(
-                                f"[thread exit] Поток завершён за 10 мин/"
+                                f"[thread exit] Поток завершён за 15 мин/"
                                 f"до отпр.: {train_tracking} для {chat_id}"
                             )
                             return
@@ -867,7 +894,7 @@ def start_tracking_train(callback):
 
                         # Выводить сообщение при появлении изменений в билетах
                         #  + быстрая ссылка
-
+                        logging.debug(f"FLAG3  ticket_dict  {ticket_dict}")
                         if ticket_dict != memory_ticket_dict:
                             markup_url = (
                                 types.InlineKeyboardMarkup()
@@ -878,15 +905,16 @@ def start_tracking_train(callback):
                             markup_url.row(url_to_ticket)
                             bot.send_message(
                                 chat_id,
-                                f"Обновление по {train_tracking}:\
-                                    \n{ticket_dict}",
+                                f"Обновление по {train_tracking}:\n"
+                                f"{ticket_dict}",
                                 reply_markup=markup_url,
                             )
 
-                            json_ticket_dict = json.dumps(memory_ticket_dict)
+                            json_ticket_dict = json.dumps(ticket_dict)
                             cursor.execute(
                                 """
-                                UPDATE tracking SET json_ticket_dict = ?
+                                UPDATE tracking
+                                SET json_ticket_dict = ?
                                 WHERE chat_id = ? AND train_id = ?
                                 """,
                                 (
@@ -917,6 +945,12 @@ def start_tracking_train(callback):
                     finally:
                         cursor.close()
                         conn.close()
+                end_time_db_loop = time.time()
+                db_loop_time = end_time_db_loop - start_time_db_loop
+                logging.debug(
+                    f"Время к БД для {chat_id} в цикле loop \n\
+                    {db_loop_time:.4f} сек"
+                )
                 time.sleep(randint(300, 600))
         except Exception as e:
             logging.error(
@@ -963,7 +997,7 @@ def get_track_list(message):
             cursor.execute(
                 """
                 SELECT  tracking_id, t.train_number,
-                r.city_from, r.city_to, r.date, status
+                r.city_from, r.city_to, r.date, status, t.time_depart
                 FROM tracking tr
                 JOIN trains t ON tr.train_id = t.train_id
                 JOIN routes r ON t.route_id = r.route_id
@@ -1001,12 +1035,17 @@ def show_track_list(message):
     # tracking_id -> int(),
     # t.train_number -> str(),
     # r.city_from, r.city_to, r.date -> str(),
-    # status -> int()
+    # status -> int(),
+    # t.time_depart -> str()
     if track_list:
-        reply_edit = map(
-            lambda x: f"🚆 {x[1]} {x[2]}➡️{x[3]}\n🕒 {x[4]} \n{'-'*5}",
-            track_list,
-        )
+
+        reply_edit = []
+        for x in track_list:
+            date_obj = datetime.strptime(x[4], "%Y-%m-%d")
+            f_date = date_obj.strftime("%d.%m.%y")
+            reply_edit.append(
+                f"🚆 {x[1]} {x[2]}➡️{x[3]}\n🕒 {x[6]} {f_date} \n{'-'*5}"
+            )
         reply = "\n".join(reply_edit)
     bot.reply_to(message, f"{reply}")
 
@@ -1020,11 +1059,14 @@ def stop_track_train(message):
     # t.train_number -> str(),
     # r.city_from, r.city_to, r.date -> str(),
     # status -> int()
+    # t.time_depart -> str()
     if track_list:
         markup = types.InlineKeyboardMarkup()
         for x in track_list:
+            date_obj = datetime.strptime(x[4], "%Y-%m-%d")
+            f_date = date_obj.strftime("%d.%m.%y")
             # Для отображения в сообщении
-            reply = f"🚫 {x[1]} {x[2]}➡️{x[3]} 🕒 {x[4]}"
+            reply = f"🚫 {x[1]} {x[2]}➡️{x[3]} 🕒 {x[6]} {f_date}"
             markup.row(
                 types.InlineKeyboardButton(
                     f"{reply}",
@@ -1058,7 +1100,7 @@ def stop_tracking_train_by_number(callback):
             cursor.execute(
                 """
                 UPDATE tracking SET status = ?
-                WHERE tracking_id = ?
+                DELETE FROM tracking WHERE tracking_id = ?;
             """,
                 (
                     False,
@@ -1067,13 +1109,15 @@ def stop_tracking_train_by_number(callback):
             )
             conn.commit()
             logging.info(
-                f"Train_number: {train_number} \
-                    stop tracking for chat_id: {chat_id}, date: {date}"
+                f"Train_number: {train_number} date: {date} \
+                    stop tracking for chat_id: {chat_id}, \
+                        tracking_id: {tracking_id}."
             )
         except sqlite3.Error as e:
             logging.error(
                 f"Database error in stop_tracking_train_by_number: {str(e)}"
             )
+            conn.rollback()
             raise
         finally:
             # Если соединение не открылось
@@ -1214,7 +1258,9 @@ def cleanup_expired_routes():
                 cursor = conn.cursor()
 
                 # Текущая дата
-                today = datetime.now().strftime('%Y-%m-%d')
+                yesterday = (datetime.now() - timedelta(days=1)).strftime(
+                    '%Y-%m-%d'
+                )
 
                 # Находим маршруты с прошедшей датой
                 cursor.execute(
@@ -1222,7 +1268,7 @@ def cleanup_expired_routes():
                     SELECT route_id FROM routes
                     WHERE date < ?
                 """,
-                    (today,),
+                    (yesterday,),
                 )
                 expired_routes = cursor.fetchall()
 
@@ -1239,7 +1285,7 @@ def cleanup_expired_routes():
                             )
                         )
                     """,
-                        (today,),
+                        (yesterday,),
                     )
 
                     # Удаляем поезда
@@ -1251,7 +1297,7 @@ def cleanup_expired_routes():
                             WHERE date < ?
                         )
                     """,
-                        (today,),
+                        (yesterday,),
                     )
 
                     # Удаляем сами маршруты
@@ -1260,7 +1306,7 @@ def cleanup_expired_routes():
                         DELETE FROM routes
                         WHERE date < ?
                     """,
-                        (today,),
+                        (yesterday,),
                     )
 
                     conn.commit()
@@ -1468,7 +1514,7 @@ if __name__ == "__main__":
     # Проверка устаревших маршрутов и отслеживание потоков
     start_background_tasks()
     attempt_counter = 1
-    max_attempts = 3
+    max_attempts = 20
     min_delay = 15
     while True:
         # Ограничение на 3 попытки запуска с динамическим интервалом

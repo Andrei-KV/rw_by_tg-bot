@@ -1,0 +1,72 @@
+**/__pycache__
+**/.venv
+**/.classpath
+**/.dockerignore
+**/.env
+**/.git
+**/.gitignore
+**/.project
+**/.settings
+**/.toolstarget
+**/.vs
+**/.vscode
+**/*.*proj.user
+**/*.dbmdl
+**/*.jfm
+**/bin
+**/charts
+**/docker-compose*
+**/compose*
+**/Dockerfile*
+**/node_modules
+**/npm-debug.log
+**/obj
+**/secrets.dev.yaml
+**/values.dev.yaml
+LICENSE
+README.md
+# Игнорируем кэшированные файлы и каталоги
+__pycache__/
+.venv/
+*.pyc
+
+# Логи
+*.log
+
+# Базы данных и SQL файлы
+*.db
+*.sqlite3
+*.sql
+
+# Конфиденциальные данные
+.env
+*.env
+
+# Git репозиторий
+.git/
+.gitignore
+
+# Временные файлы и каталоги проекта
+*.dbmdl
+*.jfm
+
+# Docker файлы и директории
+docker-compose*
+Dockerfile*
+
+# IDE и настройки
+.vscode/
+.idea/
+
+# Документация
+LICENSE
+README.md
+
+# Тестовые примеры
+examp*
+deep_seek_format.py
+main_learn.py
+new.txt
+telegram_bot.py
+test.py
+test_rw_by.html
