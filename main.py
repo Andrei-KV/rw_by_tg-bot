@@ -204,180 +204,191 @@ def db_worker():
 threading.Thread(target=db_worker, daemon=True).start()
 
 
+# Универсальная функция-обёртка
+def async_db_call(func, *args, **kwargs):
+    # Создать очередь
+    result_queue = queue.Queue()
+    # Добавить функцию в очередь
+    db_queue.put((func, args, result_queue))
+    # Вернуть результат или исключение
+    result = result_queue.get()
+    if isinstance(result, Exception):
+        raise result
+    return result
+
+
 # ----------------------------------------------------------------------------
-# Функция-обёртка для
+# Функции для обращения к БД
 def add_user_db(chat_id):
-    with db_lock:
+    try:
+        conn = sqlite3.connect('tracking_train.sqlite3')
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            INSERT OR IGNORE INTO users (chat_id)
+            VALUES (?)
+        """,
+            (chat_id,),
+        )
+        conn.commit()
+        logging.info(f"User {chat_id} added to database")
+    except sqlite3.Error as e:
+        logging.error(f"Database error in add_user_db: {str(e)}")
+        raise
+    finally:
+        # Если соединение не открылось
         try:
-            conn = sqlite3.connect('tracking_train.sqlite3')
-            cursor = conn.cursor()
-            cursor.execute(
-                """
-                INSERT OR IGNORE INTO users (chat_id)
-                VALUES (?)
-            """,
-                (chat_id,),
-            )
-            conn.commit()
-            logging.info(f"User {chat_id} added to database")
-        except sqlite3.Error as e:
-            logging.error(f"Database error in add_user_db: {str(e)}")
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+        except (sqlite3.Error, AttributeError) as e:
+            logging.error(f"Ошибка при закрытии БД: {e}")
             raise
-        finally:
-            # Если соединение не открылось
-            try:
-                if cursor:
-                    cursor.close()
-                if conn:
-                    conn.close()
-            except (sqlite3.Error, AttributeError) as e:
-                logging.error(f"Ошибка при закрытии БД: {e}")
 
 
 def add_route_db(city_from, city_to, date, url):
-    with db_lock:
-        try:
-            conn = sqlite3.connect('tracking_train.sqlite3')
-            cursor = conn.cursor()
-            # Благодаря URL UNIQUE не будет повторной записи
-            cursor.execute(
-                """
-                INSERT OR IGNORE INTO routes (city_from, city_to, date, url)
-                VALUES (?, ?, ? , ?)
+    try:
+        conn = sqlite3.connect('tracking_train.sqlite3')
+        cursor = conn.cursor()
+        # Благодаря URL UNIQUE не будет повторной записи
+        cursor.execute(
+            """
+            INSERT OR IGNORE INTO routes (city_from, city_to, date, url)
+            VALUES (?, ?, ? , ?)
             """,
-                (city_from, city_to, date, url),
-            )
-            conn.commit()
-            logging.info(
-                f"Route {city_from}-{city_to}-{date} added to database"
-            )
-        except sqlite3.Error as e:
-            logging.error(f"Database error in add_route_db: {str(e)}")
+            (city_from, city_to, date, url),
+        )
+        conn.commit()
+        logging.info(f"Route {city_from}-{city_to}-{date} added to database")
+    except sqlite3.Error as e:
+        logging.error(f"Database error in add_route_db: {str(e)}")
+        raise
+    finally:
+        # Если соединение не открылось
+        try:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+        except (sqlite3.Error, AttributeError) as e:
+            logging.error(f"Ошибка при закрытии БД: {e}")
             raise
-        finally:
-            # Если соединение не открылось
-            try:
-                if cursor:
-                    cursor.close()
-                if conn:
-                    conn.close()
-            except (sqlite3.Error, AttributeError) as e:
-                logging.error(f"Ошибка при закрытии БД: {e}")
 
 
 def add_train_db(train, time_depart, time_arriv, url):
-    with db_lock:
-        try:
-            conn = sqlite3.connect('tracking_train.sqlite3')
-            cursor = conn.cursor()
-            # Выбор соответствующего маршрута
-            cursor.execute("SELECT route_id FROM routes WHERE url = ?", (url,))
-            route_id = cursor.fetchone()[0]
-            cursor.execute(
-                """
-                INSERT OR IGNORE INTO trains
-                (route_id, train_number, time_depart, time_arriv)
-                VALUES (?, ?, ?, ?)
+    try:
+        conn = sqlite3.connect('tracking_train.sqlite3')
+        cursor = conn.cursor()
+        # Выбор соответствующего маршрута
+        cursor.execute("SELECT route_id FROM routes WHERE url = ?", (url,))
+        route_id = cursor.fetchone()[0]
+        cursor.execute(
+            """
+            INSERT OR IGNORE INTO trains
+            (route_id, train_number, time_depart, time_arriv)
+            VALUES (?, ?, ?, ?)
             """,
-                (route_id, train, time_depart, time_arriv),
-            )
-            conn.commit()
-            logging.info(
-                f"Train: {train} for route_id: {route_id} added to database"
-            )
-        except sqlite3.Error as e:
-            logging.error(f"Database error in add_train_db: {str(e)}")
+            (route_id, train, time_depart, time_arriv),
+        )
+        conn.commit()
+        logging.info(
+            f"Train: {train} for route_id: {route_id} added to database"
+        )
+    except sqlite3.Error as e:
+        logging.error(f"Database error in add_train_db: {str(e)}")
+        raise
+    finally:
+        # Если соединение не открылось
+        try:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+        except (sqlite3.Error, AttributeError) as e:
+            logging.error(f"Ошибка при закрытии БД: {e}")
             raise
-        finally:
-            # Если соединение не открылось
-            try:
-                if cursor:
-                    cursor.close()
-                if conn:
-                    conn.close()
-            except (sqlite3.Error, AttributeError) as e:
-                logging.error(f"Ошибка при закрытии БД: {e}")
 
 
 def add_tracking_db(chat_id, train_selected, ticket_dict, url, status=False):
-    with db_lock:
-        try:
-            conn = sqlite3.connect('tracking_train.sqlite3')
-            cursor = conn.cursor()
-            # Получить route_id по известному URL
-            cursor.execute("SELECT route_id FROM routes WHERE url = ?", (url,))
-            route_id = cursor.fetchone()[0]
 
-            # Получить train_id по route_id и train_selected
-            cursor.execute(
-                """
+    try:
+        conn = sqlite3.connect('tracking_train.sqlite3')
+        cursor = conn.cursor()
+        # Получить route_id по известному URL
+        cursor.execute("SELECT route_id FROM routes WHERE url = ?", (url,))
+        route_id = cursor.fetchone()[0]
+
+        # Получить train_id по route_id и train_selected
+        cursor.execute(
+            """
             SELECT train_id FROM trains
             WHERE route_id = ? AND train_number = ?
             """,
-                (route_id, train_selected),
-            )
-            train_id = cursor.fetchone()[0]
+            (route_id, train_selected),
+        )
+        train_id = cursor.fetchone()[0]
 
-            # Преобразование словаря билетов в JSON
-            json_ticket_dict = json.dumps(ticket_dict)
+        # Преобразование словаря билетов в JSON
+        json_ticket_dict = json.dumps(ticket_dict)
 
-            # Вставка в список слежения с выбранным статусом
-            cursor.execute(
-                """
-                INSERT OR IGNORE INTO tracking
-                (chat_id, train_id, json_ticket_dict, status)
-                VALUES (?, ?, ?, ?)
-                """,
-                (chat_id, train_id, json_ticket_dict, status),
-            )
-            conn.commit()
-            logging.info(f"Train_id: {train_id} added to db_tracking_list")
-        except sqlite3.Error as e:
-            logging.error(f"Database error in add_tracking_db: {str(e)}")
+        # Вставка в список слежения с выбранным статусом
+        cursor.execute(
+            """
+            INSERT OR IGNORE INTO tracking
+            (chat_id, train_id, json_ticket_dict, status)
+            VALUES (?, ?, ?, ?)
+            """,
+            (chat_id, train_id, json_ticket_dict, status),
+        )
+        conn.commit()
+        logging.info(f"Train_id: {train_id} added to db_tracking_list")
+    except sqlite3.Error as e:
+        logging.error(f"Database error in add_tracking_db: {str(e)}")
+        raise
+    finally:
+        # Если соединение не открылось
+        try:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+        except (sqlite3.Error, AttributeError) as e:
+            logging.error(f"Ошибка при закрытии БД: {e}")
             raise
-        finally:
-            # Если соединение не открылось
-            try:
-                if cursor:
-                    cursor.close()
-                if conn:
-                    conn.close()
-            except (sqlite3.Error, AttributeError) as e:
-                logging.error(f"Ошибка при закрытии БД: {e}")
 
 
 # Получить список поездов по заданному маршруту из БД
 def get_trains_list_db(url):
-    with db_lock:
+    try:
+        conn = sqlite3.connect('tracking_train.sqlite3')
+        cursor = conn.cursor()
+        # Получить route_id по известному URL
+        cursor.execute("SELECT route_id FROM routes WHERE url = ?", (url,))
+        route_id = cursor.fetchone()[0]
+        # Получить trains_list по route_id
+        cursor.execute(
+            """
+        SELECT train_number, time_depart, time_arriv FROM trains
+        WHERE route_id = ?
+        ORDER BY time_depart""",
+            (route_id,),
+        )
+        trains_list = cursor.fetchall()
+        conn.commit()
+    except sqlite3.Error as e:
+        logging.error(f"Database error in get_trains_list_db: {str(e)}")
+        raise
+    finally:
+        # Если соединение не открылось
         try:
-            conn = sqlite3.connect('tracking_train.sqlite3')
-            cursor = conn.cursor()
-            # Получить route_id по известному URL
-            cursor.execute("SELECT route_id FROM routes WHERE url = ?", (url,))
-            route_id = cursor.fetchone()[0]
-            # Получить trains_list по route_id
-            cursor.execute(
-                """
-            SELECT train_number, time_depart, time_arriv FROM trains
-            WHERE route_id = ?
-            ORDER BY time_depart""",
-                (route_id,),
-            )
-            trains_list = cursor.fetchall()
-
-            conn.commit()
-        except sqlite3.Error as e:
-            logging.error(f"Database error in get_trains_list_db: {str(e)}")
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+        except (sqlite3.Error, AttributeError) as e:
+            logging.error(f"Ошибка при закрытии БД: {e}")
             raise
-        finally:
-            # Если соединение не открылось
-            try:
-                if cursor:
-                    cursor.close()
-                if conn:
-                    conn.close()
-            except (sqlite3.Error, AttributeError) as e:
-                logging.error(f"Ошибка при закрытии БД: {e}")
     return trains_list
 
 
@@ -420,6 +431,7 @@ def get_loop_data_list(chat_id, train_tracking, url):
                 conn.close()
         except (sqlite3.Error, AttributeError) as e:
             logging.error(f"Ошибка при закрытии БД: {e}")
+            raise
 
     result = {
         "route_id": resp[0],
@@ -462,6 +474,7 @@ def set_track_true(chat_id, train_id):
                 conn.close()
         except (sqlite3.Error, AttributeError) as e:
             logging.error(f"Ошибка при закрытии БД: {e}")
+            raise
 
 
 # Получение свежих данных из таблицы при отслеживании
@@ -505,6 +518,7 @@ def get_fresh_loop(
                 conn.close()
         except (sqlite3.Error, AttributeError) as e:
             logging.error(f"Ошибка при закрытии БД: {e}")
+            raise
 
 
 # Получение списка отслеживаемых поездов, т.к. используется
@@ -544,6 +558,7 @@ def get_track_list(message):
                 conn.close()
         except (sqlite3.Error, AttributeError) as e:
             logging.error(f"Ошибка при закрытии БД: {e}")
+            raise
 
     return track_list  # для функции удаления из списка отслеживания
 
@@ -580,6 +595,7 @@ def del_tracking_db(
                 conn.close()
         except (sqlite3.Error, AttributeError) as e:
             logging.error(f"Ошибка при закрытии БД: {e}")
+            raise
 
 
 # Обновление таблицы отслеживания в цикле
@@ -617,13 +633,7 @@ def update_tracking_loop(
                 conn.close()
         except (sqlite3.Error, AttributeError) as e:
             logging.error(f"Ошибка при закрытии БД: {e}")
-
-
-# ----------------------------------------------------------------------------
-# Функции для непосредственного обращения к БД
-
-
-# def add_user_db_worker(chat_id)
+            raise
 
 
 # ----------------------------------------------------------------------------
@@ -682,7 +692,7 @@ def start(message):
         set_user_data(chat_id, {"step": "start"})
 
         # Добавить пользователя в БД
-        add_user_db(chat_id)
+        async_db_call(add_user_db, chat_id)
     except Exception as e:
         logging.error(f"Error in start command: {str(e)}", exc_info=True)
         raise
@@ -807,7 +817,8 @@ def get_trains_list(message):
         start(message)
         return
     # Добавляет маршрут в БД
-    add_route_db(
+    async_db_call(
+        add_route_db,
         user_info["city_from"],
         user_info["city_to"],
         date,
@@ -843,7 +854,7 @@ def get_trains_list(message):
             )
         trains_list.append([train, time_depart, time_arriv])
         # Добавить поезда в БД
-        add_train_db(train, time_depart, time_arriv, url)
+        async_db_call(add_train_db, train, time_depart, time_arriv, url)
         # Отобразить список поездов
     show_train_list(message)
 
@@ -851,7 +862,7 @@ def get_trains_list(message):
 def show_train_list(message):
     chat_id = message.chat.id
     url = user_data[chat_id]["url"]
-    trains_list = get_trains_list_db(url)
+    trains_list = async_db_call(get_trains_list_db, url)
     markup = types.InlineKeyboardMarkup()
     # Отображение кнопок выбора поезда из доступного списка
     for train in trains_list:
@@ -898,7 +909,14 @@ def select_train(callback):
     # Добавить поезд в список отслеживания
 
     url = user_data[chat_id]['url']
-    add_tracking_db(chat_id, train_selected, ticket_dict, url, status=False)
+    async_db_call(
+        add_tracking_db,
+        chat_id,
+        train_selected,
+        ticket_dict,
+        url,
+        status=False,
+    )
 
     # Кнопка включения слежения за поездом
     markup = types.InlineKeyboardMarkup()
@@ -981,37 +999,37 @@ def start_tracking_train(callback):
     # Время обращения к БД от пользователя для debug
     start_time_db_track = time.time()
     # Изменение статуса в БД
-    with db_lock:
-        try:
 
-            loop_data_list = get_loop_data_list(chat_id, train_tracking, url)
+    try:
 
-            route_id = loop_data_list["route_id"]
-            train_id = loop_data_list["train_id"]
-            status = loop_data_list["status"]
-            count = loop_data_list["count"]
+        loop_data_list = async_db_call(
+            get_loop_data_list, chat_id, train_tracking, url
+        )
 
-            # Проверка отслеживания поезда, чтобы не запустить излишний поток
-            if status == 1:
-                bot.send_message(
-                    chat_id,
-                    f"Отслеживание поезда {train_tracking} уже запущено.",
-                )
-                return
+        route_id = loop_data_list["route_id"]
+        train_id = loop_data_list["train_id"]
+        status = loop_data_list["status"]
+        count = loop_data_list["count"]
 
-            # Проверка ограничения не более 5 отслеживаний для одного чата
-            if count >= 5:
-                bot.send_message(
-                    chat_id, "Превышено число отслеживаний\n(max 5)"
-                )
-                return
+        # Проверка отслеживания поезда, чтобы не запустить излишний поток
+        if status == 1:
+            bot.send_message(
+                chat_id,
+                f"Отслеживание поезда {train_tracking} уже запущено.",
+            )
+            return
 
-            # Вставка в список слежения с выбранным статусом
-            set_track_true(chat_id, train_id)
+        # Проверка ограничения не более 5 отслеживаний для одного чата
+        if count >= 5:
+            bot.send_message(chat_id, "Превышено число отслеживаний\n(max 5)")
+            return
 
-        except sqlite3.Error as e:
-            logging.error(f"Database error in start_tracking_train: {str(e)}")
-            raise
+        # Вставка в список слежения с выбранным статусом
+        async_db_call(set_track_true, chat_id, train_id)
+
+    except sqlite3.Error as e:
+        logging.error(f"Database error in start_tracking_train: {str(e)}")
+        raise
 
     end_time_db_track = time.time()
     db_tr_time = end_time_db_track - start_time_db_track
@@ -1028,45 +1046,45 @@ def start_tracking_train(callback):
             while True:
                 # Время обращения к БД от пользователя для debug
                 start_time_db_loop = time.time()
-                with db_lock:
-                    try:
-                        # conn = sqlite3.connect('tracking_train.sqlite3')
-                        # cursor = conn.cursor()
-                        # cursor.execute(
-                        #     """SELECT json_ticket_dict, status FROM tracking
-                        #     WHERE chat_id = ? AND train_id = ?
-                        #         """,
-                        #     (
-                        #         chat_id,
-                        #         train_id,
-                        #     ),
-                        # )
-                        # result = cursor.fetchone()
-                        # logging.debug(f"FLAG1  result  {result}")
-                        # if result:
-                        #     json_str, status = result  # Распаковываем кортеж
-                        #     memory_ticket_dict = json.loads(
-                        #         json_str
-                        #     )  # Декодируем JSON строку
-                        #     status = bool(int(status))
-                        #     logging.debug(
-                        #         f"FG memory_ticket_dict {memory_ticket_dict}"
-                        #     )
-                        # else:
-                        #     # Обработка случая, когда запись не найдена
-                        #     memory_ticket_dict = {}
-                        #     status = False
 
-                        memory_ticket_dict, status = get_fresh_loop(
-                            chat_id, train_id
+                try:
+                    # conn = sqlite3.connect('tracking_train.sqlite3')
+                    # cursor = conn.cursor()
+                    # cursor.execute(
+                    #     """SELECT json_ticket_dict, status FROM tracking
+                    #     WHERE chat_id = ? AND train_id = ?
+                    #         """,
+                    #     (
+                    #         chat_id,
+                    #         train_id,
+                    #     ),
+                    # )
+                    # result = cursor.fetchone()
+                    # logging.debug(f"FLAG1  result  {result}")
+                    # if result:
+                    #     json_str, status = result  # Распаковываем кортеж
+                    #     memory_ticket_dict = json.loads(
+                    #         json_str
+                    #     )  # Декодируем JSON строку
+                    #     status = bool(int(status))
+                    #     logging.debug(
+                    #         f"FG memory_ticket_dict {memory_ticket_dict}"
+                    #     )
+                    # else:
+                    #     # Обработка случая, когда запись не найдена
+                    #     memory_ticket_dict = {}
+                    #     status = False
+
+                    memory_ticket_dict, status = async_db_call(
+                        get_fresh_loop, chat_id, train_id
+                    )
+
+                    if not status:
+                        logging.info(
+                            f"Stopping tracking for train"
+                            f"{train_tracking}, user {chat_id}"
                         )
-
-                        if not status:
-                            logging.info(
-                                f"Stopping tracking for train"
-                                f"{train_tracking}, user {chat_id}"
-                            )
-                            return
+                        return
 
                         # !!! Возможно, лишнее (урл уже есть)
                         # cursor.execute(
@@ -1076,108 +1094,87 @@ def start_tracking_train(callback):
                         # )
                         # url = cursor.fetchone()[0]
                         # Получение новой страницы "soup"
-                        r = requests.get(url)
+                    r = requests.get(url)
 
-                        only_span_div_tag = SoupStrainer(["span", "div"])
-                        soup = BeautifulSoup(
-                            r.text, "lxml", parse_only=only_span_div_tag
+                    only_span_div_tag = SoupStrainer(["span", "div"])
+                    soup = BeautifulSoup(
+                        r.text, "lxml", parse_only=only_span_div_tag
+                    )
+
+                    # Проверка времени
+                    # (прекратить отслеживание за 15 мин до отправления)
+                    if check_depart_time(train_tracking, soup) < 1000:
+                        # cursor.execute(
+                        #     """
+                        #     DELETE FROM tracking
+                        #     WHERE chat_id = ? AND train_id = ?
+                        #     """,
+                        #     (
+                        #         chat_id,
+                        #         train_id,
+                        #     ),
+                        # )
+                        # Удалить маршрут из списка отслеживания
+                        async_db_call(
+                            del_tracking_db,
+                            chat_id,
+                            train_id,
                         )
-
-                        # Проверка времени
-                        # (прекратить отслеживание за 15 мин до отправления)
-                        if check_depart_time(train_tracking, soup) < 1000:
-                            # cursor.execute(
-                            #     """
-                            #     DELETE FROM tracking
-                            #     WHERE chat_id = ? AND train_id = ?
-                            #     """,
-                            #     (
-                            #         chat_id,
-                            #         train_id,
-                            #     ),
-                            # )
-                            # Удалить маршрут из списка отслеживания
-                            del_tracking_db(
-                                chat_id,
-                                train_id,
-                            )
-                            bot.send_message(
-                                chat_id,
-                                f"Отслеживание завершёно по расписанию"
-                                f" отправления поезда {train_tracking}",
-                            )
-                            logging.info(
-                                f"[thread exit] Поток завершён за 15 мин/"
-                                f"до отпр.: {train_tracking} для {chat_id}"
-                            )
-                            return
+                        bot.send_message(
+                            chat_id,
+                            f"Отслеживание завершёно по расписанию"
+                            f" отправления поезда {train_tracking}",
+                        )
+                        logging.info(
+                            f"[thread exit] Поток завершён за 15 мин/"
+                            f"до отпр.: {train_tracking} для {chat_id}"
+                        )
+                        return
 
                         # Получение более свежей информации по билетам
-                        ticket_dict = check_tickets_by_class(
-                            train_tracking, soup, chat_id
+                    ticket_dict = check_tickets_by_class(
+                        train_tracking, soup, chat_id
+                    )
+
+                    # Выводить сообщение при появлении изменений в билетах
+                    #  + быстрая ссылка
+                    logging.debug(f"FLAG3  ticket_dict  {ticket_dict}")
+                    if ticket_dict != memory_ticket_dict:
+                        markup_url = (
+                            types.InlineKeyboardMarkup()
+                        )  # объект кнопки
+                        url_to_ticket = types.InlineKeyboardButton(
+                            "На сайт", url=user_data[chat_id]["url"]
+                        )
+                        markup_url.row(url_to_ticket)
+                        bot.send_message(
+                            chat_id,
+                            f"Обновление по {train_tracking}:\n"
+                            f"{ticket_dict}",
+                            reply_markup=markup_url,
                         )
 
-                        # Выводить сообщение при появлении изменений в билетах
-                        #  + быстрая ссылка
-                        logging.debug(f"FLAG3  ticket_dict  {ticket_dict}")
-                        if ticket_dict != memory_ticket_dict:
-                            markup_url = (
-                                types.InlineKeyboardMarkup()
-                            )  # объект кнопки
-                            url_to_ticket = types.InlineKeyboardButton(
-                                "На сайт", url=user_data[chat_id]["url"]
-                            )
-                            markup_url.row(url_to_ticket)
-                            bot.send_message(
-                                chat_id,
-                                f"Обновление по {train_tracking}:\n"
-                                f"{ticket_dict}",
-                                reply_markup=markup_url,
-                            )
+                        json_ticket_dict = json.dumps(ticket_dict)
 
-                            json_ticket_dict = json.dumps(ticket_dict)
-
-                            # Обновление таблицы отслеживания в цикле
-                            update_tracking_loop(
-                                json_ticket_dict,
-                                chat_id,
-                                train_id,
-                            )
-
-                            # cursor.execute(
-                            #     """
-                            #     UPDATE tracking
-                            #     SET json_ticket_dict = ?
-                            #     WHERE chat_id = ? AND train_id = ?
-                            #     """,
-                            #     (
-                            #         json_ticket_dict,
-                            #         chat_id,
-                            #         train_id,
-                            #     ),
-                            # )
-
-                        # conn.commit()
-                    except sqlite3.Error as e:
-                        logging.error(
-                            f"Database error in tracking loop: {str(e)}"
+                        # Обновление таблицы отслеживания в цикле
+                        async_db_call(
+                            update_tracking_loop,
+                            json_ticket_dict,
+                            chat_id,
+                            train_id,
                         )
-                        time.sleep(60)  # Попытка через 1 мин
-                        continue
+
+                except sqlite3.Error as e:
+                    logging.error(f"Database error in tracking loop: {str(e)}")
+                    time.sleep(60)  # Попытка через 1 мин
+                    continue
                     # При отсутствии нужной записи в БД
-                    except TypeError as e:
-                        logging.error(
-                            f"Database error in tracking loop: {str(e)}"
-                        )
-                        raise
-                    except requests.exceptions.RequestException as e:
-                        logging.error(
-                            f"Database error in tracking loop: {str(e)}"
-                        )
-                        raise
-                    # finally:
-                    #     cursor.close()
-                    #     conn.close()
+                except TypeError as e:
+                    logging.error(f"Database error in tracking loop: {str(e)}")
+                    raise
+                except requests.exceptions.RequestException as e:
+                    logging.error(f"Database error in tracking loop: {str(e)}")
+                    raise
                 end_time_db_loop = time.time()
                 db_loop_time = end_time_db_loop - start_time_db_loop
                 logging.debug(
@@ -1221,7 +1218,9 @@ def start_tracking_train(callback):
 @ensure_start
 def show_track_list(message):
     reply = "Список отслеживания пуст"  # по умолчанию
-    track_list = list(filter(lambda x: x[5] == 1, get_track_list(message)))
+    track_list = list(
+        filter(lambda x: x[5] == 1, async_db_call(get_track_list, message))
+    )
     # tracking_id -> int(),
     # t.train_number -> str(),
     # r.city_from, r.city_to, r.date -> str(),
@@ -1244,7 +1243,9 @@ def show_track_list(message):
 @bot.message_handler(commands=["stop_track_train"])
 @ensure_start
 def stop_track_train(message):
-    track_list = list(filter(lambda x: x[5] == 1, get_track_list(message)))
+    track_list = list(
+        filter(lambda x: x[5] == 1, async_db_call(get_track_list, message))
+    )
     # tracking_id -> int(),
     # t.train_number -> str(),
     # r.city_from, r.city_to, r.date -> str(),
@@ -1282,42 +1283,42 @@ def stop_tracking_train_by_number(callback):
     train_number = train_stop_tracking[1]
     date = train_stop_tracking[2]
 
-    with db_lock:
+    try:
+        conn = sqlite3.connect('tracking_train.sqlite3')
+        cursor = conn.cursor()
+        # Поменять статус отслеживания и удалить из списка
+        cursor.execute(
+            """
+            UPDATE tracking SET status = ?
+            DELETE FROM tracking WHERE tracking_id = ?;
+        """,
+            (
+                False,
+                tracking_id,
+            ),
+        )
+        conn.commit()
+        logging.info(
+            f"Train_number: {train_number} date: {date} \
+                stop tracking for chat_id: {chat_id}, \
+                    tracking_id: {tracking_id}."
+        )
+    except sqlite3.Error as e:
+        logging.error(
+            f"Database error in stop_tracking_train_by_number: {str(e)}"
+        )
+        conn.rollback()
+        raise
+    finally:
+        # Если соединение не открылось
         try:
-            conn = sqlite3.connect('tracking_train.sqlite3')
-            cursor = conn.cursor()
-            # Поменять статус отслеживания и удалить из списка
-            cursor.execute(
-                """
-                UPDATE tracking SET status = ?
-                DELETE FROM tracking WHERE tracking_id = ?;
-            """,
-                (
-                    False,
-                    tracking_id,
-                ),
-            )
-            conn.commit()
-            logging.info(
-                f"Train_number: {train_number} date: {date} \
-                    stop tracking for chat_id: {chat_id}, \
-                        tracking_id: {tracking_id}."
-            )
-        except sqlite3.Error as e:
-            logging.error(
-                f"Database error in stop_tracking_train_by_number: {str(e)}"
-            )
-            conn.rollback()
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+        except (sqlite3.Error, AttributeError) as e:
+            logging.error(f"Ошибка при закрытии БД: {e}")
             raise
-        finally:
-            # Если соединение не открылось
-            try:
-                if cursor:
-                    cursor.close()
-                if conn:
-                    conn.close()
-            except (sqlite3.Error, AttributeError) as e:
-                logging.error(f"Ошибка при закрытии БД: {e}")
 
     bot.send_message(
         chat_id, f"Отслеживание поезда {train_number}/{date} остановлено."
@@ -1441,78 +1442,78 @@ def check_depart_time(train_number, soup):
 def cleanup_expired_routes():
     while True:
         try:
-            conn = sqlite3.connect('tracking_train.sqlite3')
-            cursor = conn.cursor()
+            async_db_call(_cleanup_logic)
+        except Exception:
+            raise
+        # Проверяем каждые 2 часа
+        time.sleep(2 * 60 * 60)
 
-            # Текущая дата
-            yesterday = (datetime.now() - timedelta(days=1)).strftime(
-                '%Y-%m-%d'
-            )
-            # Находим маршруты с прошедшей датой
+
+def _cleanup_logic():
+    try:
+        conn = sqlite3.connect('tracking_train.sqlite3')
+        cursor = conn.cursor()
+        # Текущая дата
+        yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
+        # Находим маршруты с прошедшей датой
+        cursor.execute(
+            """
+            SELECT route_id FROM routes
+            WHERE date < ?
+        """,
+            (yesterday,),
+        )
+        expired_routes = cursor.fetchall()
+        if expired_routes:
+            # Удаляем связанные записи из tracking
             cursor.execute(
                 """
+                DELETE FROM tracking
+                WHERE train_id IN (
+                SELECT train_id FROM trains
+                WHERE route_id IN (
                 SELECT route_id FROM routes
+                WHERE date < ?
+                    )
+                )
+                """,
+                (yesterday,),
+            )
+
+            # Удаляем поезда
+            cursor.execute(
+                """
+                DELETE FROM trains
+                WHERE route_id IN (
+                SELECT route_id FROM routes
+                WHERE date < ?
+                )
+            """,
+                (yesterday,),
+            )
+
+            # Удаляем сами маршруты
+            cursor.execute(
+                """
+                DELETE FROM routes
                 WHERE date < ?
             """,
                 (yesterday,),
             )
-            expired_routes = cursor.fetchall()
-            if expired_routes:
-                # Удаляем связанные записи из tracking
-                cursor.execute(
-                    """
-                    DELETE FROM tracking
-                    WHERE train_id IN (
-                    SELECT train_id FROM trains
-                    WHERE route_id IN (
-                    SELECT route_id FROM routes
-                    WHERE date < ?
-                        )
-                    )
-                """,
-                    (yesterday,),
-                )
-
-                # Удаляем поезда
-                cursor.execute(
-                    """
-                    DELETE FROM trains
-                    WHERE route_id IN (
-                    SELECT route_id FROM routes
-                    WHERE date < ?
-                    )
-                """,
-                    (yesterday,),
-                )
-
-                # Удаляем сами маршруты
-                cursor.execute(
-                    """
-                    DELETE FROM routes
-                    WHERE date < ?
-                """,
-                    (yesterday,),
-                )
-                conn.commit()
-                logging.info(
-                    f"Удалено {len(expired_routes)} устаревших маршрутов"
-                )
-        except sqlite3.Error as e:
-            logging.error(
-                f"Database error in cleanup_expired_routes: {str(e)}"
-            )
+            conn.commit()
+            logging.info(f"Удалено {len(expired_routes)} устаревших маршрутов")
+    except sqlite3.Error as e:
+        logging.error(f"Database error in cleanup_expired_routes: {str(e)}")
+        raise
+    finally:
+        try:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+        except (sqlite3.Error, AttributeError) as e:
+            logging.error(f"Ошибка при закрытии БД: {e}")
             raise
-        finally:
-            try:
-                if cursor:
-                    cursor.close()
-                if conn:
-                    conn.close()
-            except (sqlite3.Error, AttributeError) as e:
-                logging.error(f"Ошибка при закрытии БД: {e}")
-
-        # Проверяем каждые 2 часа
-        time.sleep(2 * 60 * 60)
 
 
 # Отслеживание работающих потоков каждый час
@@ -1615,36 +1616,33 @@ def confirm_stop(call):
     # всех поездов в False
     # после остановки поездов, удалить всю сессию
 
-    with db_lock:
+    try:
+        conn = sqlite3.connect('tracking_train.sqlite3')
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            DELETE FROM tracking
+            WHERE chat_id = ?
+        """,
+            (chat_id,),
+        )
+        cursor.execute("DELETE FROM users WHERE chat_id = ?", (chat_id,))
+        conn.commit()
+        logging.info(
+            f"Бот остановлен chat_id: {chat_id}." f"Список отслеживания очищен"
+        )
+    except sqlite3.Error as e:
+        logging.error(f"Database error in cleanup_expired_routes: {str(e)}")
+        raise
+    finally:
         try:
-            conn = sqlite3.connect('tracking_train.sqlite3')
-            cursor = conn.cursor()
-            cursor.execute(
-                """
-                DELETE FROM tracking
-                WHERE chat_id = ?
-            """,
-                (chat_id,),
-            )
-            cursor.execute("DELETE FROM users WHERE chat_id = ?", (chat_id,))
-            conn.commit()
-            logging.info(
-                f"Бот остановлен chat_id: {chat_id}."
-                f"Список отслеживания очищен"
-            )
-        except sqlite3.Error as e:
-            logging.error(
-                f"Database error in cleanup_expired_routes: {str(e)}"
-            )
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+        except (sqlite3.Error, AttributeError) as e:
+            logging.error(f"Ошибка при закрытии БД: {e}")
             raise
-        finally:
-            try:
-                if cursor:
-                    cursor.close()
-                if conn:
-                    conn.close()
-            except (sqlite3.Error, AttributeError) as e:
-                logging.error(f"Ошибка при закрытии БД: {e}")
     del_user_data(chat_id)
     bot.send_message(chat_id, "🛑 Бот остановлен")
 
