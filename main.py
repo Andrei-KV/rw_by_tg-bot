@@ -1048,32 +1048,6 @@ def start_tracking_train(callback):
                 start_time_db_loop = time.time()
 
                 try:
-                    # conn = sqlite3.connect('tracking_train.sqlite3')
-                    # cursor = conn.cursor()
-                    # cursor.execute(
-                    #     """SELECT json_ticket_dict, status FROM tracking
-                    #     WHERE chat_id = ? AND train_id = ?
-                    #         """,
-                    #     (
-                    #         chat_id,
-                    #         train_id,
-                    #     ),
-                    # )
-                    # result = cursor.fetchone()
-                    # logging.debug(f"FLAG1  result  {result}")
-                    # if result:
-                    #     json_str, status = result  # Распаковываем кортеж
-                    #     memory_ticket_dict = json.loads(
-                    #         json_str
-                    #     )  # Декодируем JSON строку
-                    #     status = bool(int(status))
-                    #     logging.debug(
-                    #         f"FG memory_ticket_dict {memory_ticket_dict}"
-                    #     )
-                    # else:
-                    #     # Обработка случая, когда запись не найдена
-                    #     memory_ticket_dict = {}
-                    #     status = False
 
                     memory_ticket_dict, status = async_db_call(
                         get_fresh_loop, chat_id, train_id
@@ -1086,14 +1060,6 @@ def start_tracking_train(callback):
                         )
                         return
 
-                        # !!! Возможно, лишнее (урл уже есть)
-                        # cursor.execute(
-                        #     """SELECT url FROM routes
-                        # WHERE route_id = ?""",
-                        #     (route_id,),
-                        # )
-                        # url = cursor.fetchone()[0]
-                        # Получение новой страницы "soup"
                     r = requests.get(url)
 
                     only_span_div_tag = SoupStrainer(["span", "div"])
@@ -1104,16 +1070,7 @@ def start_tracking_train(callback):
                     # Проверка времени
                     # (прекратить отслеживание за 15 мин до отправления)
                     if check_depart_time(train_tracking, soup) < 1000:
-                        # cursor.execute(
-                        #     """
-                        #     DELETE FROM tracking
-                        #     WHERE chat_id = ? AND train_id = ?
-                        #     """,
-                        #     (
-                        #         chat_id,
-                        #         train_id,
-                        #     ),
-                        # )
+
                         # Удалить маршрут из списка отслеживания
                         async_db_call(
                             del_tracking_db,
@@ -1284,6 +1241,27 @@ def stop_tracking_train_by_number(callback):
     date = train_stop_tracking[2]
 
     try:
+        async_db_call(
+            _stop_tracking_logic,
+            train_stop_tracking,
+            chat_id,
+            tracking_id,
+            train_number,
+            date,
+        )
+    except Exception:
+        raise
+
+    bot.send_message(
+        chat_id, f"Отслеживание поезда {train_number}/{date} остановлено."
+    )
+
+
+# Для работы через очередь
+def _stop_tracking_logic(
+    train_stop_tracking, chat_id, tracking_id, train_number, date
+):
+    try:
         conn = sqlite3.connect('tracking_train.sqlite3')
         cursor = conn.cursor()
         # Поменять статус отслеживания и удалить из списка
@@ -1319,10 +1297,6 @@ def stop_tracking_train_by_number(callback):
         except (sqlite3.Error, AttributeError) as e:
             logging.error(f"Ошибка при закрытии БД: {e}")
             raise
-
-    bot.send_message(
-        chat_id, f"Отслеживание поезда {train_number}/{date} остановлено."
-    )
 
 
 # ============================================================================
