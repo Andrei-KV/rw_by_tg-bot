@@ -1200,9 +1200,11 @@ def start_tracking_train(callback):
                           user {chat_id}: {str(e)}",
                 exc_info=True,
             )
-            error_msg = "❗ Ошибка бота\nНеобходимо начать заново"
+            error_msg = (
+                "❗ Ошибка бота\nПроверить отслеживание или начать заново"
+            )
             bot.send_message(chat_id, error_msg)
-            start(chat_id)  # Возвращаемся к началу
+            start(callback.message)  # Возвращаемся к началу
 
     # Регистрация и запуск параллельного потока с заданным именем
     # и аргументами, чтобы не быть в ситуации, когда

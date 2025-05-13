@@ -7,7 +7,8 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
 # Устанавливаем Poetry
-RUN pip install poetry
+RUN pip install poetry sqlite-web
+RUN pip install --no-cache-dir sqlite-web
 
 # Копируем только файлы зависимостей
 COPY pyproject.toml poetry.lock* /app/
@@ -27,6 +28,10 @@ RUN apt update && apt install -y sqlite3 && rm -rf /var/lib/apt/lists/*
 # Теперь копируем весь остальной код проекта
 COPY . /app
 
+# Копируем скрипт запуска
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+
 # RUN adduser ...: Создаёт пользователя ,
 # который будет работать внутри контейнера.
 # Это рекомендуется для безопасности, чтобы не запускать контейнер от имени root.
@@ -38,4 +43,7 @@ COPY . /app
 RUN adduser --disabled-password --gecos "" appuser && chown -R appuser /app
 USER appuser
 
-CMD ["python", "main.py", "sqlite_web", "/app/tracking_train.sqlite3", "--host", "0.0.0.0"]
+# Порт по умолчанию
+EXPOSE 3000
+
+CMD ["/app/entrypoint.sh"]
