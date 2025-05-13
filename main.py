@@ -719,6 +719,11 @@ def start(message):
     try:
         chat_id = message.chat.id
         logging.info(f"User {chat_id} started the bot")
+
+        # Для отображения активности
+        bot.send_chat_action(chat_id, 'typing')  # Show typing indicator
+        time.sleep(1)  # Optional delay
+
         bot.send_message(chat_id, "Станция отправления: ")
         # Регистрация следующей функции для города отправления
         # "Вызвать next_step_handler после ответа пользователя"
@@ -903,7 +908,17 @@ def get_trains_list(message):
 
 def show_train_list(message):
     chat_id = message.chat.id
-    url = user_data[chat_id]["url"]
+    try:
+        url = user_data[chat_id]["url"]
+    except KeyError:
+        bot.send_message(
+            chat_id,
+            "❓Маршрут не найден или ошибка серевера.\
+                \nПовторите ввод маршрута",
+        )
+        start(message)
+        return
+
     trains_list = async_db_call(get_trains_list_db, url)
     markup = types.InlineKeyboardMarkup()
     # Отображение кнопок выбора поезда из доступного списка
@@ -1022,10 +1037,16 @@ def add_track_train(message):
 )
 @ensure_start
 def start_tracking_train(callback):
+
     bot.answer_callback_query(callback.id)  # Для имитации ответа в Телеграм
 
     train_tracking = callback.data.split("_")[0]
     chat_id = callback.message.chat.id
+
+    # Для отображения активности
+    bot.send_chat_action(chat_id, 'typing')  # Show typing indicator
+    time.sleep(1)  # Optional delay
+
     url = user_data[chat_id]['url']
 
     # Повторное получение инф-ции по билетам для внесения в таблицу отслеж.
@@ -1208,6 +1229,11 @@ def start_tracking_train(callback):
 @bot.message_handler(commands=["show_track_list"])
 @ensure_start
 def show_track_list(message):
+
+    # Для отображения активности
+    bot.send_chat_action(message.chat.id, 'typing')  # Show typing indicator
+    time.sleep(1)  # Optional delay
+
     reply = "Список отслеживания пуст"  # по умолчанию
     track_list = list(
         filter(lambda x: x[5] == 1, async_db_call(get_track_list, message))
@@ -1242,6 +1268,11 @@ def stop_track_train(message):
     # r.city_from, r.city_to, r.date -> str(),
     # status -> int()
     # t.time_depart -> str()
+
+    # Для отображения активности
+    bot.send_chat_action(message.chat.id, 'typing')  # Show typing indicator
+    time.sleep(1)  # Optional delay
+
     if track_list:
         markup = types.InlineKeyboardMarkup()
         for x in track_list:
@@ -1571,24 +1602,9 @@ def stop(message):
 
     bot.send_message(
         chat_id,
-        "❗ Вы уверены, что хотите остановить бота\nи очистить переписку?",
+        "❗ Вы уверены, что хотите остановить бота?",
         reply_markup=markup,
     )
-
-
-# #!!!ДОБАВИТЬ
-# # Очистка переписки
-# def clear_chat_history(chat_id, limit=100):
-#     try:
-#         messages = bot.get_chat_history(chat_id, limit=limit)
-#         for msg in messages:
-#             try:
-#                 bot.delete_message(chat_id, msg.message_id)
-#                 time.sleep(0.1)  # Задержка для избежания лимитов API
-#             except:
-#                 continue
-#     except Exception as e:
-#         logging.error(f"Ошибка очистки чата: {e}")
 
 
 @bot.callback_query_handler(func=lambda call: call.data == "cancel_stop")
@@ -1604,6 +1620,10 @@ def cancel_stop(call):
 def confirm_stop(call):
     chat_id = call.message.chat.id
 
+    # Для отображения активности
+    bot.send_chat_action(chat_id, 'typing')  # Show typing indicator
+    time.sleep(1)  # Optional delay
+
     # Удаляем сообщение с кнопками
     bot.delete_message(chat_id, call.message.message_id)
 
@@ -1617,6 +1637,12 @@ def confirm_stop(call):
     # всех поездов в False
     # после остановки поездов, удалить всю сессию
 
+    async_db_call(_confirm_stop_logic, chat_id)
+    del_user_data(chat_id)
+    bot.send_message(chat_id, "🛑 Бот остановлен")
+
+
+def _confirm_stop_logic(chat_id):
     try:
         conn = sqlite3.connect('tracking_train.sqlite3')
         cursor = conn.cursor()
@@ -1644,8 +1670,6 @@ def confirm_stop(call):
         except (sqlite3.Error, AttributeError) as e:
             logging.error(f"Ошибка при закрытии БД: {e}")
             raise
-    del_user_data(chat_id)
-    bot.send_message(chat_id, "🛑 Бот остановлен")
 
 
 # Выход из программы

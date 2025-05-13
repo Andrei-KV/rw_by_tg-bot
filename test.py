@@ -342,12 +342,8 @@ all_station_list = [
     "Ясенин",
 ]
 
-a = [x for x in all_station_list if  x.startswith('Бог')]
-print(a)
-b = [x for x in all_station_list if len(x) < 5]
-print(b)
-city_from  = 'Ми'
-examples = [
-    x for x in all_station_list if x.startswith(city_from[:3])
-    ]
-print(int(True))
+
+user_data = {'2':{'3':2}}
+chat_id = '2'
+url = user_data[chat_id]["url"]
+print(url)
