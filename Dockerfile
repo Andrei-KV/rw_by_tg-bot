@@ -38,4 +38,4 @@ COPY . /app
 RUN adduser --disabled-password --gecos "" appuser && chown -R appuser /app
 USER appuser
 
-CMD ["python", "main.py"]
+CMD ["python", "main.py", "sqlite_web", "/app/tracking_train.sqlite3", "--host", "0.0.0.0"]
