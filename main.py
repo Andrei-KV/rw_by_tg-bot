@@ -447,41 +447,6 @@ def get_loop_data_list(chat_id, train_tracking, url):
     return result
 
 
-# Изменение статуса отслеживания на True (убрать после проверки)
-# def set_track_true(chat_id, train_id):
-#     try:
-#         conn = sqlite3.connect('tracking_train.sqlite3')
-#         cursor = conn.cursor()
-#         cursor.execute(
-#             """
-#                     UPDATE tracking SET status = ?
-#                     WHERE chat_id = ? AND train_id = ?
-#                     """,
-#             (
-#                 True,
-#                 chat_id,
-#                 train_id,
-#             ),
-#         )
-#         conn.commit()
-#         logging.info(
-#             f"Train_id: {train_id} start tracking for chat_id: {chat_id}"
-#         )
-#     except sqlite3.Error as e:
-#         logging.error(f"Database error in set_track_true: {str(e)}")
-#         raise
-#     finally:
-#         # Если соединение не открылось
-#         try:
-#             if cursor:
-#                 cursor.close()
-#             if conn:
-#                 conn.close()
-#         except (sqlite3.Error, AttributeError) as e:
-#             logging.error(f"Ошибка при закрытии БД: {e}")
-#             raise
-
-
 # Получение свежих данных из таблицы при отслеживании
 def get_fresh_loop(
     chat_id,
