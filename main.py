@@ -1204,7 +1204,7 @@ def start_tracking_train(callback):
                 "❗ Ошибка бота\nПроверить отслеживание или начать заново"
             )
             bot.send_message(chat_id, error_msg)
-            start(callback.message)  # Возвращаемся к началу
+            # start(callback.message)  # Возвращаемся к началу
 
     # Регистрация и запуск параллельного потока с заданным именем
     # и аргументами, чтобы не быть в ситуации, когда
@@ -1464,8 +1464,12 @@ def check_depart_time(train_number, soup):
         f'div.sch-table__row[data-train-number^="{train_number}"] \
             div.sch-table__time.train-from-time'
     )
+    # Если дата уже прошла, информации не будет. Вызвать 0
+    if not train_info:
+        result = 0
     # время до отправления в секундах
-    return int(train_info[0]["data-value"])
+    result = int(train_info[0]["data-value"])
+    return result
 
 
 # ============================================================================
