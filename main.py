@@ -757,7 +757,16 @@ def get_city_to(message):
         bot.register_next_step_handler(message, get_city_to)
         return
     update_user_data(chat_id, "city_to", city_to)
-    bot.send_message(chat_id, "📅 Дата в формате гггг-мм-дд: ")
+    markup = types.ReplyKeyboardMarkup(
+        one_time_keyboard=True, resize_keyboard=True, row_width=2
+    )
+    today_btn = types.KeyboardButton("Сегодня")
+    tomorrow_btn = types.KeyboardButton("Завтра")
+    markup.add(today_btn, tomorrow_btn)
+
+    bot.send_message(
+        chat_id, "📅Выберите дату или введите вручную в формате гггг-мм-дд: "
+    )
     # Регистрация следующей функции для даты
     bot.register_next_step_handler(message, get_date)
 
@@ -765,10 +774,6 @@ def get_city_to(message):
 # Чтение даты отправления
 @with_command_intercept
 def get_date(message):
-    # if message.text.startswith('/stop'):
-    #     # Останов бота
-    #     bot.register_next_step_handler(message, stop)
-    #     return
     chat_id = message.chat.id
     try:
         date = normalize_date(message.text)
@@ -1335,6 +1340,7 @@ def normalize_city_name(name):
 
 # Нормализация ввода даты с контролем "сегодня и далее"
 def normalize_date(date_str):
+
     formats = [
         "%d.%m.%Y",
         "%d/%m/%Y",
@@ -1344,6 +1350,18 @@ def normalize_date(date_str):
         "%Y %m %d",
     ]
     today = datetime.today().date()
+    if date_str == "Сегодня":
+        return datetime.today().date()
+    elif date_str == "Завтра":
+        return datetime.today().date() + timedelta(days=1)
+    if not date_str or not isinstance(date_str, str):
+        raise ValueError(
+            f"Неверный формат.\n\
+Примеры: {today.strftime('%Y-%m-%d')}, \
+{today.strftime('%d %m %Y')}, \
+{today.strftime('%Y %m %d')}"
+        )
+
     for fmt in formats:
         try:
             dt = datetime.strptime(date_str.strip(), fmt)
