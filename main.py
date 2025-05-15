@@ -1,3 +1,4 @@
+import calendar
 import json
 import logging
 import os
@@ -25,7 +26,7 @@ from bs4.filter import SoupStrainer
 from telebot import apihelper, types
 
 # Список станций
-from all_stations_list import all_station_list
+from all_stations_list import all_station_list, all_station_list_lower
 from token_info import stop_code, token
 
 
@@ -675,6 +676,8 @@ def with_command_intercept(func):
 # Создаётся объект бота, который умеет принимать сообщения от Telegram.
 bot = telebot.TeleBot(token, threaded=True)  # type: ignore
 
+# ==============================================
+
 
 # Запуск чата. Запрос города отправления
 # (функции до старта отслеживания используют словарь user_data
@@ -757,18 +760,20 @@ def get_city_to(message):
         bot.register_next_step_handler(message, get_city_to)
         return
     update_user_data(chat_id, "city_to", city_to)
-    markup = types.ReplyKeyboardMarkup(
-        one_time_keyboard=True, resize_keyboard=True, row_width=2
-    )
-    today_btn = types.KeyboardButton("Сегодня")
-    tomorrow_btn = types.KeyboardButton("Завтра")
-    markup.add(today_btn, tomorrow_btn)
 
-    bot.send_message(
-        chat_id, "📅Выберите дату или введите вручную в формате гггг-мм-дд: "
+    # Отправляем календарь сразу
+    # Отправляем календарь сразу
+    msg = bot.send_message(
+        chat_id,
+        "📅 Выберите дату или введите вручную в формате ГГГГ-ММ-ДД:",
+        reply_markup=generate_calendar(),
     )
-    # Регистрация следующей функции для даты
-    bot.register_next_step_handler(message, get_date)
+
+    # Регистрируем обработчик для ручного ввода
+    bot.register_next_step_handler(msg, get_date)
+
+
+# Обработка ответов по выбору даты
 
 
 # Чтение даты отправления
@@ -883,7 +888,7 @@ def show_train_list(message):
     except KeyError:
         bot.send_message(
             chat_id,
-            "❓Маршрут не найден или ошибка серевера.\
+            "❓Ошибка сервера.\
                 \nПовторите ввод маршрута",
         )
         start(message)
@@ -902,7 +907,7 @@ def show_train_list(message):
     if not trains_list:
         bot.send_message(
             chat_id,
-            "❓🚆Поезда не найдены либо ошибка сервера.\
+            "❓🚆Поезда не найдены.\
                 \nПовторите ввод маршрута",
         )
         start(message)
@@ -1298,7 +1303,6 @@ def stop_tracking_train_by_number(callback):
 def _stop_tracking_logic(
     tracking_id,
 ):
-    logging.debug(f"!!! FLAG10 {tracking_id}")
     try:
         conn = sqlite3.connect('tracking_train.sqlite3')
         cursor = conn.cursor()
@@ -1335,7 +1339,168 @@ def _stop_tracking_logic(
 
 # Нормализация ввода города
 def normalize_city_name(name):
-    return name.strip().lower().capitalize()
+    name = name.strip().lower()
+    try:
+        index = all_station_list_lower.index(name)
+        name = all_station_list[index]
+    except Exception:
+        name = name.capitalize()
+    return name
+
+
+# -------------------------
+# Функции для отображения календаря
+def is_date_active(year, month, day):
+    """Проверяет, активна ли дата (в пределах 59 дней от текущей)"""
+    today = datetime.now().date()
+    selected_date = datetime(year, month, day).date()
+    max_date = today + timedelta(days=59)
+    return today <= selected_date <= max_date
+
+
+def generate_calendar(year=None, month=None):
+    """Генерация inline-календаря с возможностью переключения месяцев"""
+    now = datetime.now()
+    today = now.date()
+    max_date = today + timedelta(days=59)
+
+    # Устанавливаем текущий месяц, если не указан
+    if year is None:
+        year = now.year
+    if month is None:
+        month = now.month
+
+    # Корректируем, если выбран прошедший месяц
+    if year < now.year or (year == now.year and month < now.month):
+        year, month = now.year, now.month
+
+    markup = types.InlineKeyboardMarkup()
+
+    # Заголовок (месяц и год)
+    month_name = calendar.month_name[month]
+    markup.row(
+        types.InlineKeyboardButton(
+            f"{month_name} {year}", callback_data="ignore"
+        )
+    )
+
+    # Дни недели
+    week_days = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"]
+    markup.row(
+        *[
+            types.InlineKeyboardButton(day, callback_data="ignore")
+            for day in week_days
+        ]
+    )
+
+    # Ячейки календаря
+    month_cal = calendar.monthcalendar(year, month)
+    for week in month_cal:
+        row = []
+        for day in week:
+            if day == 0:
+                row.append(
+                    types.InlineKeyboardButton(" ", callback_data="ignore")
+                )
+            else:
+                date_str = f"{year}-{month:02d}-{day:02d}"
+                date_obj = datetime(year, month, day).date()
+                if is_date_active(year, month, day):
+                    # Активная дата
+                    emoji = "🔹" if date_obj == today else ""
+                    row.append(
+                        types.InlineKeyboardButton(
+                            f"{emoji}{day}", callback_data=f"select_{date_str}"
+                        )
+                    )
+                else:
+                    # Неактивная дата
+                    row.append(
+                        types.InlineKeyboardButton(
+                            f"*{day}*", callback_data="ignore"
+                        )
+                    )
+        markup.row(*row)
+
+    # Кнопки навигации
+    prev_month = month - 1 if month > 1 else 12
+    prev_year = year if month > 1 else year - 1
+    next_month = month + 1 if month < 12 else 1
+    next_year = year if month < 12 else year + 1
+
+    nav_buttons = []
+
+    # Кнопка "Назад" (показываем всегда, кроме самого раннего месяца)
+    if not (year == now.year and month == now.month):
+        nav_buttons.append(
+            types.InlineKeyboardButton(
+                "◀️", callback_data=f"change_{prev_year}_{prev_month}"
+            )
+        )
+
+    # Кнопка "Сегодня"
+    today_str = f"{now.year}-{now.month:02d}-{now.day:02d}"
+    nav_buttons.append(
+        types.InlineKeyboardButton(
+            "Сегодня", callback_data=f"select_{today_str}"
+        )
+    )
+
+    # Кнопка "Вперед" если есть будущие месяцы в пределах 59 дней
+    if (next_year < max_date.year) or (
+        next_year == max_date.year and next_month <= max_date.month
+    ):
+        nav_buttons.append(
+            types.InlineKeyboardButton(
+                "▶️", callback_data=f"change_{next_year}_{next_month}"
+            )
+        )
+
+    if nav_buttons:
+        markup.row(*nav_buttons)
+
+    return markup
+
+
+@bot.callback_query_handler(
+    func=lambda call: call.data.startswith(('select_', 'change_'))
+)
+def handle_calendar_callback(call):
+    chat_id = call.message.chat.id
+    message_id = call.message.message_id
+
+    if call.data.startswith('select_'):
+        # Выбрана дата
+        selected_date = call.data[7:]
+        bot.delete_message(chat_id, message_id)
+        process_selected_date(chat_id, selected_date)
+
+    elif call.data.startswith('change_'):
+        # Смена месяца
+        _, year, month = call.data.split('_')
+        bot.edit_message_reply_markup(
+            chat_id=chat_id,
+            message_id=message_id,
+            reply_markup=generate_calendar(int(year), int(month)),
+        )
+
+    bot.answer_callback_query(call.id)
+
+
+def process_selected_date(chat_id, date_str):
+    """Обработка выбранной даты"""
+    try:
+        # Создаем объект message для совместимости с вашей функцией get_date
+        class Message:
+            def __init__(self, chat_id, text):
+                self.chat = type('Chat', (), {'id': chat_id})
+                self.text = text
+                self.message_id = None
+
+        message = Message(chat_id, date_str)
+        get_date(message)
+    except Exception as e:
+        bot.send_message(chat_id, f"Ошибка обработки даты: {str(e)}")
 
 
 # Нормализация ввода даты с контролем "сегодня и далее"
@@ -1544,9 +1709,9 @@ def monitor_threads_track():
             f"Thread: {t.name}, ID: {t.ident}" for t in threading.enumerate()
         ]
 
-        logging.debug(f"Active threads: {len(active_threads)}")
+        logging.info(f"Active threads: {len(active_threads)}")
         for t in active_threads:
-            logging.debug(f"Thread {t} is alive")
+            logging.info(f"Thread {t} is alive")
         time.sleep(3600)
 
 
