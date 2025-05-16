@@ -40,6 +40,11 @@ class FutureDateError(ValueError):
     pass
 
 
+# Класс ошибки для "Ошибка сайта"
+class SiteResponseError(Exception):
+    pass
+
+
 # Словарь соответствия номер-название класса
 seats_type_dict = {
     "0": "Без нумерации 🚶‍♂️",
@@ -824,6 +829,18 @@ def get_trains_list(message):
     update_user_data(chat_id, "url", url)
     try:
         r = requests.get(url)
+        if r.status_code != 200:
+            error_msg = (
+                f"Fail response in get_trains_list. Code {r.status_code}"
+            )
+            logging.debug(f"{error_msg}, for user {chat_id}")
+            raise SiteResponseError(
+                f"Ошибка ответа сайта. Код {r.status_code}"
+            )
+
+        only_span_div_tag = SoupStrainer(["span", "div"])
+        soup = BeautifulSoup(r.text, "lxml", parse_only=only_span_div_tag)
+
         response_time = r.elapsed.total_seconds()  # время в секундах
         logging.info(
             f"Запрос на сайт \n{user_data[chat_id]}"
@@ -957,7 +974,7 @@ def select_train(callback):
             reply_markup=markup,
         )
     # Проверка времени отправления
-    elif check_depart_time(train_selected, soup) < 0:
+    elif check_depart_time(train_selected, soup) <= 0:
         btn_track = types.InlineKeyboardButton(
             "🔄 Назад к поездам",
             callback_data="re_get_trains_list",
@@ -1024,14 +1041,22 @@ def start_tracking_train(callback):
 
     url = user_data[chat_id]['url']
 
-    # Повторное получение инф-ции по билетам для внесения в таблицу отслеж.
-    r = requests.get(url)
-
-    only_span_div_tag = SoupStrainer(["span", "div"])
-    soup = BeautifulSoup(r.text, "lxml", parse_only=only_span_div_tag)
-    ticket_dict = check_tickets_by_class(train_tracking, soup, chat_id)
     # Изменение статуса в БД
     try:
+        # Повторное получение инф-ции по билетам для внесения в таблицу отслеж.
+        r = requests.get(url)
+        if r.status_code != 200:
+            error_msg = (
+                f"Fail response in start_tracking_train. Code {r.status_code}"
+            )
+            logging.error(f"{error_msg}, for user {chat_id}")
+            raise SiteResponseError(
+                f"Ошибка ответа сайта. Код {r.status_code}"
+            )
+
+        only_span_div_tag = SoupStrainer(["span", "div"])
+        soup = BeautifulSoup(r.text, "lxml", parse_only=only_span_div_tag)
+        ticket_dict = check_tickets_by_class(train_tracking, soup, chat_id)
 
         loop_data_list = async_db_call(
             get_loop_data_list, chat_id, train_tracking, url
@@ -1069,6 +1094,15 @@ def start_tracking_train(callback):
         logging.error(f"Database error in start_tracking_train: {str(e)}")
         raise
 
+    except Exception as e:
+        logging.error(f"Server request error: {e}")
+        bot.send_message(
+            chat_id, "⚠️ Ошибка запроса на сервер.\nПовторите ввод маршрута"
+        )
+        # Возвращаемся к началу
+        start(callback.message)
+        return
+
     # Запуск отслеживания в параллельном потоке
     # Лучше передавать аргументы, а не использовать внешние
     def tracking_loop(chat_id, train_tracking, train_id, route_id, url):
@@ -1090,7 +1124,24 @@ def start_tracking_train(callback):
                         )
                         return
 
-                    r = requests.get(url)
+                    # Попытки при ошибках в ответах (около 2 часов)
+                    counter = 0
+                    while True:
+                        counter += 1
+                        r = requests.get(url)
+                        if r.status_code == 200:
+                            break
+
+                        logging.debug(
+                            f"Fail response. "
+                            f"Code {r.status_code}, train {train_tracking} "
+                            f"for user {chat_id}"
+                        )
+                        if counter > 9:
+                            raise SiteResponseError(
+                                f"Ошибка ответа сайта. Код {r.status_code}"
+                            )
+                        time.sleep(counter * 60 * 10)
 
                     only_span_div_tag = SoupStrainer(["span", "div"])
                     soup = BeautifulSoup(
@@ -1152,12 +1203,16 @@ def start_tracking_train(callback):
                         )
 
                 except sqlite3.Error as e:
-                    logging.error(f"Database error in tracking loop: {str(e)}")
+                    error_msg = f"Database error in tracking loop: {str(e)}"
+                    logging.error(f"{error_msg}, chat_id: {chat_id}")
                     time.sleep(60)  # Попытка через 1 мин
                     continue
                     # При отсутствии нужной записи в БД
                 except TypeError as e:
                     logging.error(f"Database error in tracking loop: {str(e)}")
+                    raise
+                except SiteResponseError as e:
+                    logging.error(f"Site error in tracking loop: {str(e)}")
                     raise
                 except requests.exceptions.RequestException as e:
                     logging.error(f"Database error in tracking loop: {str(e)}")
@@ -1168,12 +1223,18 @@ def start_tracking_train(callback):
                     f"Время к БД для {chat_id} в цикле loop \n\
                     {db_loop_time:.4f} сек"
                 )
-                time.sleep(randint(300, 600))
+                time.sleep(randint(600, 800))
         except Exception as e:
             logging.error(
                 f"Tracking loop crashed for train {train_tracking}, \
                           user {chat_id}: {str(e)}",
                 exc_info=True,
+            )
+            # Удалить маршрут из списка отслеживания
+            async_db_call(
+                del_tracking_db,
+                chat_id,
+                train_id,
             )
             error_msg = (
                 "❗ Ошибка бота\nПроверить отслеживание или начать заново"
@@ -1615,8 +1676,9 @@ def check_depart_time(train_number, soup):
     # Если дата уже прошла, информации не будет. Вызвать 0
     if not train_info:
         result = 0
-    # время до отправления в секундах
-    result = int(train_info[0]["data-value"])
+    else:
+        # время до отправления в секундах
+        result = int(train_info[0]["data-value"])
     return result
 
 

@@ -1599,8 +1599,9 @@ def check_depart_time(train_number, soup):
     # Если дата уже прошла, информации не будет. Вызвать 0
     if not train_info:
         result = 0
-    # время до отправления в секундах
-    result = int(train_info[0]["data-value"])
+    else:
+        # время до отправления в секундах
+        result = int(train_info[0]["data-value"])
     return result
 
 
