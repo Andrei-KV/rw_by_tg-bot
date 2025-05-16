@@ -60,3 +60,45 @@ while True:
     if a == 10:
         break
     print(a)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    @bot.callback_query_handler(func=lambda call: call.data.startswith(('select_', 'change_')))
+def handle_calendar_callback(call):
+    chat_id = call.message.chat.id
+    message_id = call.message.message_id
+    
+    if call.data.startswith('select_'):
+        # Выбрана дата
+        selected_date = call.data[7:]
+        bot.delete_message(chat_id, message_id)
+        
+        # Отменяем все предыдущие обработчики
+        bot.clear_step_handler_by_chat_id(chat_id)
+        
+        process_selected_date(chat_id, selected_date)
+        
+    elif call.data.startswith('change_'):
+        # Смена месяца
+        _, year, month = call.data.split('_')
+        bot.edit_message_reply_markup(
+            chat_id=chat_id,
+            message_id=message_id,
+            reply_markup=generate_calendar(int(year), int(month)),
+        )
+    
+    bot.answer_callback_query(call.id)

@@ -659,13 +659,33 @@ def ensure_start(func):
 def with_command_intercept(func):
     def wrapper(message):
         text = message.text or ""
+        chat_id = message.chat.id
+        if text.startswith("/add_train_last_route"):
+            bot.clear_step_handler_by_chat_id(chat_id)
+            show_train_list(message)
+            return
+        if text.startswith("/add_train_new_route"):
+            bot.clear_step_handler_by_chat_id(chat_id)
+            start(message)
+            return
+        if text.startswith("/stop_track_train"):
+            bot.clear_step_handler_by_chat_id(chat_id)
+            stop_track_train(message)
+            return
+        if text.startswith("/show_track_list"):
+            bot.clear_step_handler_by_chat_id(chat_id)
+            show_track_list(message)
+            return
         if text.startswith("/stop"):
+            bot.clear_step_handler_by_chat_id(chat_id)
             stop(message)
             return
         if text.startswith("/start"):
+            bot.clear_step_handler_by_chat_id(chat_id)
             start(message)
             return
         if text.startswith(f"/{stop_code}"):
+            bot.clear_step_handler_by_chat_id(chat_id)
             exit_admin(message)
             return
         # Добавить другие команды по мере надобности
@@ -770,10 +790,9 @@ def get_city_to(message):
     # Отправляем календарь сразу
     msg = bot.send_message(
         chat_id,
-        "📅 Выберите дату или введите вручную в формате ГГГГ-ММ-ДД:",
+        "📅 Выберите дату:",
         reply_markup=generate_calendar(),
     )
-
     # Регистрируем обработчик для ручного ввода
     bot.register_next_step_handler(msg, get_date)
 
@@ -791,6 +810,7 @@ def get_date(message):
         get_trains_list(message)
         return
     except (PastDateError, FutureDateError, ValueError) as e:
+        logging.info(f"FLAG get_date   {e}")
         bot.send_message(chat_id, f"✏️ {e}.\nПовторите ввод даты")
         # Возврат при ошибке ввода
         bot.register_next_step_handler(message, get_date)
@@ -829,6 +849,7 @@ def get_trains_list(message):
     update_user_data(chat_id, "url", url)
     try:
         r = requests.get(url)
+        logging.info(f"FLAG get_trains_list   {r.status_code}")
         if r.status_code != 200:
             error_msg = (
                 f"Fail response in get_trains_list. Code {r.status_code}"
@@ -898,6 +919,7 @@ def get_trains_list(message):
     show_train_list(message)
 
 
+@ensure_start
 def show_train_list(message):
     chat_id = message.chat.id
     try:
@@ -905,7 +927,7 @@ def show_train_list(message):
     except KeyError:
         bot.send_message(
             chat_id,
-            "❓Ошибка сервера.\
+            "❓Ошибка пользователя.\
                 \nПовторите ввод маршрута",
         )
         start(message)
@@ -949,7 +971,6 @@ def select_train(callback):
     chat_id = callback.message.chat.id
     # Получаем из сессии здесь, т.к. дальше не передаётся объект message
     soup = user_data[chat_id]["soup"]
-
     # Вывод количества мест по классам или "Мест нет"
     ticket_dict = check_tickets_by_class(train_selected, soup, chat_id)
 
@@ -1529,14 +1550,17 @@ def generate_calendar(year=None, month=None):
 def handle_calendar_callback(call):
     chat_id = call.message.chat.id
     message_id = call.message.message_id
-
     if call.data.startswith('select_'):
         # Выбрана дата
         selected_date = call.data[7:]
         bot.delete_message(chat_id, message_id)
+        # Отменяем все предыдущие обработчики
+        bot.clear_step_handler_by_chat_id(chat_id)
         process_selected_date(chat_id, selected_date)
 
     elif call.data.startswith('change_'):
+        # Для отображения активности
+        bot.send_chat_action(chat_id, 'typing')  # Show typing indicator
         # Смена месяца
         _, year, month = call.data.split('_')
         bot.edit_message_reply_markup(
@@ -1551,7 +1575,7 @@ def handle_calendar_callback(call):
 def process_selected_date(chat_id, date_str):
     """Обработка выбранной даты"""
     try:
-        # Создаем объект message для совместимости с вашей функцией get_date
+        # Создаем объект message для совместимости функцией get_date
         class Message:
             def __init__(self, chat_id, text):
                 self.chat = type('Chat', (), {'id': chat_id})

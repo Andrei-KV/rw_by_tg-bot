@@ -1,10 +1,10 @@
+import calendar
 import json
 import logging
 import os
 import queue
 import sqlite3
 
-import calendar
 # Библиотека для параллельных потоков
 import threading
 import time
@@ -37,6 +37,11 @@ class PastDateError(ValueError):
 
 # Класс ошибки для "Дата в далеко в будущем"
 class FutureDateError(ValueError):
+    pass
+
+
+# Класс ошибки для "Ошибка сайта"
+class SiteResponseError(Exception):
     pass
 
 
@@ -654,13 +659,33 @@ def ensure_start(func):
 def with_command_intercept(func):
     def wrapper(message):
         text = message.text or ""
+        chat_id = message.chat.id
+        if text.startswith("/add_train_last_route"):
+            bot.clear_step_handler_by_chat_id(chat_id)
+            show_train_list(message)
+            return
+        if text.startswith("/add_train_new_route"):
+            bot.clear_step_handler_by_chat_id(chat_id)
+            start(message)
+            return
+        if text.startswith("/stop_track_train"):
+            bot.clear_step_handler_by_chat_id(chat_id)
+            stop_track_train(message)
+            return
+        if text.startswith("/show_track_list"):
+            bot.clear_step_handler_by_chat_id(chat_id)
+            show_track_list(message)
+            return
         if text.startswith("/stop"):
+            bot.clear_step_handler_by_chat_id(chat_id)
             stop(message)
             return
         if text.startswith("/start"):
+            bot.clear_step_handler_by_chat_id(chat_id)
             start(message)
             return
         if text.startswith(f"/{stop_code}"):
+            bot.clear_step_handler_by_chat_id(chat_id)
             exit_admin(message)
             return
         # Добавить другие команды по мере надобности
@@ -674,9 +699,10 @@ def with_command_intercept(func):
 
 
 # Создаётся объект бота, который умеет принимать сообщения от Telegram.
-bot = telebot.TeleBot("7530329365:AAF5lrcis8w50UJzpw_6mObl8nhTH3AlMOQ", threaded=True)  # type: ignore
+bot = telebot.TeleBot('7530329365:AAF5lrcis8w50UJzpw_6mObl8nhTH3AlMOQ', threaded=True)  # type: ignore
 
 # ==============================================
+
 
 # Запуск чата. Запрос города отправления
 # (функции до старта отслеживания используют словарь user_data
@@ -760,16 +786,14 @@ def get_city_to(message):
         return
     update_user_data(chat_id, "city_to", city_to)
 
-
-    
     # Отправляем календарь сразу
     # Отправляем календарь сразу
     msg = bot.send_message(
-        chat_id, 
-        "📅 Выберите дату из календаря или введите вручную в формате ГГГГ-ММ-ДД:",
-        reply_markup=generate_calendar()
+        chat_id,
+        "📅 Выберите дату:",
+        reply_markup=generate_calendar(),
     )
-    
+    logging.info(f"FLAG 21   {msg.text}")
     # Регистрируем обработчик для ручного ввода
     bot.register_next_step_handler(msg, get_date)
 
@@ -777,20 +801,23 @@ def get_city_to(message):
 # Обработка ответов по выбору даты
 
 
-
-
 # Чтение даты отправления
 @with_command_intercept
 def get_date(message):
     chat_id = message.chat.id
+    logging.info(f"FLAG 22   {message.text}")
     try:
+        logging.info(f"FLAG 23   {message.text}")
         date = normalize_date(message.text)
+        logging.info(f"FLAG 24   {date}")
         update_user_data(chat_id, "date", date)
         get_trains_list(message)
         return
     except (PastDateError, FutureDateError, ValueError) as e:
+        logging.info(f"FLAG 25   {e}")
         bot.send_message(chat_id, f"✏️ {e}.\nПовторите ввод даты")
         # Возврат при ошибке ввода
+        logging.info(f"FLAG 35   {message.text}")
         bot.register_next_step_handler(message, get_date)
         return
     except Exception as e:
@@ -827,6 +854,19 @@ def get_trains_list(message):
     update_user_data(chat_id, "url", url)
     try:
         r = requests.get(url)
+        logging.info(f"FLAG 26   {r.status_code}")
+        if r.status_code != 200:
+            error_msg = (
+                f"Fail response in get_trains_list. Code {r.status_code}"
+            )
+            logging.debug(f"{error_msg}, for user {chat_id}")
+            raise SiteResponseError(
+                f"Ошибка ответа сайта. Код {r.status_code}"
+            )
+
+        only_span_div_tag = SoupStrainer(["span", "div"])
+        soup = BeautifulSoup(r.text, "lxml", parse_only=only_span_div_tag)
+
         response_time = r.elapsed.total_seconds()  # время в секундах
         logging.info(
             f"Запрос на сайт \n{user_data[chat_id]}"
@@ -883,7 +923,7 @@ def get_trains_list(message):
         # Отобразить список поездов
     show_train_list(message)
 
-
+@ensure_start
 def show_train_list(message):
     chat_id = message.chat.id
     try:
@@ -891,7 +931,7 @@ def show_train_list(message):
     except KeyError:
         bot.send_message(
             chat_id,
-            "❓Ошибка сервера.\
+            "❓Ошибка пользователя.\
                 \nПовторите ввод маршрута",
         )
         start(message)
@@ -935,7 +975,7 @@ def select_train(callback):
     chat_id = callback.message.chat.id
     # Получаем из сессии здесь, т.к. дальше не передаётся объект message
     soup = user_data[chat_id]["soup"]
-
+    logging.info(f"FLAG 33   {train_selected}")
     # Вывод количества мест по классам или "Мест нет"
     ticket_dict = check_tickets_by_class(train_selected, soup, chat_id)
 
@@ -960,7 +1000,7 @@ def select_train(callback):
             reply_markup=markup,
         )
     # Проверка времени отправления
-    elif check_depart_time(train_selected, soup) < 0:
+    elif check_depart_time(train_selected, soup) <= 0:
         btn_track = types.InlineKeyboardButton(
             "🔄 Назад к поездам",
             callback_data="re_get_trains_list",
@@ -1027,14 +1067,22 @@ def start_tracking_train(callback):
 
     url = user_data[chat_id]['url']
 
-    # Повторное получение инф-ции по билетам для внесения в таблицу отслеж.
-    r = requests.get(url)
-
-    only_span_div_tag = SoupStrainer(["span", "div"])
-    soup = BeautifulSoup(r.text, "lxml", parse_only=only_span_div_tag)
-    ticket_dict = check_tickets_by_class(train_tracking, soup, chat_id)
     # Изменение статуса в БД
     try:
+        # Повторное получение инф-ции по билетам для внесения в таблицу отслеж.
+        r = requests.get(url)
+        if r.status_code != 200:
+            error_msg = (
+                f"Fail response in start_tracking_train. Code {r.status_code}"
+            )
+            logging.error(f"{error_msg}, for user {chat_id}")
+            raise SiteResponseError(
+                f"Ошибка ответа сайта. Код {r.status_code}"
+            )
+
+        only_span_div_tag = SoupStrainer(["span", "div"])
+        soup = BeautifulSoup(r.text, "lxml", parse_only=only_span_div_tag)
+        ticket_dict = check_tickets_by_class(train_tracking, soup, chat_id)
 
         loop_data_list = async_db_call(
             get_loop_data_list, chat_id, train_tracking, url
@@ -1072,6 +1120,15 @@ def start_tracking_train(callback):
         logging.error(f"Database error in start_tracking_train: {str(e)}")
         raise
 
+    except Exception as e:
+        logging.error(f"Server request error: {e}")
+        bot.send_message(
+            chat_id, "⚠️ Ошибка запроса на сервер.\nПовторите ввод маршрута"
+        )
+        # Возвращаемся к началу
+        start(callback.message)
+        return
+
     # Запуск отслеживания в параллельном потоке
     # Лучше передавать аргументы, а не использовать внешние
     def tracking_loop(chat_id, train_tracking, train_id, route_id, url):
@@ -1093,7 +1150,24 @@ def start_tracking_train(callback):
                         )
                         return
 
-                    r = requests.get(url)
+                    # Попытки при ошибках в ответах (около 2 часов)
+                    counter = 0
+                    while True:
+                        counter += 1
+                        r = requests.get(url)
+                        if r.status_code == 200:
+                            break
+
+                        logging.debug(
+                            f"Fail response. "
+                            f"Code {r.status_code}, train {train_tracking} "
+                            f"for user {chat_id}"
+                        )
+                        if counter > 9:
+                            raise SiteResponseError(
+                                f"Ошибка ответа сайта. Код {r.status_code}"
+                            )
+                        time.sleep(counter * 60 * 10)
 
                     only_span_div_tag = SoupStrainer(["span", "div"])
                     soup = BeautifulSoup(
@@ -1155,12 +1229,16 @@ def start_tracking_train(callback):
                         )
 
                 except sqlite3.Error as e:
-                    logging.error(f"Database error in tracking loop: {str(e)}")
+                    error_msg = f"Database error in tracking loop: {str(e)}"
+                    logging.error(f"{error_msg}, chat_id: {chat_id}")
                     time.sleep(60)  # Попытка через 1 мин
                     continue
                     # При отсутствии нужной записи в БД
                 except TypeError as e:
                     logging.error(f"Database error in tracking loop: {str(e)}")
+                    raise
+                except SiteResponseError as e:
+                    logging.error(f"Site error in tracking loop: {str(e)}")
                     raise
                 except requests.exceptions.RequestException as e:
                     logging.error(f"Database error in tracking loop: {str(e)}")
@@ -1171,12 +1249,18 @@ def start_tracking_train(callback):
                     f"Время к БД для {chat_id} в цикле loop \n\
                     {db_loop_time:.4f} сек"
                 )
-                time.sleep(randint(300, 600))
+                time.sleep(randint(600, 800))
         except Exception as e:
             logging.error(
                 f"Tracking loop crashed for train {train_tracking}, \
                           user {chat_id}: {str(e)}",
                 exc_info=True,
+            )
+            # Удалить маршрут из списка отслеживания
+            async_db_call(
+                del_tracking_db,
+                chat_id,
+                train_id,
             )
             error_msg = (
                 "❗ Ошибка бота\nПроверить отслеживание или начать заново"
@@ -1346,15 +1430,18 @@ def normalize_city_name(name):
     try:
         index = all_station_list_lower.index(name)
         name = all_station_list[index]
-    except:
+    except Exception:
         name = name.capitalize()
     return name
+
+
 # -------------------------
 # Функции для отображения календаря
 def is_date_active(year, month, day):
     """Проверяет, активна ли дата (в пределах 59 дней от текущей)"""
     today = datetime.now().date()
     selected_date = datetime(year, month, day).date()
+    logging.info(f"FLAG 32   {selected_date}")
     max_date = today + timedelta(days=59)
     return today <= selected_date <= max_date
 
@@ -1364,110 +1451,134 @@ def generate_calendar(year=None, month=None):
     now = datetime.now()
     today = now.date()
     max_date = today + timedelta(days=59)
-    
+
     # Устанавливаем текущий месяц, если не указан
-    if year is None: year = now.year
-    if month is None: month = now.month
-    
+    if year is None:
+        year = now.year
+    if month is None:
+        month = now.month
+
     # Корректируем, если выбран прошедший месяц
     if year < now.year or (year == now.year and month < now.month):
         year, month = now.year, now.month
-    
+
     markup = types.InlineKeyboardMarkup()
-    
+
     # Заголовок (месяц и год)
     month_name = calendar.month_name[month]
-    markup.row(types.InlineKeyboardButton(
-        f"{month_name} {year}", 
-        callback_data="ignore"
-    ))
-    
+    markup.row(
+        types.InlineKeyboardButton(
+            f"{month_name} {year}", callback_data="ignore"
+        )
+    )
+
     # Дни недели
     week_days = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"]
-    markup.row(*[types.InlineKeyboardButton(
-        day, callback_data="ignore"
-    ) for day in week_days])
-    
+    markup.row(
+        *[
+            types.InlineKeyboardButton(day, callback_data="ignore")
+            for day in week_days
+        ]
+    )
+
     # Ячейки календаря
     month_cal = calendar.monthcalendar(year, month)
     for week in month_cal:
         row = []
         for day in week:
             if day == 0:
-                row.append(types.InlineKeyboardButton(" ", callback_data="ignore"))
+                row.append(
+                    types.InlineKeyboardButton(" ", callback_data="ignore")
+                )
             else:
                 date_str = f"{year}-{month:02d}-{day:02d}"
                 date_obj = datetime(year, month, day).date()
                 if is_date_active(year, month, day):
                     # Активная дата
                     emoji = "🔹" if date_obj == today else ""
-                    row.append(types.InlineKeyboardButton(
-                        f"{emoji}{day}", 
-                        callback_data=f"select_{date_str}"
-                    ))
+                    row.append(
+                        types.InlineKeyboardButton(
+                            f"{emoji}{day}", callback_data=f"select_{date_str}"
+                        )
+                    )
                 else:
                     # Неактивная дата
-                    row.append(types.InlineKeyboardButton(
-                        f"*{day}*",
-                        callback_data="ignore"
-                    ))
+                    row.append(
+                        types.InlineKeyboardButton(
+                            f"*{day}*", callback_data="ignore"
+                        )
+                    )
         markup.row(*row)
-    
+
     # Кнопки навигации
     prev_month = month - 1 if month > 1 else 12
     prev_year = year if month > 1 else year - 1
     next_month = month + 1 if month < 12 else 1
     next_year = year if month < 12 else year + 1
-    
+
     nav_buttons = []
-    
-    # Кнопка "Назад" (показываем всегда, кроме самого раннего доступного месяца)
+
+    # Кнопка "Назад" (показываем всегда, кроме самого раннего месяца)
     if not (year == now.year and month == now.month):
-        nav_buttons.append(types.InlineKeyboardButton(
-            "◀️", 
-            callback_data=f"change_{prev_year}_{prev_month}"
-        ))
-    
+        nav_buttons.append(
+            types.InlineKeyboardButton(
+                "◀️", callback_data=f"change_{prev_year}_{prev_month}"
+            )
+        )
+
     # Кнопка "Сегодня"
     today_str = f"{now.year}-{now.month:02d}-{now.day:02d}"
-    nav_buttons.append(types.InlineKeyboardButton(
-        "Сегодня", 
-        callback_data=f"select_{today_str}"
-    ))
-    
+    nav_buttons.append(
+        types.InlineKeyboardButton(
+            "Сегодня", callback_data=f"select_{today_str}"
+        )
+    )
+
     # Кнопка "Вперед" если есть будущие месяцы в пределах 59 дней
-    if (next_year < max_date.year) or (next_year == max_date.year and next_month <= max_date.month):
-        nav_buttons.append(types.InlineKeyboardButton(
-            "▶️", 
-            callback_data=f"change_{next_year}_{next_month}"
-        ))
-    
+    if (next_year < max_date.year) or (
+        next_year == max_date.year and next_month <= max_date.month
+    ):
+        nav_buttons.append(
+            types.InlineKeyboardButton(
+                "▶️", callback_data=f"change_{next_year}_{next_month}"
+            )
+        )
+
     if nav_buttons:
         markup.row(*nav_buttons)
-    
+
     return markup
 
-@bot.callback_query_handler(func=lambda call: call.data.startswith(('select_', 'change_')))
+
+@bot.callback_query_handler(
+    func=lambda call: call.data.startswith(('select_', 'change_'))
+)
 def handle_calendar_callback(call):
     chat_id = call.message.chat.id
     message_id = call.message.message_id
-    
+    logging.info(f"FLAG 29  {call.message.text}")
     if call.data.startswith('select_'):
         # Выбрана дата
         selected_date = call.data[7:]
         bot.delete_message(chat_id, message_id)
+        logging.info(f"FLAG 30   {selected_date}")
+        # Отменяем все предыдущие обработчики
+        bot.clear_step_handler_by_chat_id(chat_id)
         process_selected_date(chat_id, selected_date)
         
+
     elif call.data.startswith('change_'):
+        logging.info(f"FLAG 31   {'change_'}")
         # Смена месяца
         _, year, month = call.data.split('_')
         bot.edit_message_reply_markup(
             chat_id=chat_id,
             message_id=message_id,
-            reply_markup=generate_calendar(int(year), int(month))
+            reply_markup=generate_calendar(int(year), int(month)),
         )
-    
+
     bot.answer_callback_query(call.id)
+
 
 def process_selected_date(chat_id, date_str):
     """Обработка выбранной даты"""
@@ -1478,13 +1589,12 @@ def process_selected_date(chat_id, date_str):
                 self.chat = type('Chat', (), {'id': chat_id})
                 self.text = text
                 self.message_id = None
-        
+
         message = Message(chat_id, date_str)
+        logging.info(f"FLAG 28   {message.text}")
         get_date(message)
     except Exception as e:
         bot.send_message(chat_id, f"Ошибка обработки даты: {str(e)}")
-
-
 
 
 # Нормализация ввода даты с контролем "сегодня и далее"
