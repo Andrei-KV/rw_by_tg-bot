@@ -1164,7 +1164,7 @@ def start_tracking_train(callback):
                             types.InlineKeyboardMarkup()
                         )  # объект кнопки
                         url_to_ticket = types.InlineKeyboardButton(
-                            "На сайт", url=user_data[chat_id]["url"]
+                            "На сайт", url=url
                         )
                         markup_url.row(url_to_ticket)
                         bot.send_message(
