@@ -133,76 +133,6 @@ def del_user_data(chat_id):
 # # Создание БД и подключение
 
 
-# Для sqlite
-'''
-with db_lock:
-    conn = sqlite3.connect('tracking_train.sqlite3')
-
-    # Курсор для выполнения команд
-    cursor = conn.cursor()
-
-    # Создание таблицы пользователей c текущей информацией
-    # (словарь)
-    cursor.execute(
-        """
-    CREATE TABLE IF NOT EXISTS users (
-        chat_id INTEGER PRIMARY KEY
-    )
-    """
-    )
-
-    # Создание таблицы маршрутов
-    cursor.execute(
-        """
-    CREATE TABLE IF NOT EXISTS routes (
-        route_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        city_from TEXT,
-        city_to TEXT,
-        date TEXT,
-        url TEXT UNIQUE
-    )
-    """
-    )
-
-    # Создание таблицы поездов по каждому маршруту
-    cursor.execute(
-        """
-    CREATE TABLE IF NOT EXISTS trains (
-        train_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        route_id INTEGER NOT NULL,
-        train_number TEXT,
-        time_depart TEXT,
-        time_arriv TEXT,
-        FOREIGN KEY (route_id) REFERENCES routes(route_id)
-        UNIQUE (route_id, train_number, time_depart, time_arriv)
-    )
-    """
-    )
-
-    # Создание таблицы отслеживания пользователем поезда
-    cursor.execute(
-        """
-    CREATE TABLE IF NOT EXISTS tracking (
-        tracking_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        chat_id INTEGER NOT NULL,
-        train_id INTEGER NOT NULL,
-        json_ticket_dict TEXT,
-
-        FOREIGN KEY (chat_id) REFERENCES users(chat_id),
-        FOREIGN KEY (train_id) REFERENCES trains(train_id)
-        UNIQUE (chat_id, train_id)
-    )
-    """
-    )
-
-    # Синхронизация именений
-    conn.commit()
-    # Закрыть соединение с таблицей
-    cursor.close()
-    # Закрыть соединение с БД
-    conn.close()
-'''
-
 # Postgres Создание пула подключений
 db_pool = pool.SimpleConnectionPool(
     minconn=1,
@@ -1679,7 +1609,7 @@ def check_depart_time(train_number, soup, train_id):
         fetchone=True,
     )
     if resp_db:
-        depart_time = resp_db[0]
+        depart_time = datetime.strptime(resp_db[0], "%Y-%m-%d").date()
     else:
         depart_time = datetime(2000, 1, 1).date()
     today = datetime.today().date()
