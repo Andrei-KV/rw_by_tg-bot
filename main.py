@@ -942,6 +942,170 @@ def add_track_train(message):
 
 
 # Включение отслеживания, добавление поезда в лист слежения
+# Включение отслеживания, добавление поезда в лист слежения
+
+
+def tracking_loop(chat_id, train_tracking, train_id, route_id, url):
+    logging.debug(f"Tracking train {train_tracking} for user {chat_id}")
+
+    # Счётчик ошибок
+    error_streak = 0
+    max_errors = 5
+    while True:
+        try:
+            # Время обращения к БД от пользователя для debug
+            start_time_db_loop = time.time()
+
+            try:
+                # Запоминание данных о билете
+                memory_ticket_dict = async_db_call(
+                    get_fresh_loop, chat_id, train_id
+                )
+
+                if not memory_ticket_dict:
+                    logging.info(
+                        f"Stopping tracking for train"
+                        f"{train_tracking}, user {chat_id}"
+                    )
+                    return
+
+                session = requests.Session()
+                session.headers.update(
+                    {
+                        "User-Agent": "Mozilla/5.0 (X11; Linux x86_64)"
+                        + " AppleWebKit/537.36 (KHTML, like Gecko)"
+                        + " Chrome/133.0.0.0 Safari/537.36",
+                        "Accept": "*/*",
+                        "Accept-Language": "en-GB,en-US;q=0.9,en;q=0.8,"
+                        + "ru;q=0.7,it;q=0.6",
+                        "Accept-Encoding": "gzip, deflate, br, zstd",
+                        "Referer": f"{url}",
+                        "X-Requested-With": "XMLHttpRequest",
+                    }
+                )
+                r = session.get(url)
+                if r.status_code != 200:
+                    logging.warning(
+                        f"Fail response. "
+                        f"Code {r.status_code}, train {train_tracking} "
+                        f"for user {chat_id}"
+                    )
+                    raise SiteResponseError(
+                        f"Ошибка ответа сайта. Код {r.status_code}"
+                    )
+
+                only_span_div_tag = SoupStrainer(["span", "div"])
+                soup = BeautifulSoup(
+                    r.text, "lxml", parse_only=only_span_div_tag
+                )
+
+                # Проверка времени
+                # (прекратить отслеживание за 15 мин до отправления)
+                if check_depart_time(train_tracking, soup, train_id) < 1000:
+
+                    # Удалить маршрут из списка отслеживания
+                    async_db_call(
+                        del_tracking_db,
+                        chat_id,
+                        train_id,
+                    )
+                    bot.send_message(
+                        chat_id,
+                        f"Отслеживание завершёно по расписанию"
+                        f" отправления поезда {train_tracking}",
+                    )
+                    logging.info(
+                        f"[thread exit] Поток завершён за 15 мин/"
+                        f"до отпр.: {train_tracking} для {chat_id}"
+                    )
+                    return
+
+                    # Получение более свежей информации по билетам
+                ticket_dict = check_tickets_by_class(
+                    train_tracking, soup, chat_id
+                )
+
+                # Выводить сообщение при появлении изменений в билетах
+                #  + быстрая ссылка
+                logging.debug(f"FLAG3  ticket_dict  {ticket_dict}")
+                if ticket_dict != memory_ticket_dict:
+                    markup_url = types.InlineKeyboardMarkup()  # объект кнопки
+                    url_to_ticket = types.InlineKeyboardButton(
+                        "На сайт", url=url
+                    )
+                    markup_url.row(url_to_ticket)
+                    bot.send_message(
+                        chat_id,
+                        f"Обновление по {train_tracking}:\n" f"{ticket_dict}",
+                        reply_markup=markup_url,
+                    )
+
+                    json_ticket_dict = json.dumps(ticket_dict)
+
+                    # Обновление таблицы отслеживания в цикле
+                    async_db_call(
+                        update_tracking_loop,
+                        json_ticket_dict,
+                        chat_id,
+                        train_id,
+                    )
+                end_time_db_loop = time.time()
+                db_loop_time = end_time_db_loop - start_time_db_loop
+                logging.debug(
+                    f"Время к БД для {chat_id} в цикле loop \n\
+                        {db_loop_time:.4f} сек"
+                )
+
+            except psycopg2.Error as e:
+                error_msg = f"Database error in tracking loop: {str(e)}"
+                logging.warning(f"{error_msg}, chat_id: {chat_id}")
+                raise
+                # При отсутствии нужной записи в БД
+            except TypeError as e:
+                error_msg = f"Database error in tracking loop: {str(e)}"
+                logging.warning(f"{error_msg}, chat_id: {chat_id}")
+                raise
+            except SiteResponseError as e:
+                error_msg = f"Site error in tracking loop: {str(e)}"
+                logging.warning(f"{error_msg}, chat_id: {chat_id}")
+                raise
+            except requests.exceptions.SSLError as e:
+                error_msg = f"SSL ошибка для поезда {train_tracking}: {str(e)}"
+                logging.warning(f"{error_msg}, chat_id: {chat_id}")
+                raise
+            except requests.exceptions.RequestException as e:
+                error_msg = f"Database error in tracking loop: {str(e)}"
+                logging.warning(f"{error_msg}, chat_id: {chat_id}")
+                raise
+
+        except Exception as e:
+            logging.warning(
+                f"Tracking loop crashed for train {train_tracking}, \
+                            user {chat_id}: {str(e)}",
+                exc_info=True,
+            )
+
+            if error_streak >= max_errors:
+                # Удалить маршрут из списка отслеживания
+                async_db_call(
+                    del_tracking_db,
+                    chat_id,
+                    train_id,
+                )
+                error_msg = (
+                    f"❗ Ошибка бота\n"
+                    f"Отслеживание поезда {train_tracking} остановлено"
+                )
+                bot.send_message(chat_id, error_msg)
+                return
+
+            error_streak += 1
+            time.sleep(error_streak * 600)
+            continue
+
+        time.sleep(randint(600, 800))
+
+
 @bot.callback_query_handler(
     func=lambda callback: callback.data.endswith("_start_tracking")
 )
@@ -1022,174 +1186,6 @@ def start_tracking_train(callback):
 
     # Запуск отслеживания в параллельном потоке
     # Лучше передавать аргументы, а не использовать внешние
-    def tracking_loop(chat_id, train_tracking, train_id, route_id, url):
-        logging.debug(f"Tracking train {train_tracking} for user {chat_id}")
-
-        # Счётчик ошибок
-        error_streak = 0
-        max_errors = 5
-        while True:
-            try:
-                # Время обращения к БД от пользователя для debug
-                start_time_db_loop = time.time()
-
-                try:
-                    # Запоминание данных о билете
-                    memory_ticket_dict = async_db_call(
-                        get_fresh_loop, chat_id, train_id
-                    )
-
-                    if not memory_ticket_dict:
-                        logging.info(
-                            f"Stopping tracking for train"
-                            f"{train_tracking}, user {chat_id}"
-                        )
-                        return
-
-                    session = requests.Session()
-                    session.headers.update(
-                        {
-                            "User-Agent": "Mozilla/5.0 (X11; Linux x86_64)"
-                            + " AppleWebKit/537.36 (KHTML, like Gecko)"
-                            + " Chrome/133.0.0.0 Safari/537.36",
-                            "Accept": "*/*",
-                            "Accept-Language": "en-GB,en-US;q=0.9,en;q=0.8,"
-                            + "ru;q=0.7,it;q=0.6",
-                            "Accept-Encoding": "gzip, deflate, br, zstd",
-                            "Referer": f"{url}",
-                            "X-Requested-With": "XMLHttpRequest",
-                        }
-                    )
-                    r = session.get(url)
-                    if r.status_code != 200:
-                        logging.warning(
-                            f"Fail response. "
-                            f"Code {r.status_code}, train {train_tracking} "
-                            f"for user {chat_id}"
-                        )
-                        raise SiteResponseError(
-                            f"Ошибка ответа сайта. Код {r.status_code}"
-                        )
-
-                    only_span_div_tag = SoupStrainer(["span", "div"])
-                    soup = BeautifulSoup(
-                        r.text, "lxml", parse_only=only_span_div_tag
-                    )
-
-                    # Проверка времени
-                    # (прекратить отслеживание за 15 мин до отправления)
-                    if (
-                        check_depart_time(train_tracking, soup, train_id)
-                        < 1000
-                    ):
-
-                        # Удалить маршрут из списка отслеживания
-                        async_db_call(
-                            del_tracking_db,
-                            chat_id,
-                            train_id,
-                        )
-                        bot.send_message(
-                            chat_id,
-                            f"Отслеживание завершёно по расписанию"
-                            f" отправления поезда {train_tracking}",
-                        )
-                        logging.info(
-                            f"[thread exit] Поток завершён за 15 мин/"
-                            f"до отпр.: {train_tracking} для {chat_id}"
-                        )
-                        return
-
-                        # Получение более свежей информации по билетам
-                    ticket_dict = check_tickets_by_class(
-                        train_tracking, soup, chat_id
-                    )
-
-                    # Выводить сообщение при появлении изменений в билетах
-                    #  + быстрая ссылка
-                    logging.debug(f"FLAG3  ticket_dict  {ticket_dict}")
-                    if ticket_dict != memory_ticket_dict:
-                        markup_url = (
-                            types.InlineKeyboardMarkup()
-                        )  # объект кнопки
-                        url_to_ticket = types.InlineKeyboardButton(
-                            "На сайт", url=url
-                        )
-                        markup_url.row(url_to_ticket)
-                        bot.send_message(
-                            chat_id,
-                            f"Обновление по {train_tracking}:\n"
-                            f"{ticket_dict}",
-                            reply_markup=markup_url,
-                        )
-
-                        json_ticket_dict = json.dumps(ticket_dict)
-
-                        # Обновление таблицы отслеживания в цикле
-                        async_db_call(
-                            update_tracking_loop,
-                            json_ticket_dict,
-                            chat_id,
-                            train_id,
-                        )
-                    end_time_db_loop = time.time()
-                    db_loop_time = end_time_db_loop - start_time_db_loop
-                    logging.debug(
-                        f"Время к БД для {chat_id} в цикле loop \n\
-                        {db_loop_time:.4f} сек"
-                    )
-
-                except psycopg2.Error as e:
-                    error_msg = f"Database error in tracking loop: {str(e)}"
-                    logging.warning(f"{error_msg}, chat_id: {chat_id}")
-                    raise
-                    # При отсутствии нужной записи в БД
-                except TypeError as e:
-                    error_msg = f"Database error in tracking loop: {str(e)}"
-                    logging.warning(f"{error_msg}, chat_id: {chat_id}")
-                    raise
-                except SiteResponseError as e:
-                    error_msg = f"Site error in tracking loop: {str(e)}"
-                    logging.warning(f"{error_msg}, chat_id: {chat_id}")
-                    raise
-                except requests.exceptions.SSLError as e:
-                    error_msg = (
-                        f"SSL ошибка для поезда {train_tracking}: {str(e)}"
-                    )
-                    logging.warning(f"{error_msg}, chat_id: {chat_id}")
-                    raise
-                except requests.exceptions.RequestException as e:
-                    error_msg = f"Database error in tracking loop: {str(e)}"
-                    logging.warning(f"{error_msg}, chat_id: {chat_id}")
-                    raise
-
-            except Exception as e:
-                logging.warning(
-                    f"Tracking loop crashed for train {train_tracking}, \
-                            user {chat_id}: {str(e)}",
-                    exc_info=True,
-                )
-
-                if error_streak >= max_errors:
-                    # Удалить маршрут из списка отслеживания
-                    async_db_call(
-                        del_tracking_db,
-                        chat_id,
-                        train_id,
-                    )
-                    error_msg = (
-                        f"❗ Ошибка бота\n"
-                        f"Отслеживание поезда {train_tracking} остановлено"
-                    )
-                    bot.send_message(chat_id, error_msg)
-                    return
-
-                error_streak += 1
-                time.sleep(error_streak * 600)
-                continue
-
-            time.sleep(randint(600, 800))
-
     # Регистрация и запуск параллельного потока с заданным именем
     # и аргументами, чтобы не быть в ситуации, когда
     # функция запустится через секунду-другую,
@@ -1330,6 +1326,57 @@ def _stop_tracking_logic(
 
 # ============================================================================
 # Вспомогательные функции
+
+
+# Функции для запуска потоков отслеживания при перезапуске приложения
+def get_all_active_trackings():
+    rows = execute_db_query(
+        """
+            SELECT
+                t.chat_id,
+                tr.train_number,
+                t.train_id,
+                tr.route_id,
+                r.url
+            FROM tracking t
+            JOIN trains tr ON t.train_id = tr.train_id
+            JOIN routes r ON tr.route_id = r.route_id
+
+        """,
+        fetchall=True,
+        commit=True,
+    )
+    return rows
+
+
+def restore_all_trackings():
+    try:
+        rows = async_db_call(get_all_active_trackings)
+        if not rows:
+            logging.info("Нет активных отслеживаний для восстановления.")
+            return
+        for row in rows:
+            chat_id = row[0]
+            train_tracking = row[1]
+            train_id = row[2]
+            route_id = row[3]
+            url = row[4]
+
+            thread = threading.Thread(
+                target=tracking_loop,
+                args=(chat_id, train_tracking, train_id, route_id, url),
+                name=f"tracking_{train_tracking}_{chat_id}",
+                daemon=True,
+            )
+            thread.start()
+            logging.info(
+                f"Восстановлено отслеживание: {train_tracking} для {chat_id}"
+            )
+
+    except Exception as e:
+        logging.error(
+            f"Ошибка восстановления отслеживания: {str(e)}", exc_info=True
+        )
 
 
 # Нормализация ввода города
@@ -1723,7 +1770,7 @@ def _cleanup_logic():
         raise
 
 
-# Отслеживание работающих потоков каждый час
+# Отслеживание работающих потоков каждые 30 мин
 def monitor_threads_track():
     while True:
         active_threads = [
@@ -1733,7 +1780,7 @@ def monitor_threads_track():
         logging.info(f"Active threads: {len(active_threads)}")
         for t in active_threads:
             logging.info(f"Thread {t} is alive")
-        time.sleep(3600)
+        time.sleep(1800)
 
 
 def start_background_tasks():
@@ -1876,6 +1923,8 @@ def exit_admin(message):
 # =============================================================================
 # Запуск бота в режиме непрерывной работы
 if __name__ == "__main__":
+    # Запуск существующих отслеживаний
+    restore_all_trackings()
     # Проверка устаревших маршрутов и отслеживание потоков
     start_background_tasks()
     attempt_counter = 1
