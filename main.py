@@ -1626,7 +1626,7 @@ def check_tickets_by_class(train_number, soup, chat_id):
     if selling_allowed == "true":
         return get_tickets_by_class(train_number, soup)
     elif selling_allowed == "false":
-        return "Мест нет"
+        return "Мест нет либо закрыта продажа"
     else:
         return "Ошибка получения информации о поезде"
 
