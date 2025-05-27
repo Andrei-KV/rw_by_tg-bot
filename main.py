@@ -436,7 +436,10 @@ def get_fresh_loop(
         if result:
             json_str = result[0]  # Распаковываем кортеж
             memory_ticket_dict = json.loads(json_str)  # Декодируем JSON строку
-            logging.debug(f"FG2 memory_ticket_dict {memory_ticket_dict}")
+            logging.debug(
+                f"FG2 memory_ticket_dict, chat_id, train_id:\n"
+                f" {memory_ticket_dict, chat_id, train_id}"
+            )
         else:
             # Обработка случая, когда запись не найдена
             memory_ticket_dict = {}
@@ -603,7 +606,9 @@ bot = telebot.TeleBot(token, threaded=True)  # type: ignore
 def start(message):
     try:
         chat_id = message.chat.id
-        logging.info(f"User {chat_id} started the bot")
+        f_name = message.chat.first_name
+        l_name = message.chat.last_name
+        logging.info(f"User {f_name} {l_name} {chat_id} started the bot")
 
         # Для отображения активности
         bot.send_chat_action(chat_id, 'typing')  # Show typing indicator
@@ -1041,7 +1046,21 @@ def start_tracking_train(callback):
                         )
                         return
 
-                    r = requests.get(url)
+                    session = requests.Session()
+                    session.headers.update(
+                        {
+                            "User-Agent": "Mozilla/5.0 (X11; Linux x86_64)"
+                            + " AppleWebKit/537.36 (KHTML, like Gecko)"
+                            + " Chrome/133.0.0.0 Safari/537.36",
+                            "Accept": "*/*",
+                            "Accept-Language": "en-GB,en-US;q=0.9,en;q=0.8,"
+                            + "ru;q=0.7,it;q=0.6",
+                            "Accept-Encoding": "gzip, deflate, br, zstd",
+                            "Referer": f"{url}",
+                            "X-Requested-With": "XMLHttpRequest",
+                        }
+                    )
+                    r = session.get(url)
                     if r.status_code != 200:
                         logging.warning(
                             f"Fail response. "
@@ -1591,7 +1610,10 @@ def check_depart_time(train_number, soup, train_id):
         f'div.sch-table__row[data-train-number^="{train_number}"] \
             div.sch-table__time.train-from-time'
     )
-
+    logging.info(
+        f"FG check_depart_time (train_number, train_id, train_info) \n"
+        f"{train_number, ' ',  train_id, '\n', train_info}"
+    )
     # Сравнение текущей даты с датой отправления
     # Если даты совпадают, а train_info пустой == ошибка сайта
     # Такие сложности из-за особености сайта: если поезд сегодня
