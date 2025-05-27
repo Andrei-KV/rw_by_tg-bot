@@ -950,7 +950,10 @@ def tracking_loop(chat_id, train_tracking, train_id, route_id, url):
 
     # Счётчик ошибок
     error_streak = 0
-    max_errors = 5
+    # Максимально: днём 5 ошибок, ночью 10 ошибок
+    # Ночное время
+    start_night = datetime(year=1, month=1, day=1, hour=1).time()
+    end_night = datetime(year=1, month=1, day=1, hour=5).time()
     while True:
         try:
             # Время обращения к БД от пользователя для debug
@@ -1084,6 +1087,12 @@ def tracking_loop(chat_id, train_tracking, train_id, route_id, url):
                             user {chat_id}: {str(e)}",
                 exc_info=True,
             )
+            # Если исключение ночью - больше задержка
+            current_time = datetime.now().time()
+            if start_night < current_time < end_night:
+                max_errors = 10
+            else:
+                max_errors = 5
 
             if error_streak >= max_errors:
                 # Удалить маршрут из списка отслеживания
