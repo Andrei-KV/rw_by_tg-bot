@@ -606,8 +606,12 @@ bot = telebot.TeleBot(token, threaded=True)  # type: ignore
 def start(message):
     try:
         chat_id = message.chat.id
-        f_name = message.chat.get('first_name', None)
-        l_name = message.chat.get('last_name', None)
+        try:
+            f_name = message.chat.get('first_name', None)
+            l_name = message.chat.get('last_name', None)
+        except AttributeError:
+            f_name = 'continue'
+            l_name = 'continue'
         logging.info(f"User {f_name} {l_name} {chat_id} started the bot")
 
         # Для отображения активности
@@ -830,7 +834,7 @@ def show_train_list(message):
     except KeyError:
         bot.send_message(
             chat_id,
-            "❓Ошибка пользователя.\
+            "❓Утерян последний маршрут.\
                 \nПовторите ввод маршрута",
         )
         start(message)
