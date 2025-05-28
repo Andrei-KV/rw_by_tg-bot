@@ -606,8 +606,8 @@ bot = telebot.TeleBot(token, threaded=True)  # type: ignore
 def start(message):
     try:
         chat_id = message.chat.id
-        f_name = message.chat.first_name
-        l_name = message.chat.last_name
+        f_name = message.chat.get('first_name', None)
+        l_name = message.chat.get('last_name', None)
         logging.info(f"User {f_name} {l_name} {chat_id} started the bot")
 
         # Для отображения активности
@@ -953,7 +953,7 @@ def tracking_loop(chat_id, train_tracking, train_id, route_id, url):
     # Максимально: днём 5 ошибок, ночью 10 ошибок
     # Ночное время
     start_night = datetime(year=1, month=1, day=1, hour=1).time()
-    end_night = datetime(year=1, month=1, day=1, hour=5).time()
+    end_night = datetime(year=1, month=1, day=1, hour=7).time()
     while True:
         try:
             # Время обращения к БД от пользователя для debug
@@ -1070,7 +1070,8 @@ def tracking_loop(chat_id, train_tracking, train_id, route_id, url):
                 raise
             except SiteResponseError as e:
                 error_msg = f"Site error in tracking loop: {str(e)}"
-                logging.warning(f"{error_msg}, chat_id: {chat_id}")
+                r_c = r.status_code
+                logging.warning(f"{error_msg},resp:{r_c}, chat_id: {chat_id}")
                 raise
             except requests.exceptions.SSLError as e:
                 error_msg = f"SSL ошибка для поезда {train_tracking}: {str(e)}"
@@ -1084,13 +1085,13 @@ def tracking_loop(chat_id, train_tracking, train_id, route_id, url):
         except Exception as e:
             logging.warning(
                 f"Tracking loop crashed for train {train_tracking}, \
-                            user {chat_id}: {str(e)}",
+                    error_streak = {error_streak} user {chat_id}: {str(e)}",
                 exc_info=True,
             )
             # Если исключение ночью - больше задержка
             current_time = datetime.now().time()
             if start_night < current_time < end_night:
-                max_errors = 10
+                max_errors = 20
             else:
                 max_errors = 5
 
