@@ -954,10 +954,11 @@ def tracking_loop(chat_id, train_tracking, train_id, route_id, url):
 
     # Счётчик ошибок
     error_streak = 0
-    # Максимально: днём 5 ошибок, ночью 10 ошибок
-    # Ночное время
-    start_night = datetime(year=1, month=1, day=1, hour=1).time()
-    end_night = datetime(year=1, month=1, day=1, hour=7).time()
+    max_errors = 10
+    # # Максимально:  10 ошибок
+    # # Ночное время
+    # start_night = datetime(year=1, month=1, day=1, hour=1).time()
+    # end_night = datetime(year=1, month=1, day=1, hour=7).time()
     while True:
         try:
             # Время обращения к БД от пользователя для debug
@@ -1076,6 +1077,8 @@ def tracking_loop(chat_id, train_tracking, train_id, route_id, url):
                 error_msg = f"Site error in tracking loop: {str(e)}"
                 r_c = r.status_code
                 logging.warning(f"{error_msg},resp:{r_c}, chat_id: {chat_id}")
+                # Запомнить html при ошибке бота
+                logging.warning(f"Ответ при ошибке {r.text}")
                 raise
             except requests.exceptions.SSLError as e:
                 error_msg = f"SSL ошибка для поезда {train_tracking}: {str(e)}"
@@ -1092,12 +1095,12 @@ def tracking_loop(chat_id, train_tracking, train_id, route_id, url):
                     error_streak = {error_streak} user {chat_id}: {str(e)}",
                 exc_info=True,
             )
-            # Если исключение ночью - больше задержка
-            current_time = datetime.now().time()
-            if start_night < current_time < end_night:
-                max_errors = 20
-            else:
-                max_errors = 5
+            # # Если исключение ночью - больше задержка
+            # current_time = datetime.now().time()
+            # if start_night < current_time < end_night:
+            #     max_errors = 20
+            # else:
+            #     max_errors = 5
 
             if error_streak >= max_errors:
                 # Удалить маршрут из списка отслеживания
