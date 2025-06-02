@@ -1120,6 +1120,7 @@ def tracking_loop(chat_id, train_tracking, train_id, route_id, url):
             time.sleep(error_streak * 600)
             continue
 
+        error_streak = 0
         time.sleep(randint(600, 800))
 
 
