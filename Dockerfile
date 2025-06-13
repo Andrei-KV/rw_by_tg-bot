@@ -43,7 +43,8 @@ RUN chmod +x /app/entrypoint.sh
 RUN adduser --disabled-password --gecos "" appuser && chown -R appuser /app
 USER appuser
 
-# Порт по умолчанию
+# Порт, на котором слушает Flask
 EXPOSE 8080
 
-CMD ["/app/entrypoint.sh"]
+# Запуск приложения через entrypoint
+ENTRYPOINT ["/app/entrypoint.sh"]
