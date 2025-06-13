@@ -44,6 +44,6 @@ RUN adduser --disabled-password --gecos "" appuser && chown -R appuser /app
 USER appuser
 
 # Порт по умолчанию
-EXPOSE 3000
+EXPOSE 8080
 
 CMD ["/app/entrypoint.sh"]
