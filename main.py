@@ -38,6 +38,7 @@ from token_info import (
     db_user,
     stop_code,
     token,
+    web_port,
     webhook_url,
 )
 
@@ -1996,7 +1997,7 @@ if __name__ == "__main__":
                 logging.info(f"Webhook установлен: {webhook_url}")
             else:
                 logging.error("Ошибка установки webhook")
-            app.run(host='0.0.0.0', port=8000)
+            app.run(host='0.0.0.0', port=web_port)
 
         except apihelper.ApiTelegramException as e:
             # Игнорирование ошибки "webhook не установлен"
