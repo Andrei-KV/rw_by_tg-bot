@@ -15,6 +15,7 @@ from random import randint
 from urllib.parse import quote
 
 # import sqlite3
+import flask
 import psycopg2
 import requests
 
@@ -37,6 +38,7 @@ from token_info import (
     db_user,
     stop_code,
     token,
+    webhook_url,
 )
 
 
@@ -594,7 +596,46 @@ def with_command_intercept(func):
 
 
 # Создаётся объект бота, который умеет принимать сообщения от Telegram.
+app = flask.Flask(__name__)
 bot = telebot.TeleBot(token, threaded=True)  # type: ignore
+
+
+# Обработка запроса от Telegram (webhook endpoint)
+"""
+Этот маршрут слушает POST-запросы по пути /<токен>
+Telegram будет присылать сюда новые сообщения пользователей,
+если правильно установить webhook (bot.set_webhook(...)).
+URL /TOKEN — это защита от чужих запросов.
+
+"""
+
+
+@app.route(f'/{token}', methods=['POST'])
+def webhook():
+    try:
+        json_str = flask.request.data.decode("utf-8")
+        # превращает JSON-строку в объект telebot.types.Update:
+        update = telebot.types.Update.de_json(json_str)
+        logging.debug("FLAG Webhook получен!")
+        if update is not None:
+            # метод, который имитирует поведение polling, но вручную:
+            bot.process_new_updates([update])  # только если не None
+    except Exception as e:
+        logging.warning(f"Ошибка обработки webhook: {e}")
+    return "ok", 200  # Telegram требует подтверждение
+
+
+"""
+Это просто проверка, что сервер запущен.
+Если перейти в браузере по https://your-domain.com/, то:
+"Bot is alive" — значит Flask-приложение работает.
+"""
+
+
+@app.route("/", methods=["GET"])
+def index():
+    return "Bot is alive", 200
+
 
 # ==============================================
 
@@ -1945,35 +1986,29 @@ if __name__ == "__main__":
     restore_all_trackings()
     # Проверка устаревших маршрутов и отслеживание потоков
     start_background_tasks()
-    attempt_counter = 1
-    max_attempts = 20
-    min_delay = 15
-    while True:
-        # Ограничение на 3 попытки запуска с динамическим интервалом
+
+    try:
         try:
-            try:
-                bot.delete_webhook()  # Попытка удалить существующий webhook
-                time.sleep(1)  # Пауза для обработки запроса сервером Telegram
-            except apihelper.ApiTelegramException as e:
-                # Игнорирование ошибки "webhook не установлен"
-                if "webhook is not set" not in str(e):
-                    logging.error(f"Webhook deletion failed: {e}")
-                    raise  # Проброс других ошибок API
-            logging.info("Starting bot polling...")
-            bot.polling(non_stop=True, timeout=90, long_polling_timeout=60)
-            break
+            bot.remove_webhook()  # Попытка удалить существующий webhook
+            time.sleep(2)  # Пауза для обработки запроса сервером Telegram
+            success = bot.set_webhook(url=f"{webhook_url}/{token}")
+            if success:
+                logging.info(f"Webhook установлен: {webhook_url}")
+            else:
+                logging.error("Ошибка установки webhook")
+            app.run(host='0.0.0.0', port=8000)
+
+        except apihelper.ApiTelegramException as e:
+            # Игнорирование ошибки "webhook не установлен"
+            if "webhook is not set" not in str(e):
+                logging.error(f"Webhook deletion failed: {e}")
+            else:
+                raise  # Проброс других ошибок API
 
         # Ошибка запроса
-        except requests.exceptions.ReadTimeout as e:
-            logging.error(f"Timeout error: {e}. Restarting bot...")
-            attempt_counter += 1
-            time.sleep(min_delay * attempt_counter)
+    except requests.exceptions.ReadTimeout as e:
+        logging.error(f"Timeout error: {e}.")
 
-        # Остальные ошибки
-        except Exception as e:
-            logging.error(f"Attempt {attempt_counter} failed: {str(e)}")
-            attempt_counter += 1
-            time.sleep(min_delay * attempt_counter)
-        if attempt_counter > max_attempts:
-            logging.critical("Max retries exceeded")
-            raise
+    # Остальные ошибки
+    except Exception as e:
+        logging.error(f"Attempt failed: {str(e)}")
