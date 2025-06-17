@@ -8,7 +8,7 @@ ENV PYTHONUNBUFFERED=1
 
 # Устанавливаем Poetry
 RUN pip install poetry sqlite-web
-RUN pip install --no-cache-dir sqlite-web
+# RUN pip install --no-cache-dir sqlite-web
 
 # Копируем только файлы зависимостей
 COPY pyproject.toml poetry.lock* /app/
@@ -22,7 +22,7 @@ RUN poetry config virtualenvs.create false \
   && poetry install --no-root
 
 # Установим sqlite3
-RUN apt update && apt install -y sqlite3 && rm -rf /var/lib/apt/lists/*
+# RUN apt update && apt install -y sqlite3 && rm -rf /var/lib/apt/lists/*
 
 
 # Теперь копируем весь остальной код проекта
@@ -46,5 +46,6 @@ USER appuser
 # Порт, на котором слушает Flask
 EXPOSE 8080
 
-# Запуск приложения через entrypoint
-ENTRYPOINT ["/app/entrypoint.sh"]
+CMD ["python", "main.py"]
+# # Запуск приложения через entrypoint
+# ENTRYPOINT ["/app/entrypoint.sh"]

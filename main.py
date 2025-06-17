@@ -1997,7 +1997,7 @@ if __name__ == "__main__":
                 logging.info(f"Webhook установлен: {webhook_url}")
             else:
                 logging.error("Ошибка установки webhook")
-            app.run(host=db_host, port=web_port)
+            app.run(host='0.0.0.0', port=web_port)
 
         except apihelper.ApiTelegramException as e:
             # Игнорирование ошибки "webhook не установлен"

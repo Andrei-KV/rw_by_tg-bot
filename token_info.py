@@ -13,4 +13,4 @@ db_host = os.getenv("DB_HOST")
 db_port = os.getenv("DB_PORT") 
 db_name = os.getenv("DB_NAME") 
 webhook_url = os.getenv("WEBHOOK_URL")
-web_port = int(os.getenv("WEB_PORT")) # type: ignore
+web_port = int(os.getenv("WEB_PORT", 8080))
