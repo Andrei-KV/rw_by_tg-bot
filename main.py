@@ -598,7 +598,7 @@ def with_command_intercept(func):
 # Создаётся объект бота, который умеет принимать сообщения от Telegram.
 app = flask.Flask(__name__)
 bot = telebot.TeleBot(token, threaded=True)  # type: ignore
-
+app_initialized = False  # Флаг, чтобы не выполнять инициализацию повторно
 
 # Обработка запроса от Telegram (webhook endpoint)
 """
@@ -1981,6 +1981,12 @@ def exit_admin(message):
 
 # =============================================================================
 # Запуск бота в режиме непрерывной работы
+# При работе через gunicorn:
+# main.py не будет выполнять __main__-блок,
+#  потому что Gunicorn просто импортирует app.
+# Чтобы всё сработало:
+# webhook должен быть установлен заранее
+# фоновые задачи нужно запускать внутри @app.on_event("startup")
 if __name__ == "__main__":
     # Запуск существующих отслеживаний
     restore_all_trackings()
@@ -2013,3 +2019,37 @@ if __name__ == "__main__":
     # Остальные ошибки
     except Exception as e:
         logging.error(f"Attempt failed: {str(e)}")
+
+
+def initialize_app():
+    global app_initialized
+    if app_initialized:
+        return
+    app_initialized = True
+
+    logging.info("🔧 Инициализация приложения")
+
+    restore_all_trackings()
+    start_background_tasks()
+
+    try:
+        bot.remove_webhook()
+        time.sleep(2)
+        success = bot.set_webhook(url=f"{webhook_url}/{token}")
+        if success:
+            logging.info(f"✅ Webhook установлен: {webhook_url}")
+        else:
+            logging.error("❌ Ошибка установки webhook")
+
+    except apihelper.ApiTelegramException as e:
+        if "webhook is not set" not in str(e):
+            logging.error(f"Webhook deletion failed: {e}")
+        else:
+            raise
+    except requests.exceptions.ReadTimeout as e:
+        logging.error(f"Timeout error: {e}.")
+    except Exception as e:
+        logging.error(f"Unexpected error during init: {e}")
+
+
+initialize_app()
