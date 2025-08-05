@@ -54,6 +54,10 @@ USER appuser
 # Порт, на котором слушает Flask
 EXPOSE 8080
 
-CMD ["python", "main.py"]
+# Для разработки
+# CMD ["python", "main.py"]
 # # Запуск приложения через entrypoint
 # ENTRYPOINT ["/app/entrypoint.sh"]
+
+# Для деплоя Flask-приложение запускается через Gunicorn
+CMD ["gunicorn", "-b", "0.0.0.0:8080", "main:app"]

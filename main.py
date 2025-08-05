@@ -30,7 +30,7 @@ from telebot import apihelper, types
 
 # Список станций
 from all_stations_list import all_station_list, all_station_list_lower
-from token_info import (
+from token_info import (  # web_port, - Для разработки
     db_host,
     db_name,
     db_password,
@@ -38,7 +38,6 @@ from token_info import (
     db_user,
     stop_code,
     token,
-    web_port,
     webhook_url,
 )
 
@@ -1997,7 +1996,8 @@ if __name__ == "__main__":
                 logging.info(f"Webhook установлен: {webhook_url}")
             else:
                 logging.error("Ошибка установки webhook")
-            app.run(host='0.0.0.0', port=web_port)
+            # app.run(host='0.0.0.0', port=web_port) # Для разработки
+            # Для деплоя запускается через Gunicorn
 
         except apihelper.ApiTelegramException as e:
             # Игнорирование ошибки "webhook не установлен"
