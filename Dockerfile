@@ -11,12 +11,10 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     libpq-dev \
     gcc \
-    sqlite3 \
     && rm -rf /var/lib/apt/lists/*
 
 # Устанавливаем Poetry
-RUN pip install poetry sqlite-web
-# RUN pip install --no-cache-dir sqlite-web
+RUN pip install poetry
 
 # Копируем только файлы зависимостей
 COPY pyproject.toml poetry.lock* /app/
@@ -29,16 +27,10 @@ WORKDIR /app
 RUN poetry config virtualenvs.create false \
   && poetry install --no-root
 
-# Установим sqlite3
-# RUN apt update && apt install -y sqlite3 && rm -rf /var/lib/apt/lists/*
-
 
 # Теперь копируем весь остальной код проекта
 COPY . /app
 
-# Копируем скрипт запуска
-COPY entrypoint.sh /app/entrypoint.sh
-RUN chmod +x /app/entrypoint.sh
 
 # RUN adduser ...: Создаёт пользователя ,
 # который будет работать внутри контейнера.
@@ -54,10 +46,5 @@ USER appuser
 # Порт, на котором слушает Flask
 EXPOSE 8080
 
-# Для разработки
-# CMD ["python", "main.py"]
-# # Запуск приложения через entrypoint
-# ENTRYPOINT ["/app/entrypoint.sh"]
-
 # Для деплоя Flask-приложение запускается через Gunicorn
-CMD ["gunicorn", "-b", "0.0.0.0:8080", "main:app"]
+CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:8080", "main:app"]
