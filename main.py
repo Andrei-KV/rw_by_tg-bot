@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import queue
+import sys
 
 # Библиотека для параллельных потоков
 import threading
@@ -10,7 +11,8 @@ import time
 from collections import defaultdict
 from copy import deepcopy
 from datetime import datetime, timedelta
-from logging.handlers import RotatingFileHandler
+
+# from logging.handlers import RotatingFileHandler
 from random import randint
 from urllib.parse import quote
 
@@ -82,25 +84,24 @@ user_data_lock = threading.Lock()
 # Настройка логирования
 def setup_logging():
     logger = logging.getLogger()
-    logger.setLevel(logging.DEBUG)  # Минимальный уровень логирования
+    logger.setLevel(logging.DEBUG)
 
-    # Формат сообщений
     formatter = logging.Formatter(
         '%(asctime)s - %(levelname)s - %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S',
     )
 
-    # Логирование в файл с ротацией
-    file_handler = RotatingFileHandler(
-        'train_bot.log', maxBytes=10 * 1024 * 1024, backupCount=3  # 10 MB
-    )
-    file_handler.setFormatter(formatter)
-    logger.addHandler(file_handler)
-
-    # Логирование в консоль
-    console_handler = logging.StreamHandler()
+    # Явно указываем stdout (обязательно для Cloud Run)
+    console_handler = logging.StreamHandler(stream=sys.stdout)
     console_handler.setFormatter(formatter)
     logger.addHandler(console_handler)
+
+    # # Логирование в файл с ротацией (для локала)
+    # file_handler = RotatingFileHandler(
+    #     'train_bot.log', maxBytes=10 * 1024 * 1024, backupCount=3  # 10 MB
+    # )
+    # file_handler.setFormatter(formatter)
+    # logger.addHandler(file_handler)
 
 
 setup_logging()
