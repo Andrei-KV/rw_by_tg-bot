@@ -114,6 +114,7 @@ def get_user_data(chat_id):
 
 
 def update_user_data(chat_id, key, value):
+    logging.debug('FLAG start update_user_data')
     with user_data_lock:
         if chat_id not in user_data:
             user_data[chat_id] = {}
@@ -616,8 +617,9 @@ def webhook():
         json_str = flask.request.data.decode("utf-8")
         # превращает JSON-строку в объект telebot.types.Update:
         update = telebot.types.Update.de_json(json_str)
-        logging.debug("FLAG Webhook получен!")
+        logging.debug(f"FLAG Webhook получен! {update}")
         if update is not None:
+            logging.debug(f"update is not None {update}")
             # метод, который имитирует поведение polling, но вручную:
             bot.process_new_updates([update])  # только если не None
     except Exception as e:
@@ -679,6 +681,7 @@ def get_city_from(message):
     #     # Останов бота
     #     bot.register_next_step_handler(message, stop)
     #     return
+    logging.debug(f"Flag start get_city_from {message.text}")
     chat_id = message.chat.id
     city_from = normalize_city_name(message.text)
     if city_from not in all_station_list:
@@ -691,7 +694,7 @@ def get_city_from(message):
             + "Повторите ввод\n"
             + int(bool(examples)) * f"Варианты:\n {examples}"
         )
-
+        logging.debug("Flag ctrl city in list")
         bot.send_message(chat_id, answer)
         # Возврат при ошибке ввода
         bot.register_next_step_handler(message, get_city_from)
@@ -709,6 +712,7 @@ def get_city_to(message):
     #     # Останов бота
     #     bot.register_next_step_handler(message, stop)
     #     return
+    logging.debug('FLAG start get_city_to')
     chat_id = message.chat.id
     city_to = normalize_city_name(message.text)
     if city_to not in all_station_list:
@@ -728,7 +732,7 @@ def get_city_to(message):
         return
     update_user_data(chat_id, "city_to", city_to)
 
-    # Отправляем календарь сразу
+    logging.debug('FLAG start calendar')
     # Отправляем календарь сразу
     msg = bot.send_message(
         chat_id,
@@ -745,6 +749,7 @@ def get_city_to(message):
 # Чтение даты отправления
 @with_command_intercept
 def get_date(message):
+    logging.debug('FLAG start get_date')
     chat_id = message.chat.id
     try:
         date = normalize_date(message.text)
@@ -987,7 +992,6 @@ def add_track_train(message):
 
 
 # Включение отслеживания, добавление поезда в лист слежения
-# Включение отслеживания, добавление поезда в лист слежения
 
 
 def tracking_loop(chat_id, train_tracking, train_id, route_id, url):
@@ -1186,7 +1190,9 @@ def start_tracking_train(callback):
     try:
         # Повторное получение инф-ции по билетам для внесения в таблицу отслеж.
         r = requests.get(url)
+        logging.debug("FLAG Docker-1")
         if r.status_code != 200:
+            logging.debug("FLAG Docker-2")
             error_msg = (
                 f"Fail response in start_tracking_train. Code {r.status_code}"
             )
@@ -1440,6 +1446,7 @@ def restore_all_trackings():
 
 # Нормализация ввода города
 def normalize_city_name(name):
+    logging.debug(f"Flag normalize_city_name {name}")
     name = name.strip().lower()
     try:
         index = all_station_list_lower.index(name)
@@ -1987,38 +1994,38 @@ def exit_admin(message):
 # Чтобы всё сработало:
 # webhook должен быть установлен заранее
 # фоновые задачи нужно запускать внутри @app.on_event("startup")
-if __name__ == "__main__":
-    # Запуск существующих отслеживаний
-    restore_all_trackings()
-    # Проверка устаревших маршрутов и отслеживание потоков
-    start_background_tasks()
+# if __name__ == "__main__":
+#     # Запуск существующих отслеживаний
+#     restore_all_trackings()
+#     # Проверка устаревших маршрутов и отслеживание потоков
+#     start_background_tasks()
 
-    try:
-        try:
-            bot.remove_webhook()  # Попытка удалить существующий webhook
-            time.sleep(2)  # Пауза для обработки запроса сервером Telegram
-            success = bot.set_webhook(url=f"{webhook_url}/{token}")
-            if success:
-                logging.info(f"Webhook установлен: {webhook_url}")
-            else:
-                logging.error("Ошибка установки webhook")
-            # app.run(host='0.0.0.0', port=web_port) # Для разработки
-            # Для деплоя запускается через Gunicorn
+#     try:
+#         try:
+#             bot.remove_webhook()  # Попытка удалить существующий webhook
+#             time.sleep(2)  # Пауза для обработки запроса сервером Telegram
+#             success = bot.set_webhook(url=f"{webhook_url}/{token}")
+#             if success:
+#                 logging.info(f"Webhook установлен: {webhook_url}")
+#             else:
+#                 logging.error("Ошибка установки webhook")
+#             # app.run(host='0.0.0.0', port=web_port) # Для разработки
+#             # Для деплоя запускается через Gunicorn
 
-        except apihelper.ApiTelegramException as e:
-            # Игнорирование ошибки "webhook не установлен"
-            if "webhook is not set" not in str(e):
-                logging.error(f"Webhook deletion failed: {e}")
-            else:
-                raise  # Проброс других ошибок API
+#         except apihelper.ApiTelegramException as e:
+#             # Игнорирование ошибки "webhook не установлен"
+#             if "webhook is not set" not in str(e):
+#                 logging.error(f"Webhook deletion failed: {e}")
+#             else:
+#                 raise  # Проброс других ошибок API
 
-        # Ошибка запроса
-    except requests.exceptions.ReadTimeout as e:
-        logging.error(f"Timeout error: {e}.")
+#         # Ошибка запроса
+#     except requests.exceptions.ReadTimeout as e:
+#         logging.error(f"Timeout error: {e}.")
 
-    # Остальные ошибки
-    except Exception as e:
-        logging.error(f"Attempt failed: {str(e)}")
+#     # Остальные ошибки
+#     except Exception as e:
+#         logging.error(f"Attempt failed: {str(e)}")
 
 
 def initialize_app():
@@ -2029,17 +2036,18 @@ def initialize_app():
 
     logging.info("🔧 Инициализация приложения")
 
-    restore_all_trackings()
-    start_background_tasks()
-
     try:
-        bot.remove_webhook()
-        time.sleep(2)
-        success = bot.set_webhook(url=f"{webhook_url}/{token}")
-        if success:
-            logging.info(f"✅ Webhook установлен: {webhook_url}")
-        else:
-            logging.error("❌ Ошибка установки webhook")
+        # Проверка вебхука для разных воркеров
+        webhook_info = bot.get_webhook_info()
+        if webhook_info.url != f"{webhook_url}/{token}":
+
+            bot.remove_webhook()
+            time.sleep(5)
+            success = bot.set_webhook(url=f"{webhook_url}/{token}")
+            if success:
+                logging.info(f"✅ Webhook установлен: {webhook_url}")
+            else:
+                logging.error("❌ Ошибка установки webhook")
 
     except apihelper.ApiTelegramException as e:
         if "webhook is not set" not in str(e):
@@ -2050,6 +2058,9 @@ def initialize_app():
         logging.error(f"Timeout error: {e}.")
     except Exception as e:
         logging.error(f"Unexpected error during init: {e}")
+
+    restore_all_trackings()
+    start_background_tasks()
 
 
 initialize_app()

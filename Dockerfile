@@ -9,9 +9,13 @@ ENV PYTHONUNBUFFERED=1
 # Установка зависимостей для PostgreSQL
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
+    ca-certificates \
     libpq-dev \
     gcc \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && update-ca-certificates
+
+
 
 # Устанавливаем Poetry
 RUN pip install poetry
@@ -22,6 +26,7 @@ COPY pyproject.toml poetry.lock* /app/
 # Устанавливаем рабочую директорию
 # Следующие команды будут отталкиваться от неё
 WORKDIR /app
+
 
 # Устанавливаем зависимости в system site-packages
 RUN poetry config virtualenvs.create false \
@@ -47,4 +52,4 @@ USER appuser
 EXPOSE 8080
 
 # Для деплоя Flask-приложение запускается через Gunicorn
-CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:8080", "main:app"]
+CMD ["gunicorn", "-b", "0.0.0.0:8080", "main:app"]
