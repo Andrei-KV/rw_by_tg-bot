@@ -1,0 +1,1079 @@
+import calendar
+import json
+import logging
+import os
+import queue
+import sys
+
+# Библиотека для параллельных потоков
+import threading
+import time
+from collections import defaultdict
+from copy import deepcopy
+from datetime import datetime, timedelta
+
+# from logging.handlers import RotatingFileHandler
+from random import randint
+from urllib.parse import quote
+
+# import sqlite3
+import flask
+import requests
+
+# Импорт для бота
+import telebot
+from bs4 import BeautifulSoup
+
+# Для парсинга страниц
+from bs4.filter import SoupStrainer
+from telebot import apihelper, types
+
+# Список станций
+from all_stations_list import all_station_list, all_station_list_lower
+from src.config import settings
+from src.database import (
+    add_route_db,
+    add_train_db,
+    add_tracking_db,
+    add_user_db,
+    check_db_connection,
+    check_user_exists,
+    cleanup_expired_routes_db,
+    delete_user_session,
+    del_tracking_db,
+    get_all_active_trackings,
+    get_fresh_loop,
+    get_loop_data_list,
+    get_track_list,
+    get_trains_list_db,
+    get_user_session,
+    stop_all_tracking_for_user_db,
+    stop_tracking_by_id_db,
+    update_tracking_loop,
+    update_user_session,
+)
+from src.utils import (
+    FutureDateError,
+    PastDateError,
+    SiteResponseError,
+    check_depart_time,
+    check_tickets_by_class,
+    generate_calendar,
+    normalize_city_name,
+    normalize_date,
+    seats_type_dict,
+)
+
+
+# Remove the in-memory user_data dictionary and locks
+# user_data = defaultdict(
+#     lambda: {}
+# )
+# user_data_lock = threading.Lock()
+
+# Настройка логирования
+def setup_logging():
+    logger = logging.getLogger()
+    logger.setLevel(logging.DEBUG)
+
+    formatter = logging.Formatter(
+        '%(asctime)s - %(levelname)s - %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S',
+    )
+
+    # Явно указываем stdout (обязательно для Cloud Run)
+    console_handler = logging.StreamHandler(stream=sys.stdout)
+    console_handler.setFormatter(formatter)
+    logger.addHandler(console_handler)
+
+setup_logging()
+
+
+def get_user_data(chat_id):
+    """Gets user data from the database session."""
+    return get_user_session(chat_id)
+
+
+def update_user_data(chat_id, key, value):
+    """Updates a key-value pair in the user's session data."""
+    data = get_user_session(chat_id)
+    data[key] = value
+    update_user_session(chat_id, data)
+
+
+def set_user_data(chat_id, data_dict):
+    """Sets the entire session data for a user."""
+    update_user_session(chat_id, data_dict)
+
+
+def del_user_data(chat_id):
+    """Deletes the session data for a user."""
+    delete_user_session(chat_id)
+
+
+# Check database connection on startup
+check_db_connection()
+
+
+
+
+# ----------------------------------------------------------------------------
+# Декоратор: Проверка "start" для избежания ошибок
+def ensure_start(func):
+    def wrapper(message):
+        try:
+            chat_id = message.chat.id
+        except AttributeError:
+            chat_id = message.message.chat.id  # если проверяется callback
+        # Проверка наличия пользователя в БД
+        if not check_user_exists(chat_id):
+            bot.send_message(chat_id, "Сначала введите /start")
+            return
+        return func(message)
+
+    return wrapper
+
+
+# Декоратор: перехват команд в ответах пользователя
+def with_command_intercept(func):
+    def wrapper(message):
+        text = message.text or ""
+        chat_id = message.chat.id
+        if text.startswith("/add_train_last_route"):
+            bot.clear_step_handler_by_chat_id(chat_id)
+            show_train_list(message)
+            return
+        if text.startswith("/add_train_new_route"):
+            bot.clear_step_handler_by_chat_id(chat_id)
+            start(message)
+            return
+        if text.startswith("/stop_track_train"):
+            bot.clear_step_handler_by_chat_id(chat_id)
+            stop_track_train(message)
+            return
+        if text.startswith("/show_track_list"):
+            bot.clear_step_handler_by_chat_id(chat_id)
+            show_track_list(message)
+            return
+        if text.startswith("/stop"):
+            bot.clear_step_handler_by_chat_id(chat_id)
+            stop(message)
+            return
+        if text.startswith("/start"):
+            bot.clear_step_handler_by_chat_id(chat_id)
+            start(message)
+            return
+        if text.startswith(f"/{settings.STOP_CODE}"):
+            bot.clear_step_handler_by_chat_id(chat_id)
+            exit_admin(message)
+            return
+        # Добавить другие команды по мере надобности
+        return func(message)
+
+    return wrapper
+
+
+# =============================================================================
+# Подключение бота для ввода данных
+
+
+# Создаётся объект бота, который умеет принимать сообщения от Telegram.
+app = flask.Flask(__name__)
+bot = telebot.TeleBot(settings.TOKEN, threaded=True)  # type: ignore
+app_initialized = False  # Флаг, чтобы не выполнять инициализацию повторно
+
+# Обработка запроса от Telegram (webhook endpoint)
+"""
+Этот маршрут слушает POST-запросы по пути /<токен>
+Telegram будет присылать сюда новые сообщения пользователей,
+если правильно установить webhook (bot.set_webhook(...)).
+URL /TOKEN — это защита от чужих запросов.
+
+"""
+
+
+@app.route(f'/{settings.TOKEN}', methods=['POST'])
+def webhook():
+    try:
+        json_str = flask.request.data.decode("utf-8")
+        # превращает JSON-строку в объект telebot.types.Update:
+        update = telebot.types.Update.de_json(json_str)
+        logging.debug(f"FLAG Webhook получен! {update}")
+        if update is not None:
+            logging.debug(f"update is not None {update}")
+            # метод, который имитирует поведение polling, но вручную:
+            bot.process_new_updates([update])  # только если не None
+    except Exception as e:
+        logging.warning(f"Ошибка обработки webhook: {e}")
+    return "ok", 200  # Telegram требует подтверждение
+
+
+"""
+Это просто проверка, что сервер запущен.
+Если перейти в браузере по https://your-domain.com/, то:
+"Bot is alive" — значит Flask-приложение работает.
+"""
+
+
+@app.route("/", methods=["GET"])
+def index():
+    return "Bot is alive", 200
+
+
+# ==============================================
+
+
+# Запуск чата. Запрос города отправления
+# (функции до старта отслеживания используют словарь user_data
+# с текущей сессией ввода данных от пользователя)
+@bot.message_handler(commands=["start"])
+def start(message):
+    try:
+        chat_id = message.chat.id
+        try:
+            f_name = message.chat.get('first_name', None)
+            l_name = message.chat.get('last_name', None)
+        except AttributeError:
+            f_name = 'continue'
+            l_name = 'continue'
+        logging.info(f"User {f_name} {l_name} {chat_id} started the bot")
+
+        # Для отображения активности
+        bot.send_chat_action(chat_id, 'typing')  # Show typing indicator
+        time.sleep(1)  # Optional delay
+
+        bot.send_message(chat_id, "Станция отправления: ")
+        # Регистрация следующей функции для города отправления
+        # "Вызвать next_step_handler после ответа пользователя"
+        bot.register_next_step_handler(message, get_city_from)
+        set_user_data(chat_id, {"step": "start"})
+
+        # Добавить пользователя в БД
+        add_user_db(chat_id)
+    except Exception as e:
+        logging.error(f"Error in start command: {str(e)}", exc_info=True)
+        raise
+
+
+# Чтение города отправления. Проверка наличия в списке станций
+@with_command_intercept
+def get_city_from(message):
+    # if message.text.startswith('/stop'):
+    #     # Останов бота
+    #     bot.register_next_step_handler(message, stop)
+    #     return
+    logging.debug(f"Flag start get_city_from {message.text}")
+    chat_id = message.chat.id
+    city_from = normalize_city_name(message.text)
+    if city_from not in all_station_list:
+        # Попытка найти варианты
+        examples = '\n'.join(
+            [x for x in all_station_list if x.startswith(city_from[:3])]
+        )
+        answer = (
+            "✏️ Ошибка в названии.\n"
+            + "Повторите ввод\n"
+            + int(bool(examples)) * f"Варианты:\n {examples}"
+        )
+        logging.debug("Flag ctrl city in list")
+        bot.send_message(chat_id, answer)
+        # Возврат при ошибке ввода
+        bot.register_next_step_handler(message, get_city_from)
+        return
+    update_user_data(chat_id, "city_from", city_from)
+    bot.send_message(chat_id, "Станция прибытия: ")
+    # Регистрация следующей функции для города прибытия
+    bot.register_next_step_handler(message, get_city_to)
+
+
+# Чтение города прибытия. Проверка наличия в списке станций
+@with_command_intercept
+def get_city_to(message):
+    # if message.text.startswith('/stop'):
+    #     # Останов бота
+    #     bot.register_next_step_handler(message, stop)
+    #     return
+    logging.debug('FLAG start get_city_to')
+    chat_id = message.chat.id
+    city_to = normalize_city_name(message.text)
+    if city_to not in all_station_list:
+        # Попытка найти варианты
+        examples = '\n'.join(
+            [x for x in all_station_list if x.startswith(city_to[:3])]
+        )
+        answer = (
+            "✏️ Ошибка в названии.\n"
+            + "Повторите ввод\n"
+            + int(bool(examples)) * f"Варианты:\n {examples}"
+        )
+
+        bot.send_message(chat_id, answer)
+        # Возврат при ошибке ввода
+        bot.register_next_step_handler(message, get_city_to)
+        return
+    update_user_data(chat_id, "city_to", city_to)
+
+    logging.debug('FLAG start calendar')
+    # Отправляем календарь сразу
+    msg = bot.send_message(
+        chat_id,
+        "📅 Выберите дату:",
+        reply_markup=generate_calendar(),
+    )
+    # Регистрируем обработчик для ручного ввода
+    bot.register_next_step_handler(msg, get_date)
+
+
+# Обработка ответов по выбору даты
+
+
+# Чтение даты отправления
+@with_command_intercept
+def get_date(message):
+    logging.debug('FLAG start get_date')
+    chat_id = message.chat.id
+    try:
+        date = normalize_date(message.text)
+        update_user_data(chat_id, "date", date)
+        get_trains_list(message)
+        return
+    except (PastDateError, FutureDateError, ValueError) as e:
+        logging.info(f"FLAG get_date   {e}")
+        bot.send_message(chat_id, f"✏️ {e}.\nПовторите ввод даты")
+        # Возврат при ошибке ввода
+        bot.register_next_step_handler(message, get_date)
+        return
+    except Exception as e:
+        logging.warning(f"Ошибка выполнения get_trains_list(): {e}")
+        bot.send_message(chat_id, "❌ Ошибка сервера.\nПоробуйте позже")
+        # Останов бота
+        stop(message)
+        return
+
+
+# Функция получения поездов по маршруту
+def get_trains_list(message):
+    # Для отображения активности
+    bot.send_chat_action(message.chat.id, 'typing')  # Show typing indicator
+    time.sleep(1)  # Optional delay
+    bot.send_message(message.chat.id, "Идёт поиск 🔍")  # Send your custom text
+    chat_id = message.chat.id
+
+    user_info = get_user_data(chat_id)
+    if not user_info:
+        logging.error(f"No user data for chat_id {chat_id}")
+        raise ValueError("User data not found")
+
+    try:
+        q_from = quote(user_info["city_from"])
+        q_to = quote(user_info["city_to"])
+        date = user_info["date"]
+    except KeyError as e:
+        logging.error(f"Missing key in user data: {e}")
+        raise ValueError(f"Incomplete user data: missing {e}")
+
+    # Получение новой страницы "soup"
+    url = f"https://pass.rw.by/ru/route/?from={q_from}&to={q_to}&date={date}"
+    update_user_data(chat_id, "url", url)
+    try:
+        r = requests.get(url)
+        logging.info(f"FLAG get_trains_list   {r.status_code}")
+        if r.status_code != 200:
+            error_msg = (
+                f"Fail response in get_trains_list. Code {r.status_code}"
+            )
+            logging.debug(f"{error_msg}, for user {chat_id}")
+            raise SiteResponseError(
+                f"Ошибка ответа сайта. Код {r.status_code}"
+            )
+
+        only_span_div_tag = SoupStrainer(["span", "div"])
+        soup = BeautifulSoup(r.text, "lxml", parse_only=only_span_div_tag)
+
+        response_time = r.elapsed.total_seconds()  # время в секундах
+        logging.info(
+            f"Запрос на сайт \n{user_data[chat_id]}"
+            f"выполнен за {response_time:.3f} секунд"
+        )
+
+    except Exception as e:
+        logging.error(f"Server request error: {e}")
+        bot.send_message(
+            chat_id, "⚠️ Ошибка запроса на сервер.\nПовторите ввод маршрута"
+        )
+        # Возвращаемся к началу
+        start(message)
+        return
+    # Добавляет маршрут в БД
+    add_route_db(
+        user_info["city_from"],
+        user_info["city_to"],
+        date,
+        url,
+    )
+
+    train_id_list = [
+        i.text for i in soup.find_all("span", class_="train-number")
+    ]
+
+    if not train_id_list:
+        bot.send_message(
+            chat_id,
+            "❓🚆Поезда не найдены.\
+                \nПовторите ввод маршрута",
+        )
+        start(message)
+        return
+
+    trains_list = []
+    # Получение времени отправления и прибытия
+    for train in train_id_list:
+        try:
+            time_depart = soup.select(
+                f'[data-train-number^="{train}"] \
+                                    [data-sort="departure"]'
+            )[0].text.strip()
+            time_arriv = soup.select(
+                f'[data-train-number^="{train}"] \
+                                    [data-sort="arrival"]'
+            )[0].text.strip()
+        except Exception:
+            time_depart, time_arriv = (
+                "Нет данных",
+                "Нет данных",
+            )
+        trains_list.append([train, time_depart, time_arriv])
+        # Добавить поезда в БД
+        add_train_db(train, time_depart, time_arriv, url)
+        # Отобразить список поездов
+    show_train_list(message, url)
+
+
+@ensure_start
+def show_train_list(message, url=None):
+    chat_id = message.chat.id
+    if not url:
+        user_info = get_user_data(chat_id)
+        try:
+            url = user_info["url"]
+        except KeyError:
+            bot.send_message(
+                chat_id,
+                "❓Утерян последний маршрут.\
+                    \nПовторите ввод маршрута",
+            )
+            start(message)
+            return
+
+    trains_list = get_trains_list_db(url)
+    markup = types.InlineKeyboardMarkup()
+    # Отображение кнопок выбора поезда из доступного списка
+
+    for train in trains_list:
+        markup.row(
+            types.InlineKeyboardButton(
+                f"🚆 Поезд №{train[0]} 🕒 {train[1]} ➡️ {train[2]}",
+                callback_data=f"{train[0]}_selected",
+            )
+        )
+
+    bot.send_message(
+        chat_id,
+        "Список доступных поездов: ",
+        reply_markup=markup,
+    )
+
+
+# Выбор конкретного поезда из списка, отображение наличия мест
+@bot.callback_query_handler(
+    func=lambda callback: callback.data.endswith("_selected")
+)
+@ensure_start
+def select_train(callback):
+    # Мнимый ответ в телеграм для исключения ошибки скорости
+    bot.answer_callback_query(callback.id)
+
+    train_selected = callback.data.split("_")[0]
+    chat_id = callback.message.chat.id
+
+    user_info = get_user_data(chat_id)
+    url = user_info['url']
+    try:
+        r = requests.get(url)
+        r.raise_for_status()
+        only_span_div_tag = SoupStrainer(["span", "div"])
+        soup = BeautifulSoup(r.text, "lxml", parse_only=only_span_div_tag)
+    except requests.exceptions.RequestException as e:
+        logging.error(f"Error fetching train list: {e}")
+        bot.send_message(chat_id, "⚠️ Ошибка запроса на сервер.\nПовторите ввод маршрута")
+        start(callback.message)
+        return
+
+    # Вывод количества мест по классам или "Мест нет"
+    ticket_dict = check_tickets_by_class(train_selected, soup, chat_id)
+
+    # Добавляем в список поездов, но здесь статус отслеживания пока что False
+    # Здесь, т.к. необходимо получить список мест для контроля изменений
+    # Добавить поезд в список отслеживания
+
+    # Кнопка включения слежения за поездом
+    markup = types.InlineKeyboardMarkup()
+
+    # Если 'Без нумерованных мест' возврат на выбор поезда
+    if seats_type_dict["0"] in ticket_dict:
+        btn_track = types.InlineKeyboardButton(
+            "🔄 Назад к поездам",
+            callback_data="re_get_trains_list",
+        )
+        markup.add(btn_track)
+
+        bot.send_message(
+            chat_id=callback.message.chat.id,
+            text=f"🚆 Поезд №{train_selected}\n🔕 Отслеживания нет",
+            reply_markup=markup,
+        )
+    # Проверка времени отправления
+    elif check_depart_time(train_selected, soup, train_id=None) <= 0:
+        btn_track = types.InlineKeyboardButton(
+            "🔄 Назад к поездам",
+            callback_data="re_get_trains_list",
+        )
+        markup.add(btn_track)
+
+        bot.send_message(
+            chat_id=callback.message.chat.id,
+            text=f"🚆 Поезд №{train_selected}\n⏰ Уже отправился",
+            reply_markup=markup,
+        )
+    else:
+        btn_track = types.InlineKeyboardButton(
+            "🔍 Отслеживать",
+            callback_data=f"{train_selected}_start_tracking",
+        )
+        markup.add(btn_track)
+
+        bot.send_message(
+            chat_id=callback.message.chat.id,
+            text=f"🚆 Поезд №{train_selected}\n{ticket_dict}",
+            reply_markup=markup,
+        )
+
+
+# Обработка возврата к списку поездов, если поезд без нумерации мест
+@bot.callback_query_handler(
+    func=lambda callback: callback.data == "re_get_trains_list"
+)
+@ensure_start
+def re_get_trains_list(callback):
+    bot.answer_callback_query(callback.id)  # Для имитации ответа в Телеграм
+    show_train_list(callback.message)
+    pass
+
+
+# Добавить поезд в список отслеживания
+@bot.message_handler(commands=["add_train_last_route", "add_train_new_route"])
+@ensure_start
+def add_track_train(message):
+    if message.text == "/add_train_new_route":
+        start(message)
+        pass
+    elif message.text == "/add_train_last_route":
+        show_train_list(message)
+        pass
+
+
+# Включение отслеживания, добавление поезда в лист слежения
+
+
+def background_tracker():
+    logging.info("Starting background tracker...")
+    while True:
+        try:
+            all_trackings = get_all_active_trackings()
+            logging.info(f"Found {len(all_trackings)} active trackings.")
+
+            for tracking in all_trackings:
+                chat_id, train_number, train_id, route_id, url = tracking
+
+                # Fetch latest data from website
+                try:
+                    r = requests.get(url)
+                    r.raise_for_status()
+                    only_span_div_tag = SoupStrainer(["span", "div"])
+                    soup = BeautifulSoup(r.text, "lxml", parse_only=only_span_div_tag)
+                except requests.exceptions.RequestException as e:
+                    logging.error(f"Error fetching train data for url {url}: {e}")
+                    continue  # Skip to next tracking
+
+                # Check for changes
+                fresh_ticket_dict = check_tickets_by_class(train_number, soup, chat_id)
+                stored_ticket_dict = get_fresh_loop(chat_id, train_id)
+
+                if fresh_ticket_dict != stored_ticket_dict:
+                    # Notify user
+                    markup_url = types.InlineKeyboardMarkup()
+                    url_to_ticket = types.InlineKeyboardButton("На сайт", url=url)
+                    markup_url.row(url_to_ticket)
+                    bot.send_message(
+                        chat_id,
+                        f"Обновление по {train_number}:\n{fresh_ticket_dict}",
+                        reply_markup=markup_url,
+                    )
+
+                    # Update database
+                    json_ticket_dict = json.dumps(fresh_ticket_dict)
+                    update_tracking_loop(json_ticket_dict, chat_id, train_id)
+
+                # Check if tracking should be stopped
+                if check_depart_time(train_number, soup, train_id) < 900:  # 15 minutes
+                    del_tracking_db(chat_id, train_id)
+                    bot.send_message(
+                        chat_id,
+                        f"Отслеживание завершёно по расписанию отправления поезда {train_number}",
+                    )
+                    logging.info(f"Stopping tracking for train {train_number} for user {chat_id}")
+
+        except Exception as e:
+            logging.error(f"Error in background_tracker: {e}", exc_info=True)
+
+        time.sleep(randint(60, 120))  # Sleep for 1-2 minutes
+
+
+@bot.callback_query_handler(
+    func=lambda callback: callback.data.endswith("_start_tracking")
+)
+@ensure_start
+def start_tracking_train(callback):
+
+    bot.answer_callback_query(callback.id)  # Для имитации ответа в Телеграм
+
+    train_tracking = callback.data.split("_")[0]
+    chat_id = callback.message.chat.id
+
+    # Для отображения активности
+    bot.send_chat_action(chat_id, 'typing')  # Show typing indicator
+    time.sleep(1)  # Optional delay
+
+    url = user_data[chat_id]['url']
+
+    # Изменение статуса в БД
+    try:
+        # Повторное получение инф-ции по билетам для внесения в таблицу отслеж.
+        r = requests.get(url)
+        logging.debug("FLAG Docker-1")
+        if r.status_code != 200:
+            logging.debug("FLAG Docker-2")
+            error_msg = (
+                f"Fail response in start_tracking_train. Code {r.status_code}"
+            )
+            logging.error(f"{error_msg}, for user {chat_id}")
+            raise SiteResponseError(
+                f"Ошибка ответа сайта. Код {r.status_code}"
+            )
+
+        only_span_div_tag = SoupStrainer(["span", "div"])
+        soup = BeautifulSoup(r.text, "lxml", parse_only=only_span_div_tag)
+        ticket_dict = check_tickets_by_class(train_tracking, soup, chat_id)
+
+        loop_data_list = get_loop_data_list(chat_id, train_tracking, url)
+
+        if not loop_data_list:
+            bot.send_message(chat_id, "⚠️ Ошибка получения данных о поезде.\nПовторите ввод маршрута")
+            start(callback.message)
+            return
+
+        route_id = loop_data_list["route_id"]
+        train_id = loop_data_list["train_id"]
+        status_exist = loop_data_list["status_exist"]
+        count = loop_data_list["count"]
+
+        # Проверка отслеживания поезда, чтобы не запустить излишний поток
+        if status_exist:
+            bot.send_message(
+                chat_id,
+                f"Отслеживание поезда {train_tracking} уже запущено.",
+            )
+            return
+
+        # Проверка ограничения не более 5 отслеживаний для одного чата
+        if count >= 5:
+            bot.send_message(chat_id, "Превышено число отслеживаний\n(max 5)")
+            return
+
+        # Вставка в список слежения
+        add_tracking_db(
+            chat_id,
+            train_tracking,
+            ticket_dict,
+            url,
+        )
+
+    except Exception as e:
+        logging.error(f"Server request error: {e}")
+        bot.send_message(
+            chat_id, "⚠️ Ошибка запроса на сервер.\nПовторите ввод маршрута"
+        )
+        # Возвращаемся к началу
+        start(callback.message)
+        return
+
+    bot.send_message(
+        chat_id, f"Отслеживание поезда {train_tracking} запущено."
+    )
+
+
+# =============================================================================
+
+
+# Отображение списка отслеживаемых поездов
+@bot.message_handler(commands=["show_track_list"])
+@ensure_start
+def show_track_list(message):
+
+    # Для отображения активности
+    bot.send_chat_action(message.chat.id, 'typing')  # Show typing indicator
+    time.sleep(1)  # Optional delay
+
+    reply = "Список отслеживания пуст"  # по умолчанию
+    track_list = get_track_list(message.chat.id)
+    # Список кортежей
+    # 0-tracking_id -> int(),
+    # 1-t.train_number -> str(),
+    # 2-r.city_from,
+    # 3-r.city_to,
+    # 4-r.date -> str(),
+    # 5-t.time_depart -> str()
+    if track_list:
+
+        reply_edit = []
+        for x in track_list:
+            date_obj = datetime.strptime(x[4], "%Y-%m-%d")
+            f_date = date_obj.strftime("%d.%m.%y")
+            reply_edit.append(
+                f"🚆 {x[1]} {x[2]}➡️{x[3]}\n🕒 {x[5]} {f_date} \n{'-'*5}"
+            )
+        reply = "\n".join(reply_edit)
+    bot.reply_to(message, f"{reply}")
+
+
+# Останов отслеживания конкретного поезда
+@bot.message_handler(commands=["stop_track_train"])
+@ensure_start
+def stop_track_train(message):
+    track_list = get_track_list(message.chat.id)
+    # Список кортежей
+    # 0-tracking_id -> int(),
+    # 1-t.train_number -> str(),
+    # 2-r.city_from,
+    # 3-r.city_to,
+    # 4-r.date -> str(),
+    # 5-t.time_depart -> str()
+
+    # Для отображения активности
+    bot.send_chat_action(message.chat.id, 'typing')  # Show typing indicator
+    time.sleep(1)  # Optional delay
+
+    if track_list:
+        markup = types.InlineKeyboardMarkup()
+        for x in track_list:
+            date_obj = datetime.strptime(x[4], "%Y-%m-%d")
+            f_date = date_obj.strftime("%d.%m.%y")
+            # Для отображения в сообщении
+            reply = f"🚫 {x[1]} {x[2]}➡️{x[3]} 🕒 {x[5]} {f_date}"
+            markup.row(
+                types.InlineKeyboardButton(
+                    f"{reply}",
+                    callback_data=f"{x[0]}:{x[1]}:{x[4]}_stop_tracking",
+                )
+            )
+        bot.reply_to(message, "Выбрать удаляемый поезд: ", reply_markup=markup)
+    else:
+        bot.reply_to(message, "Список отслеживания пуст")
+
+
+# Обработка запроса на удаление поезда из списка отслеживания
+@bot.callback_query_handler(
+    func=lambda callback: callback.data.endswith("_stop_tracking")
+)
+@ensure_start
+def stop_tracking_train_by_number(callback):
+    bot.answer_callback_query(callback.id)
+    # tracking_id, t.train_number, r.date
+    train_stop_tracking = callback.data.split("_")[0].split(':')
+    chat_id = callback.message.chat.id
+    tracking_id = train_stop_tracking[0]
+    train_number = train_stop_tracking[1]
+    date = train_stop_tracking[2]
+
+    try:
+        stop_tracking_by_id_db(tracking_id)
+    except Exception:
+        raise
+    logging.info(
+        f"Train_number: {train_number} date: {date}"
+        f" stop tracking for chat_id: {chat_id},"
+        f" tracking_id: {tracking_id}."
+    )
+    bot.send_message(
+        chat_id, f"Отслеживание поезда {train_number}/{date} остановлено."
+    )
+
+
+# ============================================================================
+# Вспомогательные функции
+
+
+@bot.callback_query_handler(
+    func=lambda call: call.data.startswith(('select_', 'change_'))
+)
+def handle_calendar_callback(call):
+    chat_id = call.message.chat.id
+    message_id = call.message.message_id
+    if call.data.startswith('select_'):
+        # Выбрана дата
+        selected_date = call.data[7:]
+        bot.delete_message(chat_id, message_id)
+        # Отменяем все предыдущие обработчики
+        bot.clear_step_handler_by_chat_id(chat_id)
+        process_selected_date(chat_id, selected_date)
+
+    elif call.data.startswith('change_'):
+        # Для отображения активности
+        bot.send_chat_action(chat_id, 'typing')  # Show typing indicator
+        # Смена месяца
+        _, year, month = call.data.split('_')
+        bot.edit_message_reply_markup(
+            chat_id=chat_id,
+            message_id=message_id,
+            reply_markup=generate_calendar(int(year), int(month)),
+        )
+
+    bot.answer_callback_query(call.id)
+
+
+def process_selected_date(chat_id, date_str):
+    """Обработка выбранной даты"""
+    try:
+        # Создаем объект message для совместимости функцией get_date
+        class Message:
+            def __init__(self, chat_id, text):
+                self.chat = type('Chat', (), {'id': chat_id})
+                self.text = text
+                self.message_id = None
+
+        message = Message(chat_id, date_str)
+        get_date(message)
+    except Exception as e:
+        bot.send_message(chat_id, f"Ошибка обработки даты: {str(e)}")
+
+
+# ============================================================================
+# Фоновые задачи
+
+
+# Удаление прошедших маршрутов из таблицы routes
+def cleanup_expired_routes():
+    while True:
+        try:
+            cleanup_expired_routes_db()
+        except Exception as e:
+            logging.error(f"Error in cleanup_expired_routes: {e}")
+        # Проверяем каждые 2 часа
+        time.sleep(2 * 60 * 60)
+
+
+# Отслеживание работающих потоков каждые 30 мин
+def monitor_threads_track():
+    while True:
+        active_threads = [
+            f"Thread: {t.name}, ID: {t.ident}" for t in threading.enumerate()
+        ]
+
+        logging.info(f"Active threads: {len(active_threads)}")
+        for t in active_threads:
+            logging.info(f"Thread {t} is alive")
+        time.sleep(1800)
+
+
+def start_background_tasks():
+    # Поток для очистки устаревших маршрутов
+    cleanup_thread = threading.Thread(
+        target=cleanup_expired_routes,
+        name="route_cleanup",
+        daemon=True,
+    )
+    cleanup_thread.start()
+
+    # Отслеживание работающих потоков каждый час
+    monitor_threads = threading.Thread(
+        target=monitor_threads_track,
+        name="monitor_threads",
+        daemon=True,
+    )
+    monitor_threads.start()
+
+    # Запуск фонового отслеживания
+    tracker_thread = threading.Thread(
+        target=background_tracker,
+        name="background_tracker",
+        daemon=True,
+    )
+    tracker_thread.start()
+
+
+# =============================================================================
+# Останов бота и завершение программы
+
+
+# Останов сессии для пользователя
+# Универсальный фильтр для реакции на любое сообщение
+@bot.message_handler(func=lambda message: message.text.startswith('/stop'))
+def universal_stop_handler(message):
+    stop(message)
+
+
+@ensure_start
+def stop(message):
+    chat_id = message.chat.id
+
+    # Запрашиваем подтверждение
+    markup = types.InlineKeyboardMarkup()
+    btn_yes = types.InlineKeyboardButton("Да", callback_data="confirm_stop")
+    btn_no = types.InlineKeyboardButton("Нет", callback_data="cancel_stop")
+    markup.add(btn_yes, btn_no)
+
+    bot.send_message(
+        chat_id,
+        "❗ Вы уверены, что хотите остановить бота?",
+        reply_markup=markup,
+    )
+
+
+@bot.callback_query_handler(func=lambda call: call.data == "cancel_stop")
+def cancel_stop(call):
+    chat_id = call.message.chat.id
+
+    # Удаляем сообщение с кнопками
+    bot.delete_message(chat_id, call.message.message_id)
+    bot.send_message(chat_id, "🟢 Бот в работе")
+
+
+@bot.callback_query_handler(func=lambda call: call.data == "confirm_stop")
+def confirm_stop(call):
+    chat_id = call.message.chat.id
+
+    # Для отображения активности
+    bot.send_chat_action(chat_id, 'typing')  # Show typing indicator
+    time.sleep(1)  # Optional delay
+
+    # Удаляем сообщение с кнопками
+    bot.delete_message(chat_id, call.message.message_id)
+
+    # #!!!ДОБАВИТЬ
+    # # Очищаем переписку
+    # clear_chat_history(chat_id)
+
+    # Останавливаем бота
+
+    # для остановки параллельного потока необходимо перевести статус для
+    # всех поездов в False
+    # после остановки поездов, удалить всю сессию
+
+    stop_all_tracking_for_user_db(chat_id)
+    del_user_data(chat_id)
+    bot.send_message(chat_id, "🛑 Бот остановлен")
+
+
+# Выход из программы
+@bot.message_handler(commands=[settings.STOP_CODE])  # type: ignore
+def exit_admin(message):
+    chat_id = message.chat.id
+
+    stop_all_tracking_for_user_db(chat_id)
+
+    bot.send_message(chat_id, "Выход из ПО")
+
+    def stop_bot():
+        bot.stop_polling()
+        os._exit(0)  # Принудительный выход
+
+    threading.Thread(target=stop_bot).start()
+
+
+# =============================================================================
+# Запуск бота в режиме непрерывной работы
+# При работе через gunicorn:
+# main.py не будет выполнять __main__-блок,
+#  потому что Gunicorn просто импортирует app.
+# Чтобы всё сработало:
+# webhook должен быть установлен заранее
+# фоновые задачи нужно запускать внутри @app.on_event("startup")
+# if __name__ == "__main__":
+#     # Запуск существующих отслеживаний
+#     restore_all_trackings()
+#     # Проверка устаревших маршрутов и отслеживание потоков
+#     start_background_tasks()
+
+#     try:
+#         try:
+#             bot.remove_webhook()  # Попытка удалить существующий webhook
+#             time.sleep(2)  # Пауза для обработки запроса сервером Telegram
+#             success = bot.set_webhook(url=f"{webhook_url}/{token}")
+#             if success:
+#                 logging.info(f"Webhook установлен: {webhook_url}")
+#             else:
+#                 logging.error("Ошибка установки webhook")
+#             # app.run(host='0.0.0.0', port=web_port) # Для разработки
+#             # Для деплоя запускается через Gunicorn
+
+#         except apihelper.ApiTelegramException as e:
+#             # Игнорирование ошибки "webhook не установлен"
+#             if "webhook is not set" not in str(e):
+#                 logging.error(f"Webhook deletion failed: {e}")
+#             else:
+#                 raise  # Проброс других ошибок API
+
+#         # Ошибка запроса
+#     except requests.exceptions.ReadTimeout as e:
+#         logging.error(f"Timeout error: {e}.")
+
+#     # Остальные ошибки
+#     except Exception as e:
+#         logging.error(f"Attempt failed: {str(e)}")
+
+
+def initialize_app():
+    global app_initialized
+    if app_initialized:
+        return
+    app_initialized = True
+
+    logging.info("🔧 Инициализация приложения")
+
+    try:
+        # Проверка вебхука для разных воркеров
+        webhook_info = bot.get_webhook_info()
+        if webhook_info.url != f"{webhook_url}/{token}":
+
+            bot.remove_webhook()
+            time.sleep(5)
+            success = bot.set_webhook(url=f"{webhook_url}/{token}")
+            if success:
+                logging.info(f"✅ Webhook установлен: {webhook_url}")
+            else:
+                logging.error("❌ Ошибка установки webhook")
+
+    except apihelper.ApiTelegramException as e:
+        if "webhook is not set" not in str(e):
+            logging.error(f"Webhook deletion failed: {e}")
+        else:
+            raise
+    except requests.exceptions.ReadTimeout as e:
+        logging.error(f"Timeout error: {e}.")
+    except Exception as e:
+        logging.error(f"Unexpected error during init: {e}")
+
+    start_background_tasks()
+
+
+initialize_app()

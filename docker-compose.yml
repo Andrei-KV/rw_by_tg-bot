@@ -1,9 +1,9 @@
-version: "3.12"
+version: "3.9"
 
 services:
   bot:
     build: .
-    command: gunicorn -b 0.0.0.0:8080 main:app
+    command: gunicorn -b 0.0.0.0:8080 src.main:app
     env_file: .env
     depends_on:
       - db

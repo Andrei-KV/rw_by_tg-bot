@@ -52,4 +52,4 @@ USER appuser
 EXPOSE 8080
 
 # Для деплоя Flask-приложение запускается через Gunicorn
-CMD ["gunicorn", "-b", "0.0.0.0:8080", "main:app"]
+CMD ["gunicorn", "-b", "0.0.0.0:8080", "src.main:app"]
