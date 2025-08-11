@@ -11,8 +11,8 @@ from src.config import settings
 # initialize Connector object
 connector = Connector()
 
-def getconn() -> pg8000.dbapi.Connection:
-    conn: pg8000.dbapi.Connection = connector.connect(
+def getconn():
+    conn = connector.connect(
         settings.DB_INSTANCE_NAME,
         "pg8000",
         user=settings.DB_USER,
@@ -357,7 +357,7 @@ def get_user_session(chat_id):
         {"chat_id": chat_id},
         fetchone=True,
     )
-    return result[0] if result else {}
+    return result.data if result else {}
 
 def update_user_session(chat_id, data):
     """Updates the session data for a user."""
