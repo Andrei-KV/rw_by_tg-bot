@@ -392,7 +392,7 @@ def get_trains_list(message):
 
         response_time = r.elapsed.total_seconds()  # время в секундах
         logging.info(
-            f"Запрос на сайт \n{user_data[chat_id]}"
+            f"Запрос на сайт \n{get_user_data(chat_id)}"
             f"выполнен за {response_time:.3f} секунд"
         )
 
@@ -469,9 +469,10 @@ def show_train_list(message, url=None):
     markup = types.InlineKeyboardMarkup()
     # Отображение кнопок выбора поезда из доступного списка
 
-    for train in trains_list:
-        markup.row(
-            types.InlineKeyboardButton(
+    if trains_list:
+        for train in trains_list:
+            markup.row(
+                types.InlineKeyboardButton(
                 f"🚆 Поезд №{train[0]} 🕒 {train[1]} ➡️ {train[2]}",
                 callback_data=f"{train[0]}_selected",
             )
@@ -590,6 +591,10 @@ def background_tracker():
     while True:
         try:
             all_trackings = get_all_active_trackings()
+            if not all_trackings:
+                time.sleep(randint(60, 120))
+                continue
+
             logging.info(f"Found {len(all_trackings)} active trackings.")
 
             for tracking in all_trackings:
@@ -654,7 +659,7 @@ def start_tracking_train(callback):
     bot.send_chat_action(chat_id, 'typing')  # Show typing indicator
     time.sleep(1)  # Optional delay
 
-    url = user_data[chat_id]['url']
+    url = get_user_data(chat_id)['url']
 
     # Изменение статуса в БД
     try:
@@ -1053,13 +1058,13 @@ def initialize_app():
     try:
         # Проверка вебхука для разных воркеров
         webhook_info = bot.get_webhook_info()
-        if webhook_info.url != f"{webhook_url}/{token}":
+        if webhook_info.url != f"{settings.WEBHOOK_URL}/{settings.TOKEN}":
 
             bot.remove_webhook()
             time.sleep(5)
-            success = bot.set_webhook(url=f"{webhook_url}/{token}")
+            success = bot.set_webhook(url=f"{settings.WEBHOOK_URL}/{settings.TOKEN}")
             if success:
-                logging.info(f"✅ Webhook установлен: {webhook_url}")
+                logging.info(f"✅ Webhook установлен: {settings.WEBHOOK_URL}")
             else:
                 logging.error("❌ Ошибка установки webhook")
 
