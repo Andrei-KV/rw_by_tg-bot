@@ -43,6 +43,9 @@ from token_info import (  # web_port, - Для разработки
     webhook_url,
 )
 
+WEBHOOK_SSL_CERT = './webhook_cert.pem'
+WEBHOOK_SSL_PRIV = './webhook_pkey.pem'
+
 
 # Класс ошибки для "Дата в прошлом"
 class PastDateError(ValueError):
@@ -83,18 +86,35 @@ user_data_lock = threading.Lock()
 
 # Настройка логирования
 def setup_logging():
-    logger = logging.getLogger()
-    logger.setLevel(logging.DEBUG)
+    root_logger = logging.getLogger()
+
+    # Убираем все дефолтные хендлеры, чтобы не было дублей
+    for handler in root_logger.handlers[:]:
+        root_logger.removeHandler(handler)
+
+    root_logger.setLevel(logging.DEBUG)
 
     formatter = logging.Formatter(
         '%(asctime)s - %(levelname)s - %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S',
     )
 
-    # Явно указываем stdout (обязательно для Cloud Run)
+    # Лог в stdout (GCP его подхватит)
     console_handler = logging.StreamHandler(stream=sys.stdout)
     console_handler.setFormatter(formatter)
-    logger.addHandler(console_handler)
+    root_logger.addHandler(console_handler)
+    # logger = logging.getLogger()
+    # logger.setLevel(logging.DEBUG)
+
+    # formatter = logging.Formatter(
+    #     '%(asctime)s - %(levelname)s - %(message)s',
+    #     datefmt='%Y-%m-%d %H:%M:%S',
+    # )
+
+    # # Явно указываем stdout (обязательно для Cloud Run)
+    # console_handler = logging.StreamHandler(stream=sys.stdout)
+    # console_handler.setFormatter(formatter)
+    # logger.addHandler(console_handler)
 
     # # Логирование в файл с ротацией (для локала)
     # file_handler = RotatingFileHandler(
@@ -2044,7 +2064,10 @@ def initialize_app():
 
             bot.remove_webhook()
             time.sleep(5)
-            success = bot.set_webhook(url=f"{webhook_url}/{token}")
+            success = bot.set_webhook(
+                url=f"{webhook_url}/{token}",
+                certificate=open(WEBHOOK_SSL_CERT, 'r'),
+            )
             if success:
                 logging.info(f"✅ Webhook установлен: {webhook_url}")
             else:

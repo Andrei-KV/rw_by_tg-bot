@@ -44,6 +44,7 @@ COPY . /app
 # USER appuser: Говорит Docker запускать контейнер от имени этого пользователя.
 
 
+
 # Создаём пользователя (без прав root)
 RUN adduser --disabled-password --gecos "" appuser && chown -R appuser /app
 USER appuser
@@ -51,5 +52,6 @@ USER appuser
 # Порт, на котором слушает Flask
 EXPOSE 8080
 
-# Для деплоя Flask-приложение запускается через Gunicorn
-CMD ["gunicorn", "-b", "0.0.0.0:8080", "main:app"]
+
+# Запуск Gunicorn с HTTPS
+CMD ["gunicorn", "-b", "0.0.0.0:8080", "--certfile=webhook_cert.pem", "--keyfile=webhook_pkey.pem", "main:app"]
