@@ -54,13 +54,14 @@ from src.database import (
     update_tracking_loop,
     update_user_session,
 )
-from src.utils import (
+from src.utils import (  # get_proxies,
     FutureDateError,
     PastDateError,
     SiteResponseError,
     check_depart_time,
     check_tickets_by_class,
     generate_calendar,
+    get_request_headers,
     normalize_city_name,
     normalize_date,
     seats_type_dict,
@@ -94,6 +95,7 @@ setup_logging()
 
 def get_user_data(chat_id):
     """Gets user data from the database session."""
+    logging.debug(f"FLAG start 111 get_user_data {'flag'}")
     return get_user_session(chat_id)
 
 
@@ -359,7 +361,7 @@ def get_trains_list(message):
     time.sleep(1)  # Optional delay
     bot.send_message(message.chat.id, "Идёт поиск 🔍")  # Send your custom text
     chat_id = message.chat.id
-
+    logging.debug(f"FLAG start 1 get_trains_list {''}")
     user_info = get_user_data(chat_id)
     if not user_info:
         logging.error(f"No user data for chat_id {chat_id}")
@@ -375,16 +377,29 @@ def get_trains_list(message):
 
     # Получение новой страницы "soup"
     url = f"https://pass.rw.by/ru/route/?from={q_from}&to={q_to}&date={date}"
+
     update_user_data(chat_id, "url", url)
     try:
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
-            'AppleWebKit/537.36 (KHTML, like Gecko) '
-            'Chrome/58.0.3029.110 Safari/537.36'
-        }
-        r = requests.get(url, headers=headers)
-        logging.info(f"FLAG get_trains_list   {r.status_code}")
+        # r = requests.get(url, headers=get_request_headers(url), timeout=30)
+        session = requests.Session()
+        session.headers.update(
+            {
+                "User-Agent": "Mozilla/5.0 (X11; Linux x86_64)"
+                + " AppleWebKit/537.36 (KHTML, like Gecko)"
+                + " Chrome/133.0.0.0 Safari/537.36",
+                "Accept": "*/*",
+                "Accept-Language": "en-GB,en-US;q=0.9,en;q=0.8,"
+                + "ru;q=0.7,it;q=0.6",
+                "Accept-Encoding": "gzip, deflate, br, zstd",
+                "Referer": f"{url}",
+                "X-Requested-With": "XMLHttpRequest",
+            }
+        )
+        logging.info(f"FLAG URL={url}")
+        r = session.get(url)
+
         if r.status_code != 200:
+            logging.info(f"FLAG get_trains_list   {r.status_code}")
             error_msg = (
                 f"Fail response in get_trains_list. Code {r.status_code}"
             )
@@ -404,6 +419,7 @@ def get_trains_list(message):
 
     except Exception as e:
         logging.error(f"Server request error: {e}")
+        logging.info(f"FLAG URL={url}, headers={r.headers}")
         bot.send_message(
             chat_id, "⚠️ Ошибка запроса на сервер.\nПовторите ввод маршрута"
         )
@@ -610,7 +626,9 @@ def background_tracker():
 
                 # Fetch latest data from website
                 try:
-                    r = requests.get(url)
+                    r = requests.get(
+                        url, timeout=30, headers=get_request_headers(url)
+                    )
                     r.raise_for_status()
                     only_span_div_tag = SoupStrainer(["span", "div"])
                     soup = BeautifulSoup(
@@ -686,7 +704,7 @@ def start_tracking_train(callback):
     # Изменение статуса в БД
     try:
         # Повторное получение инф-ции по билетам для внесения в таблицу отслеж.
-        r = requests.get(url)
+        r = requests.get(url, timeout=30, headers=get_request_headers(url))
         logging.debug("FLAG Docker-1")
         if r.status_code != 200:
             logging.debug("FLAG Docker-2")

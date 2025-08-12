@@ -5,6 +5,8 @@ from datetime import datetime, timedelta
 from telebot import types
 
 from all_stations_list import all_station_list, all_station_list_lower
+
+# from src.config import settings
 from src.database import get_departure_date_db
 
 
@@ -251,6 +253,32 @@ def get_tickets_by_class(train_number, soup):
         else:
             tickets_by_class[name] = seats_num
     return tickets_by_class
+
+
+def get_request_headers(url):
+    """Returns a dictionary of headers to mimic a browser request."""
+    return {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/108.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;"
+        "q=0.9,image/avif,image/webp,image/apng,*/*;"
+        "q=0.8,application/signed-exchange;v=b3;q=0.9",
+        "Accept-Language": "en-US,en;q=0.9,ru;q=0.8",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Referer": url,  # Use the URL as the referer
+        "X-Requested-With": "XMLHttpRequest",
+    }
+
+
+# def get_proxies():
+#     """Helper function to build the proxies dictionary."""
+#     proxies = {}
+#     proxy_url = settings.PROXY_URL
+#     if proxy_url:
+#         proxies['http'] = proxy_url
+#         proxies['https'] = proxy_url
+#     return proxies
 
 
 def check_depart_time(train_number, soup, train_id):

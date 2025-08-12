@@ -8,12 +8,13 @@ ENV PYTHONUNBUFFERED=1
 
 # Установка зависимостей для PostgreSQL
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
+    apt-get install -y --no-install-recommends --reinstall \
     ca-certificates \
     libpq-dev \
     gcc \
-    && rm -rf /var/lib/apt/lists/* \
-    && update-ca-certificates
+    && update-ca-certificates \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 
 

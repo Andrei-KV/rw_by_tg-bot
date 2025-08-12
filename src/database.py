@@ -396,6 +396,7 @@ def create_user_session_table():
 
 def get_user_session(chat_id):
     """Gets the session data for a user."""
+    logging.debug(f"FLAG start 11 get_user_session {chat_id}")
     result = execute_db_query(
         "SELECT data FROM user_sessions WHERE chat_id = :chat_id",
         {"chat_id": chat_id},
