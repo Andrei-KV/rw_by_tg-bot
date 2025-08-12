@@ -1,15 +1,16 @@
-import logging
 import json
+import logging
 from datetime import datetime, timedelta
 
+# import pg8000
 import sqlalchemy
 from google.cloud.sql.connector import Connector, IPTypes
-import pg8000
 
 from src.config import settings
 
 # initialize Connector object
 connector = Connector()
+
 
 def getconn():
     conn = connector.connect(
@@ -21,6 +22,7 @@ def getconn():
         ip_type=IPTypes.PUBLIC,
     )
     return conn
+
 
 # The Cloud SQL Python Connector can be used with SQLAlchemy
 db_pool = sqlalchemy.create_engine(
@@ -78,7 +80,8 @@ def check_db_connection():
 def add_user_db(chat_id):
     """Adds a new user to the database."""
     execute_db_query(
-        "INSERT INTO users (chat_id) VALUES (:chat_id) ON CONFLICT (chat_id) DO NOTHING",
+        "INSERT INTO users (chat_id) VALUES (:chat_id) "
+        "ON CONFLICT (chat_id) DO NOTHING",
         {"chat_id": chat_id},
         commit=True,
     )
@@ -88,7 +91,9 @@ def add_user_db(chat_id):
 def add_route_db(city_from, city_to, date, url):
     """Adds a new route to the database."""
     execute_db_query(
-        "INSERT INTO routes (city_from, city_to, date, url) VALUES (:city_from, :city_to, :date, :url) ON CONFLICT (url) DO NOTHING",
+        "INSERT INTO routes (city_from, city_to, date, url) "
+        "VALUES (:city_from, :city_to, :date, :url) "
+        "ON CONFLICT (url) DO NOTHING",
         {"city_from": city_from, "city_to": city_to, "date": date, "url": url},
         commit=True,
     )
@@ -98,15 +103,25 @@ def add_route_db(city_from, city_to, date, url):
 def add_train_db(train, time_depart, time_arriv, url):
     """Adds a new train to the database."""
     result = execute_db_query(
-        "SELECT route_id FROM routes WHERE url = :url", {"url": url}, fetchone=True
+        "SELECT route_id FROM routes WHERE url = :url",
+        {"url": url},
+        fetchone=True,
     )
     if result is None:
         logging.warning(f"No route found for URL: {url}")
         return
     route_id = result[0]
     execute_db_query(
-        "INSERT INTO trains (route_id, train_number, time_depart, time_arriv) VALUES (:route_id, :train_number, :time_depart, :time_arriv) ON CONFLICT (route_id, train_number, time_depart, time_arriv) DO NOTHING",
-        {"route_id": route_id, "train_number": train, "time_depart": time_depart, "time_arriv": time_arriv},
+        "INSERT INTO trains (route_id, train_number, time_depart, time_arriv) "
+        "VALUES (:route_id, :train_number, :time_depart, :time_arriv) "
+        "ON CONFLICT (route_id, train_number, "
+        "time_depart, time_arriv) DO NOTHING",
+        {
+            "route_id": route_id,
+            "train_number": train,
+            "time_depart": time_depart,
+            "time_arriv": time_arriv,
+        },
         commit=True,
     )
     logging.info(f"Train: {train} for route_id: {route_id} added to database")
@@ -115,7 +130,9 @@ def add_train_db(train, time_depart, time_arriv, url):
 def add_tracking_db(chat_id, train_selected, ticket_dict, url):
     """Adds a new train to the tracking list."""
     result = execute_db_query(
-        "SELECT route_id FROM routes WHERE url = :url", {"url": url}, fetchone=True
+        "SELECT route_id FROM routes WHERE url = :url",
+        {"url": url},
+        fetchone=True,
     )
     if result is None:
         logging.warning(f"No route found for URL: {url}")
@@ -123,7 +140,8 @@ def add_tracking_db(chat_id, train_selected, ticket_dict, url):
     route_id = result[0]
 
     result = execute_db_query(
-        "SELECT train_id FROM trains WHERE route_id = :route_id AND train_number = :train_number",
+        "SELECT train_id FROM trains "
+        "WHERE route_id = :route_id AND train_number = :train_number",
         {"route_id": route_id, "train_number": train_selected},
         fetchone=True,
     )
@@ -137,8 +155,14 @@ def add_tracking_db(chat_id, train_selected, ticket_dict, url):
     json_ticket_dict = json.dumps(ticket_dict)
 
     execute_db_query(
-        "INSERT INTO tracking (chat_id, train_id, json_ticket_dict) VALUES (:chat_id, :train_id, :json_ticket_dict) ON CONFLICT (chat_id, train_id) DO NOTHING",
-        {"chat_id": chat_id, "train_id": train_id, "json_ticket_dict": json_ticket_dict},
+        "INSERT INTO tracking (chat_id, train_id, json_ticket_dict) "
+        "VALUES (:chat_id, :train_id, :json_ticket_dict) "
+        "ON CONFLICT (chat_id, train_id) DO NOTHING",
+        {
+            "chat_id": chat_id,
+            "train_id": train_id,
+            "json_ticket_dict": json_ticket_dict,
+        },
         commit=True,
     )
     logging.info(f"Train_id: {train_id} added to db_tracking_list")
@@ -147,14 +171,17 @@ def add_tracking_db(chat_id, train_selected, ticket_dict, url):
 def get_trains_list_db(url):
     """Gets the list of trains for a given route from the database."""
     result = execute_db_query(
-        "SELECT route_id FROM routes WHERE url = :url", {"url": url}, fetchone=True
+        "SELECT route_id FROM routes WHERE url = :url",
+        {"url": url},
+        fetchone=True,
     )
     if not result:
         logging.warning(f"No route found for URL: {url}")
         return []
     route_id = result[0]
     trains_list = execute_db_query(
-        "SELECT train_number, time_depart, time_arriv FROM trains WHERE route_id = :route_id ORDER BY time_depart",
+        "SELECT train_number, time_depart, time_arriv FROM trains "
+        "WHERE route_id = :route_id ORDER BY time_depart",
         {"route_id": route_id},
         fetchall=True,
     )
@@ -175,11 +202,14 @@ def get_loop_data_list(chat_id, train_tracking, url):
         LIMIT 1
     """
     resp = execute_db_query(
-        query, {"chat_id": chat_id, "url": url, "train_number": train_tracking}, fetchone=True
+        query,
+        {"chat_id": chat_id, "url": url, "train_number": train_tracking},
+        fetchone=True,
     )
     if not resp:
         logging.warning(
-            f"No matching train or route found for chat_id: {chat_id}, url: {url}, train: {train_tracking}"
+            f"No matching train or route found for chat_id: {chat_id},\
+url: {url}, train: {train_tracking}"
         )
         return None
 
@@ -201,7 +231,8 @@ def get_loop_data_list(chat_id, train_tracking, url):
 def get_fresh_loop(chat_id, train_id):
     """Gets fresh data from the tracking table."""
     result = execute_db_query(
-        "SELECT json_ticket_dict FROM tracking WHERE chat_id = :chat_id AND train_id = :train_id",
+        "SELECT json_ticket_dict FROM tracking "
+        "WHERE chat_id = :chat_id AND train_id = :train_id",
         {"chat_id": chat_id, "train_id": train_id},
         fetchone=True,
     )
@@ -233,18 +264,26 @@ def get_track_list(chat_id):
 def del_tracking_db(chat_id, train_id):
     """Deletes a tracked train from the database."""
     execute_db_query(
-        "DELETE FROM tracking WHERE chat_id = :chat_id AND train_id = :train_id",
+        "DELETE FROM tracking "
+        "WHERE chat_id = :chat_id AND train_id = :train_id",
         {"chat_id": chat_id, "train_id": train_id},
         commit=True,
     )
 
+
 def update_tracking_loop(json_ticket_dict, chat_id, train_id):
     """Updates the tracking table in a loop."""
     execute_db_query(
-        "UPDATE tracking SET json_ticket_dict = :json_ticket_dict WHERE chat_id = :chat_id AND train_id = :train_id",
-        {"json_ticket_dict": json_ticket_dict, "chat_id": chat_id, "train_id": train_id},
+        "UPDATE tracking SET json_ticket_dict = :json_ticket_dict "
+        "WHERE chat_id = :chat_id AND train_id = :train_id",
+        {
+            "json_ticket_dict": json_ticket_dict,
+            "chat_id": chat_id,
+            "train_id": train_id,
+        },
         commit=True,
     )
+
 
 def check_user_exists(chat_id):
     """Checks if a user exists in the database."""
@@ -254,6 +293,7 @@ def check_user_exists(chat_id):
         fetchone=True,
     )
     return bool(result[0]) if result else False
+
 
 def get_all_active_trackings():
     """Gets all active trackings from the database."""
@@ -273,6 +313,7 @@ def get_all_active_trackings():
     )
     return rows
 
+
 def cleanup_expired_routes_db():
     """Deletes expired routes from the database."""
     yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
@@ -284,7 +325,8 @@ def cleanup_expired_routes_db():
     if expired_routes:
         route_ids = [r[0] for r in expired_routes]
         execute_db_query(
-            "DELETE FROM tracking WHERE train_id IN (SELECT train_id FROM trains WHERE route_id = ANY(:route_ids))",
+            "DELETE FROM tracking WHERE train_id IN (SELECT train_id "
+            "FROM trains WHERE route_id = ANY(:route_ids))",
             {"route_ids": route_ids},
             commit=True,
         )
@@ -309,6 +351,7 @@ def stop_tracking_by_id_db(tracking_id):
         commit=True,
     )
 
+
 def stop_all_tracking_for_user_db(chat_id):
     """Stops all tracking for a user."""
     execute_db_query(
@@ -321,14 +364,14 @@ def stop_all_tracking_for_user_db(chat_id):
         {"chat_id": chat_id},
         commit=True,
     )
-    logging.info(
-        f"Bot stopped for chat_id: {chat_id}. Tracking list cleared."
-    )
+    logging.info(f"Bot stopped for chat_id: {chat_id}. Tracking list cleared.")
+
 
 def get_departure_date_db(train_id):
     """Gets the departure date for a given train from the database."""
     resp_db = execute_db_query(
-        "SELECT r.date FROM trains t JOIN routes r ON t.route_id = r.route_id WHERE train_id = :train_id",
+        "SELECT r.date FROM trains t JOIN routes r ON t.route_id = r.route_id "
+        "WHERE train_id = :train_id",
         {"train_id": train_id},
         fetchone=True,
     )
@@ -350,6 +393,7 @@ def create_user_session_table():
         commit=True,
     )
 
+
 def get_user_session(chat_id):
     """Gets the session data for a user."""
     result = execute_db_query(
@@ -358,6 +402,7 @@ def get_user_session(chat_id):
         fetchone=True,
     )
     return result.data if result else {}
+
 
 def update_user_session(chat_id, data):
     """Updates the session data for a user."""
@@ -372,6 +417,7 @@ def update_user_session(chat_id, data):
         {"chat_id": chat_id, "data": json.dumps(data)},
         commit=True,
     )
+
 
 def delete_user_session(chat_id):
     """Deletes the session data for a user."""

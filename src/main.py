@@ -1,16 +1,18 @@
-import calendar
+# import calendar
 import json
 import logging
 import os
-import queue
+
+# import queue
 import sys
 
 # Библиотека для параллельных потоков
 import threading
 import time
-from collections import defaultdict
-from copy import deepcopy
-from datetime import datetime, timedelta
+
+# from collections import defaultdict
+# from copy import deepcopy
+from datetime import datetime  # timedelta
 
 # from logging.handlers import RotatingFileHandler
 from random import randint
@@ -29,18 +31,18 @@ from bs4.filter import SoupStrainer
 from telebot import apihelper, types
 
 # Список станций
-from all_stations_list import all_station_list, all_station_list_lower
+from all_stations_list import all_station_list  # , all_station_list_lower
 from src.config import settings
 from src.database import (
     add_route_db,
-    add_train_db,
     add_tracking_db,
+    add_train_db,
     add_user_db,
     check_db_connection,
     check_user_exists,
     cleanup_expired_routes_db,
-    delete_user_session,
     del_tracking_db,
+    delete_user_session,
     get_all_active_trackings,
     get_fresh_loop,
     get_loop_data_list,
@@ -64,12 +66,12 @@ from src.utils import (
     seats_type_dict,
 )
 
-
 # Remove the in-memory user_data dictionary and locks
 # user_data = defaultdict(
 #     lambda: {}
 # )
 # user_data_lock = threading.Lock()
+
 
 # Настройка логирования
 def setup_logging():
@@ -85,6 +87,7 @@ def setup_logging():
     console_handler = logging.StreamHandler(stream=sys.stdout)
     console_handler.setFormatter(formatter)
     logger.addHandler(console_handler)
+
 
 setup_logging()
 
@@ -113,8 +116,6 @@ def del_user_data(chat_id):
 
 # Check database connection on startup
 check_db_connection()
-
-
 
 
 # ----------------------------------------------------------------------------
@@ -376,7 +377,12 @@ def get_trains_list(message):
     url = f"https://pass.rw.by/ru/route/?from={q_from}&to={q_to}&date={date}"
     update_user_data(chat_id, "url", url)
     try:
-        r = requests.get(url)
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
+            'AppleWebKit/537.36 (KHTML, like Gecko) '
+            'Chrome/58.0.3029.110 Safari/537.36'
+        }
+        r = requests.get(url, headers=headers)
         logging.info(f"FLAG get_trains_list   {r.status_code}")
         if r.status_code != 200:
             error_msg = (
@@ -473,10 +479,10 @@ def show_train_list(message, url=None):
         for train in trains_list:
             markup.row(
                 types.InlineKeyboardButton(
-                f"🚆 Поезд №{train[0]} 🕒 {train[1]} ➡️ {train[2]}",
-                callback_data=f"{train[0]}_selected",
+                    f"🚆 Поезд №{train[0]} 🕒 {train[1]} ➡️ {train[2]}",
+                    callback_data=f"{train[0]}_selected",
+                )
             )
-        )
 
     bot.send_message(
         chat_id,
@@ -506,7 +512,9 @@ def select_train(callback):
         soup = BeautifulSoup(r.text, "lxml", parse_only=only_span_div_tag)
     except requests.exceptions.RequestException as e:
         logging.error(f"Error fetching train list: {e}")
-        bot.send_message(chat_id, "⚠️ Ошибка запроса на сервер.\nПовторите ввод маршрута")
+        bot.send_message(
+            chat_id, "⚠️ Ошибка запроса на сервер.\nПовторите ввод маршрута"
+        )
         start(callback.message)
         return
 
@@ -605,19 +613,27 @@ def background_tracker():
                     r = requests.get(url)
                     r.raise_for_status()
                     only_span_div_tag = SoupStrainer(["span", "div"])
-                    soup = BeautifulSoup(r.text, "lxml", parse_only=only_span_div_tag)
+                    soup = BeautifulSoup(
+                        r.text, "lxml", parse_only=only_span_div_tag
+                    )
                 except requests.exceptions.RequestException as e:
-                    logging.error(f"Error fetching train data for url {url}: {e}")
+                    logging.error(
+                        f"Error fetching train data for url {url}: {e}"
+                    )
                     continue  # Skip to next tracking
 
                 # Check for changes
-                fresh_ticket_dict = check_tickets_by_class(train_number, soup, chat_id)
+                fresh_ticket_dict = check_tickets_by_class(
+                    train_number, soup, chat_id
+                )
                 stored_ticket_dict = get_fresh_loop(chat_id, train_id)
 
                 if fresh_ticket_dict != stored_ticket_dict:
                     # Notify user
                     markup_url = types.InlineKeyboardMarkup()
-                    url_to_ticket = types.InlineKeyboardButton("На сайт", url=url)
+                    url_to_ticket = types.InlineKeyboardButton(
+                        "На сайт", url=url
+                    )
                     markup_url.row(url_to_ticket)
                     bot.send_message(
                         chat_id,
@@ -630,13 +646,19 @@ def background_tracker():
                     update_tracking_loop(json_ticket_dict, chat_id, train_id)
 
                 # Check if tracking should be stopped
-                if check_depart_time(train_number, soup, train_id) < 900:  # 15 minutes
+                if (
+                    check_depart_time(train_number, soup, train_id) < 900
+                ):  # 15 minutes
                     del_tracking_db(chat_id, train_id)
                     bot.send_message(
                         chat_id,
-                        f"Отслеживание завершёно по расписанию отправления поезда {train_number}",
+                        f"Отслеживание завершёно по расписанию\
+ отправления поезда {train_number}",
                     )
-                    logging.info(f"Stopping tracking for train {train_number} for user {chat_id}")
+                    logging.info(
+                        f"Stopping tracking for train {train_number}\
+ for user {chat_id}"
+                    )
 
         except Exception as e:
             logging.error(f"Error in background_tracker: {e}", exc_info=True)
@@ -683,12 +705,15 @@ def start_tracking_train(callback):
         loop_data_list = get_loop_data_list(chat_id, train_tracking, url)
 
         if not loop_data_list:
-            bot.send_message(chat_id, "⚠️ Ошибка получения данных о поезде.\nПовторите ввод маршрута")
+            bot.send_message(
+                chat_id,
+                "⚠️Ошибка получения данных.\nПовторите ввод маршрута",
+            )
             start(callback.message)
             return
 
-        route_id = loop_data_list["route_id"]
-        train_id = loop_data_list["train_id"]
+        # route_id = loop_data_list["route_id"]
+        # train_id = loop_data_list["train_id"]
         status_exist = loop_data_list["status_exist"]
         count = loop_data_list["count"]
 
@@ -1062,7 +1087,9 @@ def initialize_app():
 
             bot.remove_webhook()
             time.sleep(5)
-            success = bot.set_webhook(url=f"{settings.WEBHOOK_URL}/{settings.TOKEN}")
+            success = bot.set_webhook(
+                url=f"{settings.WEBHOOK_URL}/{settings.TOKEN}"
+            )
             if success:
                 logging.info(f"✅ Webhook установлен: {settings.WEBHOOK_URL}")
             else:

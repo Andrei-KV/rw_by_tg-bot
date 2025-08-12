@@ -1,11 +1,13 @@
-import os
 import logging
+import os
+
 
 class Settings:
     """
     Class to hold all the application settings.
     Reads configuration from environment variables.
     """
+
     # Telegram
     TOKEN: str = os.getenv("TOKEN", "")
     STOP_CODE: str = os.getenv("STOP_CODE", "stop_bot")
@@ -33,10 +35,17 @@ class Settings:
             raise ValueError("TOKEN environment variable not set.")
 
         if not self.WEBHOOK_URL and not os.getenv("DEV_MODE"):
-             logging.error("WEBHOOK_URL environment variable not set for production.")
-             raise ValueError("WEBHOOK_URL environment variable not set for production.")
+            logging.error(
+                "WEBHOOK_URL environment variable not set for production."
+            )
+            raise ValueError(
+                "WEBHOOK_URL environment variable not set for production."
+            )
 
         if not self.DB_INSTANCE_NAME and not os.getenv("DEV_MODE"):
-            logging.warning("DB_INSTANCE_NAME is not set. This is required for Cloud SQL.")
+            logging.warning(
+                "DB_INSTANCE_NAME is not set. This is required for Cloud SQL."
+            )
+
 
 settings = Settings()
