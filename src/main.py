@@ -61,7 +61,7 @@ from src.utils import (  # get_proxies,
     check_depart_time,
     check_tickets_by_class,
     generate_calendar,
-    get_request_headers,
+    make_request,
     normalize_city_name,
     normalize_date,
     seats_type_dict,
@@ -380,34 +380,7 @@ def get_trains_list(message):
 
     update_user_data(chat_id, "url", url)
     try:
-        # r = requests.get(url, headers=get_request_headers(url), timeout=30)
-        session = requests.Session()
-        session.headers.update(
-            {
-                "User-Agent": "Mozilla/5.0 (X11; Linux x86_64)"
-                + " AppleWebKit/537.36 (KHTML, like Gecko)"
-                + " Chrome/133.0.0.0 Safari/537.36",
-                "Accept": "*/*",
-                "Accept-Language": "en-GB,en-US;q=0.9,en;q=0.8,"
-                + "ru;q=0.7,it;q=0.6",
-                "Accept-Encoding": "gzip, deflate, br, zstd",
-                "Referer": f"{url}",
-                "X-Requested-With": "XMLHttpRequest",
-            }
-        )
-        logging.info(f"FLAG URL={url}")
-        r = session.get(url)
-
-        if r.status_code != 200:
-            logging.info(f"FLAG get_trains_list   {r.status_code}")
-            error_msg = (
-                f"Fail response in get_trains_list. Code {r.status_code}"
-            )
-            logging.debug(f"{error_msg}, for user {chat_id}")
-            raise SiteResponseError(
-                f"Ошибка ответа сайта. Код {r.status_code}"
-            )
-
+        r = make_request(url)
         only_span_div_tag = SoupStrainer(["span", "div"])
         soup = BeautifulSoup(r.text, "lxml", parse_only=only_span_div_tag)
 
@@ -418,8 +391,7 @@ def get_trains_list(message):
         )
 
     except Exception as e:
-        logging.error(f"Server request error: {e}")
-        logging.info(f"FLAG URL={url}, headers={r.headers}")
+        logging.error(f"Server request error in get_trains_list: {e}")
         bot.send_message(
             chat_id, "⚠️ Ошибка запроса на сервер.\nПовторите ввод маршрута"
         )
@@ -522,8 +494,7 @@ def select_train(callback):
     user_info = get_user_data(chat_id)
     url = user_info['url']
     try:
-        r = requests.get(url)
-        r.raise_for_status()
+        r = make_request(url)
         only_span_div_tag = SoupStrainer(["span", "div"])
         soup = BeautifulSoup(r.text, "lxml", parse_only=only_span_div_tag)
     except requests.exceptions.RequestException as e:
@@ -626,10 +597,7 @@ def background_tracker():
 
                 # Fetch latest data from website
                 try:
-                    r = requests.get(
-                        url, timeout=30, headers=get_request_headers(url)
-                    )
-                    r.raise_for_status()
+                    r = make_request(url)
                     only_span_div_tag = SoupStrainer(["span", "div"])
                     soup = BeautifulSoup(
                         r.text, "lxml", parse_only=only_span_div_tag
@@ -704,18 +672,7 @@ def start_tracking_train(callback):
     # Изменение статуса в БД
     try:
         # Повторное получение инф-ции по билетам для внесения в таблицу отслеж.
-        r = requests.get(url, timeout=30, headers=get_request_headers(url))
-        logging.debug("FLAG Docker-1")
-        if r.status_code != 200:
-            logging.debug("FLAG Docker-2")
-            error_msg = (
-                f"Fail response in start_tracking_train. Code {r.status_code}"
-            )
-            logging.error(f"{error_msg}, for user {chat_id}")
-            raise SiteResponseError(
-                f"Ошибка ответа сайта. Код {r.status_code}"
-            )
-
+        r = make_request(url)
         only_span_div_tag = SoupStrainer(["span", "div"])
         soup = BeautifulSoup(r.text, "lxml", parse_only=only_span_div_tag)
         ticket_dict = check_tickets_by_class(train_tracking, soup, chat_id)

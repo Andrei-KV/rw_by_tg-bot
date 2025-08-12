@@ -2,7 +2,7 @@ import json
 import logging
 from datetime import datetime, timedelta
 
-# import pg8000
+import pg8000
 import sqlalchemy
 from google.cloud.sql.connector import Connector, IPTypes
 

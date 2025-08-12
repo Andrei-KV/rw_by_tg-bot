@@ -2,6 +2,7 @@ import calendar
 import logging
 from datetime import datetime, timedelta
 
+import requests
 from telebot import types
 
 from all_stations_list import all_station_list, all_station_list_lower
@@ -255,30 +256,25 @@ def get_tickets_by_class(train_number, soup):
     return tickets_by_class
 
 
-def get_request_headers(url):
-    """Returns a dictionary of headers to mimic a browser request."""
-    return {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) "
-        "Chrome/108.0.0.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;"
-        "q=0.9,image/avif,image/webp,image/apng,*/*;"
-        "q=0.8,application/signed-exchange;v=b3;q=0.9",
-        "Accept-Language": "en-US,en;q=0.9,ru;q=0.8",
-        "Accept-Encoding": "gzip, deflate, br",
-        "Referer": url,  # Use the URL as the referer
-        "X-Requested-With": "XMLHttpRequest",
-    }
-
-
-# def get_proxies():
-#     """Helper function to build the proxies dictionary."""
-#     proxies = {}
-#     proxy_url = settings.PROXY_URL
-#     if proxy_url:
-#         proxies['http'] = proxy_url
-#         proxies['https'] = proxy_url
-#     return proxies
+def make_request(url):
+    """Creates a requests session and makes a GET request."""
+    session = requests.Session()
+    session.headers.update(
+        {
+            "User-Agent": "Mozilla/5.0 (X11; Linux x86_64)"
+            + " AppleWebKit/537.36 (KHTML, like Gecko)"
+            + " Chrome/133.0.0.0 Safari/537.36",
+            "Accept": "*/*",
+            "Accept-Language": "en-GB,en-US;q=0.9,en;q=0.8,"
+            + "ru;q=0.7,it;q=0.6",
+            "Accept-Encoding": "gzip, deflate, br, zstd",
+            "Referer": f"{url}",
+            "X-Requested-With": "XMLHttpRequest",
+        }
+    )
+    r = session.get(url, timeout=30)
+    r.raise_for_status() # Raise an exception for bad status codes
+    return r
 
 
 def check_depart_time(train_number, soup, train_id):
