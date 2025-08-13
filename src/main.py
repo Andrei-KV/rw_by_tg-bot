@@ -36,7 +36,7 @@ from src.config import settings
 from src.database import (
     add_route_db,
     add_tracking_db,
-    add_train_db,
+    add_trains_db_batch,
     add_user_db,
     check_db_connection,
     check_user_exists,
@@ -419,7 +419,7 @@ def get_trains_list(message):
         start(message)
         return
 
-    trains_list = []
+    trains_data = []
     # Получение времени отправления и прибытия
     for train in train_id_list:
         try:
@@ -436,10 +436,19 @@ def get_trains_list(message):
                 "Нет данных",
                 "Нет данных",
             )
-        trains_list.append([train, time_depart, time_arriv])
-        # Добавить поезда в БД
-        add_train_db(train, time_depart, time_arriv, url)
-        # Отобразить список поездов
+        trains_data.append(
+            {
+                "train": train,
+                "time_depart": time_depart,
+                "time_arriv": time_arriv,
+            }
+        )
+
+    # Добавить поезда в БД
+    if trains_data:
+        add_trains_db_batch(trains_data, url)
+
+    # Отобразить список поездов
     show_train_list(message, url)
 
 

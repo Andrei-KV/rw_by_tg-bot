@@ -100,8 +100,8 @@ def add_route_db(city_from, city_to, date, url):
     logging.info(f"Route {city_from}-{city_to}-{date} added to database")
 
 
-def add_train_db(train, time_depart, time_arriv, url):
-    """Adds a new train to the database."""
+def add_trains_db_batch(trains_data, url):
+    """Adds a list of trains to the database in a single batch."""
     result = execute_db_query(
         "SELECT route_id FROM routes WHERE url = :url",
         {"url": url},
@@ -111,20 +111,42 @@ def add_train_db(train, time_depart, time_arriv, url):
         logging.warning(f"No route found for URL: {url}")
         return
     route_id = result[0]
-    execute_db_query(
-        "INSERT INTO trains (route_id, train_number, time_depart, time_arriv) "
-        "VALUES (:route_id, :train_number, :time_depart, :time_arriv) "
-        "ON CONFLICT (route_id, train_number, "
-        "time_depart, time_arriv) DO NOTHING",
-        {
-            "route_id": route_id,
-            "train_number": train,
-            "time_depart": time_depart,
-            "time_arriv": time_arriv,
-        },
-        commit=True,
-    )
-    logging.info(f"Train: {train} for route_id: {route_id} added to database")
+
+    with db_pool.connect() as conn:
+        trans = conn.begin()
+        try:
+            insert_statement = sqlalchemy.text(
+                "INSERT INTO trains (route_id, train_number, "
+                "time_depart, time_arriv) "
+                "VALUES (:route_id, :train_number, "
+                ":time_depart, :time_arriv) "
+                "ON CONFLICT (route_id, train_number, "
+                "time_depart, time_arriv) DO NOTHING"
+            )
+
+            params_list = [
+                {
+                    "route_id": route_id,
+                    "train_number": train["train"],
+                    "time_depart": train["time_depart"],
+                    "time_arriv": train["time_arriv"],
+                }
+                for train in trains_data
+            ]
+
+            if not params_list:
+                return
+
+            conn.execute(insert_statement, params_list)
+            trans.commit()
+            logging.info(
+                f"{len(params_list)} trains for route_id: {route_id} "
+                f"processed for the database."
+            )
+        except Exception as e:
+            trans.rollback()
+            logging.error(f"Database error in add_trains_db_batch: {e}")
+            raise
 
 
 def add_tracking_db(chat_id, train_selected, ticket_dict, url):
