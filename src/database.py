@@ -151,6 +151,13 @@ def create_tables():
             UNIQUE(chat_id, train_id)
         )
         """,
+        """
+        CREATE TABLE IF NOT EXISTS user_sessions (
+            chat_id BIGINT PRIMARY KEY,
+            data JSONB,
+            updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+        )
+        """,
     )
     try:
         with db_pool.connect() as conn:
@@ -489,20 +496,6 @@ def get_departure_date_db(train_id):
     if resp_db:
         return datetime.strptime(str(resp_db[0]), "%Y-%m-%d").date()
     return None
-
-
-def create_user_session_table():
-    """Creates the user_sessions table if it doesn't exist."""
-    execute_db_query(
-        """
-        CREATE TABLE IF NOT EXISTS user_sessions (
-            chat_id BIGINT PRIMARY KEY,
-            data JSONB,
-            updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-        )
-        """,
-        commit=True,
-    )
 
 
 def get_user_session(chat_id):
