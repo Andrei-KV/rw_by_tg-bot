@@ -402,11 +402,10 @@ def get_trains_list(message):
         url,
     )
 
-    train_id_list = [
-        i.text for i in soup.find_all("span", class_="train-number")
-    ]
+    # Efficiently parse train data by iterating through train rows once
+    train_rows = soup.select("div.sch-table__row")
 
-    if not train_id_list:
+    if not train_rows:
         bot.send_message(
             chat_id,
             "❓🚆Поезда не найдены.\
@@ -416,36 +415,47 @@ def get_trains_list(message):
         return
 
     trains_data = []
-    # Получение времени отправления и прибытия
-    for train in train_id_list:
+    for train_row in train_rows:
         try:
-            time_depart = soup.select(
-                f'[data-train-number^="{train}"] \
-                                    [data-sort="departure"]'
-            )[0].text.strip()
-            time_arriv = soup.select(
-                f'[data-train-number^="{train}"] \
-                                    [data-sort="arrival"]'
-            )[0].text.strip()
-        except Exception:
-            time_depart, time_arriv = (
-                "Нет данных",
-                "Нет данных",
-            )
-        trains_data.append(
-            {
-                "train": train,
-                "time_depart": time_depart,
-                "time_arriv": time_arriv,
-            }
-        )
+            train_number_tag = train_row.select_one("span.train-number")
+            train = train_number_tag.text if train_number_tag else None
 
-    # Добавить поезда в БД
+            time_depart_tag = train_row.select_one('[data-sort="departure"]')
+            time_depart = (
+                time_depart_tag.text.strip() if time_depart_tag else "Нет данных"
+            )
+
+            time_arriv_tag = train_row.select_one('[data-sort="arrival"]')
+            time_arriv = (
+                time_arriv_tag.text.strip() if time_arriv_tag else "Нет данных"
+            )
+
+            if train:  # Ensure we have a train number before adding
+                trains_data.append(
+                    {
+                        "train": train,
+                        "time_depart": time_depart,
+                        "time_arriv": time_arriv,
+                    }
+                )
+        except Exception as e:
+            logging.warning(f"Could not parse a train row: {e}")
+            continue
+
+    # Add trains to DB in a batch
     if trains_data:
         add_trains_db_batch(trains_data, url)
-
-    # Отобразить список поездов
-    show_train_list(message, url)
+        # Display the list of trains to the user
+        show_train_list(message, url)
+    else:
+        # This case handles if rows were found but parsing failed for all
+        bot.send_message(
+            chat_id,
+            "❓🚆Не удалось обработать информацию о поездах.\
+                \nПовторите ввод маршрута",
+        )
+        start(message)
+        return
 
 
 @ensure_start
