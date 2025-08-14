@@ -1,7 +1,7 @@
 services:
   bot:
     build: .
-    command: gunicorn --worker-class gevent -c gunicorn_config.py -b 0.0.0.0:8080 src.main:app
+    command: gunicorn --worker-class gevent -c gunicorn_config.py -b 0.0.0.0:8080 --timeout 120 src.main:app
     env_file: .env
     depends_on:
       - db
