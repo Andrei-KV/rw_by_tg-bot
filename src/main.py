@@ -41,6 +41,7 @@ from src.database import (
     check_db_connection,
     check_user_exists,
     cleanup_expired_routes_db,
+    create_tables,
     del_tracking_db,
     delete_user_session,
     get_all_active_trackings,
@@ -54,10 +55,9 @@ from src.database import (
     update_tracking_loop,
     update_user_session,
 )
-from src.utils import (  # get_proxies,
+from src.utils import (  # get_proxies,; SiteResponseError,
     FutureDateError,
     PastDateError,
-    SiteResponseError,
     check_depart_time,
     check_tickets_by_class,
     generate_calendar,
@@ -95,7 +95,6 @@ setup_logging()
 
 def get_user_data(chat_id):
     """Gets user data from the database session."""
-    logging.debug(f"FLAG start 111 get_user_data {'flag'}")
     return get_user_session(chat_id)
 
 
@@ -123,7 +122,8 @@ check_db_connection()
 # ----------------------------------------------------------------------------
 # Декоратор: Проверка "start" для избежания ошибок
 def ensure_start(func):
-    def wrapper(message):
+    def wrapper(*args, **kwargs):
+        message = args[0]
         try:
             chat_id = message.chat.id
         except AttributeError:
@@ -132,7 +132,7 @@ def ensure_start(func):
         if not check_user_exists(chat_id):
             bot.send_message(chat_id, "Сначала введите /start")
             return
-        return func(message)
+        return func(*args, **kwargs)
 
     return wrapper
 
@@ -203,7 +203,6 @@ def webhook():
         update = telebot.types.Update.de_json(json_str)
         logging.debug(f"FLAG Webhook получен! {update}")
         if update is not None:
-            logging.debug(f"update is not None {update}")
             # метод, который имитирует поведение polling, но вручную:
             bot.process_new_updates([update])  # только если не None
     except Exception as e:
@@ -261,11 +260,7 @@ def start(message):
 # Чтение города отправления. Проверка наличия в списке станций
 @with_command_intercept
 def get_city_from(message):
-    # if message.text.startswith('/stop'):
-    #     # Останов бота
-    #     bot.register_next_step_handler(message, stop)
-    #     return
-    logging.debug(f"Flag start get_city_from {message.text}")
+
     chat_id = message.chat.id
     city_from = normalize_city_name(message.text)
     if city_from not in all_station_list:
@@ -278,7 +273,6 @@ def get_city_from(message):
             + "Повторите ввод\n"
             + int(bool(examples)) * f"Варианты:\n {examples}"
         )
-        logging.debug("Flag ctrl city in list")
         bot.send_message(chat_id, answer)
         # Возврат при ошибке ввода
         bot.register_next_step_handler(message, get_city_from)
@@ -292,11 +286,6 @@ def get_city_from(message):
 # Чтение города прибытия. Проверка наличия в списке станций
 @with_command_intercept
 def get_city_to(message):
-    # if message.text.startswith('/stop'):
-    #     # Останов бота
-    #     bot.register_next_step_handler(message, stop)
-    #     return
-    logging.debug('FLAG start get_city_to')
     chat_id = message.chat.id
     city_to = normalize_city_name(message.text)
     if city_to not in all_station_list:
@@ -315,8 +304,6 @@ def get_city_to(message):
         bot.register_next_step_handler(message, get_city_to)
         return
     update_user_data(chat_id, "city_to", city_to)
-
-    logging.debug('FLAG start calendar')
     # Отправляем календарь сразу
     msg = bot.send_message(
         chat_id,
@@ -333,7 +320,6 @@ def get_city_to(message):
 # Чтение даты отправления
 @with_command_intercept
 def get_date(message):
-    logging.debug('FLAG start get_date')
     chat_id = message.chat.id
     try:
         date = normalize_date(message.text)
@@ -361,7 +347,6 @@ def get_trains_list(message):
     time.sleep(1)  # Optional delay
     bot.send_message(message.chat.id, "Идёт поиск 🔍")  # Send your custom text
     chat_id = message.chat.id
-    logging.debug(f"FLAG start 1 get_trains_list {''}")
     user_info = get_user_data(chat_id)
     if not user_info:
         logging.error(f"No user data for chat_id {chat_id}")
@@ -743,13 +728,14 @@ def start_tracking_train(callback):
 @bot.message_handler(commands=["show_track_list"])
 @ensure_start
 def show_track_list(message):
-
+    logging.info("FLAG XX show_track_list")
     # Для отображения активности
     bot.send_chat_action(message.chat.id, 'typing')  # Show typing indicator
     time.sleep(1)  # Optional delay
 
     reply = "Список отслеживания пуст"  # по умолчанию
     track_list = get_track_list(message.chat.id)
+    logging.info(f"FLAG XX show_track_list track-list  {track_list}")
     # Список кортежей
     # 0-tracking_id -> int(),
     # 1-t.train_number -> str(),
@@ -767,6 +753,7 @@ def show_track_list(message):
                 f"🚆 {x[1]} {x[2]}➡️{x[3]}\n🕒 {x[5]} {f_date} \n{'-'*5}"
             )
         reply = "\n".join(reply_edit)
+    logging.info(f"FLAG XX show_track_list reply  {reply}")
     bot.reply_to(message, f"{reply}")
 
 
@@ -775,6 +762,7 @@ def show_track_list(message):
 @ensure_start
 def stop_track_train(message):
     track_list = get_track_list(message.chat.id)
+    logging.info(f"FLAG XX stop_track_train track-list  {track_list}")
     # Список кортежей
     # 0-tracking_id -> int(),
     # 1-t.train_number -> str(),
@@ -1063,6 +1051,8 @@ def initialize_app():
     app_initialized = True
 
     logging.info("🔧 Инициализация приложения")
+    # Create database tables if they don't exist
+    create_tables()
 
     try:
         # Проверка вебхука для разных воркеров

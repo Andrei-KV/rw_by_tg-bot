@@ -1,34 +1,92 @@
 import json
 import logging
+import os
 from datetime import datetime, timedelta
+from typing import Any, Literal, Sequence, overload
 
 import pg8000
 import sqlalchemy
 from google.cloud.sql.connector import Connector, IPTypes
+from sqlalchemy.engine import Row
 
 from src.config import settings
 
-# initialize Connector object
-connector = Connector()
+# Check if running in a local environment
+IS_LOCAL = os.getenv("ENV") == "local"
 
+if IS_LOCAL:
+    # --- LOCAL DATABASE CONNECTION ---
+    # Assumes you are running a PostgreSQL container.
+    # The host should be the service name
+    # in your docker-compose.yml (e.g., 'db').
+    DB_HOST = os.getenv("DB_HOST", "db")
+    DB_PORT = int(os.getenv("DB_PORT", 5432))
 
-def getconn():
-    conn = connector.connect(
-        settings.DB_INSTANCE_NAME,
-        "pg8000",
-        user=settings.DB_USER,
-        password=settings.DB_PASSWORD,
-        db=settings.DB_NAME,
-        ip_type=IPTypes.PUBLIC,
+    # Create a standard database URL
+    local_db_url = (
+        f"postgresql+pg8000://{settings.DB_USER}:{settings.DB_PASSWORD}@"
+        f"{DB_HOST}:{DB_PORT}/{settings.DB_NAME}"
     )
-    return conn
+
+    # Create the SQLAlchemy engine
+    db_pool = sqlalchemy.create_engine(local_db_url)
+    logging.info(f"Connecting to local database at {DB_HOST}:{DB_PORT}...")
+
+else:
+    # --- GOOGLE CLOUD SQL CONNECTION (for production) ---
+    connector = Connector()
+
+    def getconn() -> pg8000.dbapi.Connection:
+        conn: pg8000.dbapi.Connection = connector.connect(
+            settings.DB_INSTANCE_NAME,
+            "pg8000",
+            user=settings.DB_USER,
+            password=settings.DB_PASSWORD,
+            db=settings.DB_NAME,
+            ip_type=IPTypes.PUBLIC,
+        )
+        return conn
+
+    db_pool = sqlalchemy.create_engine(
+        "postgresql+pg8000://",
+        creator=getconn,
+    )
+    logging.info(
+        f"Connecting to Cloud SQL instance {settings.DB_INSTANCE_NAME}..."
+    )
 
 
-# The Cloud SQL Python Connector can be used with SQLAlchemy
-db_pool = sqlalchemy.create_engine(
-    "postgresql+pg8000://",
-    creator=getconn,
-)
+@overload
+def execute_db_query(
+    query: str,
+    params: dict | None = None,
+    *,
+    fetchone: Literal[True],
+    fetchall: Literal[False] = False,
+    commit: bool = False,
+) -> Row[Any] | None: ...
+
+
+@overload
+def execute_db_query(
+    query: str,
+    params: dict | None = None,
+    *,
+    fetchone: Literal[False] = False,
+    fetchall: Literal[True],
+    commit: bool = False,
+) -> Sequence[Row[Any]]: ...
+
+
+@overload
+def execute_db_query(
+    query: str,
+    params: dict | None = None,
+    *,
+    fetchone: Literal[False] = False,
+    fetchall: Literal[False] = False,
+    commit: bool = True,
+) -> None: ...
 
 
 def execute_db_query(
@@ -75,6 +133,55 @@ def check_db_connection():
     except Exception as e:
         logging.error(f"Database connection failed: {e}")
         return False
+
+
+def create_tables():
+    """Creates all necessary tables in the database if they don't exist."""
+    commands = (
+        """
+        CREATE TABLE IF NOT EXISTS users (
+            chat_id BIGINT PRIMARY KEY
+        )
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS routes (
+            route_id SERIAL PRIMARY KEY,
+            city_from VARCHAR(255),
+            city_to VARCHAR(255),
+            date DATE,
+            url VARCHAR(512) UNIQUE
+        )
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS trains (
+            train_id SERIAL PRIMARY KEY,
+            route_id INTEGER REFERENCES routes(route_id) ON DELETE CASCADE,
+            train_number VARCHAR(255),
+            time_depart VARCHAR(10),
+            time_arriv VARCHAR(10),
+            UNIQUE(route_id, train_number, time_depart, time_arriv)
+        )
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS tracking (
+            tracking_id SERIAL PRIMARY KEY,
+            chat_id BIGINT REFERENCES users(chat_id) ON DELETE CASCADE,
+            train_id INTEGER REFERENCES trains(train_id) ON DELETE CASCADE,
+            json_ticket_dict JSONB,
+            UNIQUE(chat_id, train_id)
+        )
+        """,
+    )
+    try:
+        with db_pool.connect() as conn:
+            trans = conn.begin()
+            for command in commands:
+                conn.execute(sqlalchemy.text(command))
+            trans.commit()
+        logging.info("Database tables created or already exist.")
+    except Exception as e:
+        logging.error(f"Error creating database tables: {e}")
+        raise
 
 
 def add_user_db(chat_id):
@@ -258,16 +365,19 @@ def get_fresh_loop(chat_id, train_id):
         {"chat_id": chat_id, "train_id": train_id},
         fetchone=True,
     )
-    if result:
-        json_str = result[0]
-        memory_ticket_dict = json.loads(json_str)
-    else:
-        memory_ticket_dict = {}
-    return memory_ticket_dict
+    if result and result[0] is not None:
+        json_data = result[0]
+        if isinstance(json_data, str):
+            # If the DB returns a string, parse it
+            return json.loads(json_data)
+        # If the DB returns a dict (from JSON/JSONB column), return it directly
+        return json_data
+    return {}
 
 
 def get_track_list(chat_id):
     """Gets the list of tracked trains for a user."""
+    logging.info(f"FLAG XX get_track_list {chat_id}")
     track_list = execute_db_query(
         """
         SELECT tracking_id, t.train_number,
@@ -280,6 +390,7 @@ def get_track_list(chat_id):
         {"chat_id": chat_id},
         fetchall=True,
     )
+    logging.info(f"FLAG XX get_track_list track_list {track_list}")
     return track_list
 
 
@@ -398,7 +509,7 @@ def get_departure_date_db(train_id):
         fetchone=True,
     )
     if resp_db:
-        return datetime.strptime(resp_db[0], "%Y-%m-%d").date()
+        return datetime.strptime(str(resp_db[0]), "%Y-%m-%d").date()
     return None
 
 
@@ -418,7 +529,6 @@ def create_user_session_table():
 
 def get_user_session(chat_id):
     """Gets the session data for a user."""
-    logging.debug(f"FLAG start 11 get_user_session {chat_id}")
     result = execute_db_query(
         "SELECT data FROM user_sessions WHERE chat_id = :chat_id",
         {"chat_id": chat_id},

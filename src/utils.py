@@ -35,7 +35,6 @@ seats_type_dict = {
 
 
 def normalize_city_name(name):
-    logging.debug(f"Flag normalize_city_name {name}")
     name = name.strip().lower()
     try:
         index = all_station_list_lower.index(name)
@@ -273,7 +272,7 @@ def make_request(url):
         }
     )
     r = session.get(url, timeout=30)
-    r.raise_for_status() # Raise an exception for bad status codes
+    r.raise_for_status()  # Raise an exception for bad status codes
     return r
 
 
