@@ -1,10 +1,8 @@
-# 'version' больше не требуется в современных версиях Docker Compose
+
 services:
   bot:
     build: .
-    command: gunicorn --bind 0.0.0.0:8080 src.main:app
-    # Используем env_file для загрузки всех переменных из файла .env
-    # Это безопаснее, чем прописывать их прямо здесь
+    command: gunicorn --worker-class gevent -b 0.0.0.0:8080 src.main:app
     env_file: .env
     ports:
       - "8080:8080"
@@ -18,8 +16,8 @@ services:
       - db
 
   db:
-    # Рекомендуется использовать более стабильную версию, например, 16
-    image: postgres:17
+
+    image: postgres:16
     restart: always
     # Сервис 'db' должен содержать только переменные для самой базы данных.
     # Они будут взяты из файла .env, как и для сервиса bot.

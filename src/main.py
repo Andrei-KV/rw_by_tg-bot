@@ -28,6 +28,7 @@ from bs4 import BeautifulSoup
 
 # Для парсинга страниц
 from bs4.filter import SoupStrainer
+from gevent import monkey
 from telebot import apihelper, types
 
 # Список станций
@@ -72,6 +73,8 @@ from src.utils import (  # get_proxies,; SiteResponseError,
 #     lambda: {}
 # )
 # user_data_lock = threading.Lock()
+
+monkey.patch_all()
 
 
 # Настройка логирования
@@ -304,12 +307,20 @@ def get_city_to(message):
         bot.register_next_step_handler(message, get_city_to)
         return
     update_user_data(chat_id, "city_to", city_to)
+
+    logging.debug('FLAG start calendar generation')
+    calendar_markup = generate_calendar()
+    logging.debug('FLAG finish calendar generation')
+
     # Отправляем календарь сразу
+    logging.debug('FLAG sending calendar message')
     msg = bot.send_message(
         chat_id,
         "📅 Выберите дату:",
-        reply_markup=generate_calendar(),
+        reply_markup=calendar_markup,
     )
+    logging.debug('FLAG finished sending calendar message')
+
     # Регистрируем обработчик для ручного ввода
     bot.register_next_step_handler(msg, get_date)
 
@@ -500,7 +511,7 @@ def select_train(callback):
         return
 
     # Вывод количества мест по классам или "Мест нет"
-    ticket_dict = check_tickets_by_class(train_selected, soup, chat_id)
+    ticket_dict = check_tickets_by_class(train_selected, soup)
 
     # Добавляем в список поездов, но здесь статус отслеживания пока что False
     # Здесь, т.к. необходимо получить список мест для контроля изменений
@@ -603,9 +614,7 @@ def background_tracker():
                     continue  # Skip to next tracking
 
                 # Check for changes
-                fresh_ticket_dict = check_tickets_by_class(
-                    train_number, soup, chat_id
-                )
+                fresh_ticket_dict = check_tickets_by_class(train_number, soup)
                 stored_ticket_dict = get_fresh_loop(chat_id, train_id)
 
                 if fresh_ticket_dict != stored_ticket_dict:
@@ -669,7 +678,7 @@ def start_tracking_train(callback):
         r = make_request(url)
         only_span_div_tag = SoupStrainer(["span", "div"])
         soup = BeautifulSoup(r.text, "lxml", parse_only=only_span_div_tag)
-        ticket_dict = check_tickets_by_class(train_tracking, soup, chat_id)
+        ticket_dict = check_tickets_by_class(train_tracking, soup)
 
         loop_data_list = get_loop_data_list(chat_id, train_tracking, url)
 

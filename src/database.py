@@ -89,6 +89,39 @@ def execute_db_query(
 ) -> None: ...
 
 
+@overload
+def execute_db_query(
+    query: str,
+    params: dict | None = None,
+    *,
+    fetchone: Literal[True],
+    fetchall: Literal[False] = False,
+    commit: bool = False,
+) -> Row[Any] | None: ...
+
+
+@overload
+def execute_db_query(
+    query: str,
+    params: dict | None = None,
+    *,
+    fetchone: Literal[False] = False,
+    fetchall: Literal[True],
+    commit: bool = False,
+) -> Sequence[Row[Any]]: ...
+
+
+@overload
+def execute_db_query(
+    query: str,
+    params: dict | None = None,
+    *,
+    fetchone: Literal[False] = False,
+    fetchall: Literal[False] = False,
+    commit: bool = True,
+) -> None: ...
+
+
 def execute_db_query(
     query, params=None, fetchone=False, fetchall=False, commit=False
 ):
