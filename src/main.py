@@ -1,6 +1,3 @@
-from gevent import monkey
-
-monkey.patch_all()
 # import calendar
 import json
 import logging
