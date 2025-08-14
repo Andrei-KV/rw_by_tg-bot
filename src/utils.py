@@ -212,29 +212,29 @@ def normalize_date(date_str):
     )
 
 
-def check_tickets_by_class(train_number, soup, chat_id):
+def check_tickets_by_class(train_number, soup):
     train_info = soup.select(
         f'div.sch-table__row[data-train-number^="{train_number}"]'
     )
-    try:
-        selling_allowed = train_info[0]["data-ticket_selling_allowed"]
-    except IndexError:
-        selling_allowed = "none"
+    if not train_info:
+        return "Ошибка получения информации о поезде"
+
+    selling_allowed = train_info[0].get("data-ticket_selling_allowed")
 
     if selling_allowed == "true":
-        return get_tickets_by_class(train_number, soup)
+        return get_tickets_by_class(train_info)
     elif selling_allowed == "false":
         return "Мест нет либо закрыта продажа"
     else:
+        # This case might occur if the attribute is missing
         return "Ошибка получения информации о поезде"
 
 
-def get_tickets_by_class(train_number, soup):
-    # информация о наличии мест и классов вагонов
-    train_info = soup.select(
-        f'div.sch-table__row[data-train-number^="{train_number}"]'
-    )
-    # доступные классы вагонов и места
+def get_tickets_by_class(train_info):
+    # Dозвращает словарь с классами вагонов и количеством мест
+    if not train_info:
+        return {}
+
     class_names = train_info[0].find_all(
         class_="sch-table__t-quant js-train-modal dash"
     )
@@ -273,7 +273,7 @@ def make_request(url):
         }
     )
     r = session.get(url, timeout=30)
-    r.raise_for_status() # Raise an exception for bad status codes
+    r.raise_for_status()  # Raise an exception for bad status codes
     return r
 
 

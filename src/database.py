@@ -1,10 +1,12 @@
 import json
 import logging
 from datetime import datetime, timedelta
+from typing import Any, Literal, Sequence, overload
 
 import pg8000
 import sqlalchemy
 from google.cloud.sql.connector import Connector, IPTypes
+from sqlalchemy.engine import Row
 
 from src.config import settings
 
@@ -29,6 +31,42 @@ db_pool = sqlalchemy.create_engine(
     "postgresql+pg8000://",
     creator=getconn,
 )
+
+
+@overload
+def execute_db_query(
+    query: str,
+    params: dict | None = None,
+    *,
+    fetchone: Literal[True],
+    fetchall: Literal[False] = False,
+    commit: bool = False,
+) -> Row[Any] | None:
+    ...
+
+
+@overload
+def execute_db_query(
+    query: str,
+    params: dict | None = None,
+    *,
+    fetchone: Literal[False] = False,
+    fetchall: Literal[True],
+    commit: bool = False,
+) -> Sequence[Row[Any]]:
+    ...
+
+
+@overload
+def execute_db_query(
+    query: str,
+    params: dict | None = None,
+    *,
+    fetchone: Literal[False] = False,
+    fetchall: Literal[False] = False,
+    commit: bool = True,
+) -> None:
+    ...
 
 
 def execute_db_query(
@@ -75,6 +113,55 @@ def check_db_connection():
     except Exception as e:
         logging.error(f"Database connection failed: {e}")
         return False
+
+
+def create_tables():
+    """Creates all necessary tables in the database if they don't exist."""
+    commands = (
+        """
+        CREATE TABLE IF NOT EXISTS users (
+            chat_id BIGINT PRIMARY KEY
+        )
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS routes (
+            route_id SERIAL PRIMARY KEY,
+            city_from VARCHAR(255),
+            city_to VARCHAR(255),
+            date DATE,
+            url VARCHAR(512) UNIQUE
+        )
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS trains (
+            train_id SERIAL PRIMARY KEY,
+            route_id INTEGER REFERENCES routes(route_id) ON DELETE CASCADE,
+            train_number VARCHAR(255),
+            time_depart VARCHAR(10),
+            time_arriv VARCHAR(10),
+            UNIQUE(route_id, train_number, time_depart, time_arriv)
+        )
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS tracking (
+            tracking_id SERIAL PRIMARY KEY,
+            chat_id BIGINT REFERENCES users(chat_id) ON DELETE CASCADE,
+            train_id INTEGER REFERENCES trains(train_id) ON DELETE CASCADE,
+            json_ticket_dict JSONB,
+            UNIQUE(chat_id, train_id)
+        )
+        """,
+    )
+    try:
+        with db_pool.connect() as conn:
+            trans = conn.begin()
+            for command in commands:
+                conn.execute(sqlalchemy.text(command))
+            trans.commit()
+        logging.info("Database tables created or already exist.")
+    except Exception as e:
+        logging.error(f"Error creating database tables: {e}")
+        raise
 
 
 def add_user_db(chat_id):
@@ -258,12 +345,14 @@ def get_fresh_loop(chat_id, train_id):
         {"chat_id": chat_id, "train_id": train_id},
         fetchone=True,
     )
-    if result:
-        json_str = result[0]
-        memory_ticket_dict = json.loads(json_str)
-    else:
-        memory_ticket_dict = {}
-    return memory_ticket_dict
+    if result and result[0] is not None:
+        json_data = result[0]
+        if isinstance(json_data, str):
+            # If the DB returns a string, parse it
+            return json.loads(json_data)
+        # If the DB returns a dict (from JSON/JSONB column), return it directly
+        return json_data
+    return {}
 
 
 def get_track_list(chat_id):
@@ -398,7 +487,7 @@ def get_departure_date_db(train_id):
         fetchone=True,
     )
     if resp_db:
-        return datetime.strptime(resp_db[0], "%Y-%m-%d").date()
+        return datetime.strptime(str(resp_db[0]), "%Y-%m-%d").date()
     return None
 
 

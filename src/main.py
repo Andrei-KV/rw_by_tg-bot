@@ -1,3 +1,6 @@
+from gevent import monkey
+
+monkey.patch_all()
 # import calendar
 import json
 import logging
@@ -41,6 +44,7 @@ from src.database import (
     check_db_connection,
     check_user_exists,
     cleanup_expired_routes_db,
+    create_tables,
     del_tracking_db,
     delete_user_session,
     get_all_active_trackings,
@@ -123,7 +127,8 @@ check_db_connection()
 # ----------------------------------------------------------------------------
 # Декоратор: Проверка "start" для избежания ошибок
 def ensure_start(func):
-    def wrapper(message):
+    def wrapper(*args, **kwargs):
+        message = args[0]
         try:
             chat_id = message.chat.id
         except AttributeError:
@@ -132,7 +137,7 @@ def ensure_start(func):
         if not check_user_exists(chat_id):
             bot.send_message(chat_id, "Сначала введите /start")
             return
-        return func(message)
+        return func(*args, **kwargs)
 
     return wrapper
 
@@ -316,13 +321,19 @@ def get_city_to(message):
         return
     update_user_data(chat_id, "city_to", city_to)
 
-    logging.debug('FLAG start calendar')
+    logging.debug('FLAG start calendar generation')
+    calendar_markup = generate_calendar()
+    logging.debug('FLAG finish calendar generation')
+
     # Отправляем календарь сразу
+    logging.debug('FLAG sending calendar message')
     msg = bot.send_message(
         chat_id,
         "📅 Выберите дату:",
-        reply_markup=generate_calendar(),
+        reply_markup=calendar_markup,
     )
+    logging.debug('FLAG finished sending calendar message')
+
     # Регистрируем обработчик для ручного ввода
     bot.register_next_step_handler(msg, get_date)
 
@@ -515,7 +526,7 @@ def select_train(callback):
         return
 
     # Вывод количества мест по классам или "Мест нет"
-    ticket_dict = check_tickets_by_class(train_selected, soup, chat_id)
+    ticket_dict = check_tickets_by_class(train_selected, soup)
 
     # Добавляем в список поездов, но здесь статус отслеживания пока что False
     # Здесь, т.к. необходимо получить список мест для контроля изменений
@@ -619,7 +630,7 @@ def background_tracker():
 
                 # Check for changes
                 fresh_ticket_dict = check_tickets_by_class(
-                    train_number, soup, chat_id
+                    train_number, soup
                 )
                 stored_ticket_dict = get_fresh_loop(chat_id, train_id)
 
@@ -684,7 +695,7 @@ def start_tracking_train(callback):
         r = make_request(url)
         only_span_div_tag = SoupStrainer(["span", "div"])
         soup = BeautifulSoup(r.text, "lxml", parse_only=only_span_div_tag)
-        ticket_dict = check_tickets_by_class(train_tracking, soup, chat_id)
+        ticket_dict = check_tickets_by_class(train_tracking, soup)
 
         loop_data_list = get_loop_data_list(chat_id, train_tracking, url)
 
@@ -1063,6 +1074,8 @@ def initialize_app():
     app_initialized = True
 
     logging.info("🔧 Инициализация приложения")
+    # Create database tables if they don't exist
+    create_tables()
 
     try:
         # Проверка вебхука для разных воркеров
