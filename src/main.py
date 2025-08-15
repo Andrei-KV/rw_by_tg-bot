@@ -45,7 +45,7 @@ from src.database import (
     create_tables,
     del_tracking_db,
     delete_user_session,
-    get_all_active_trackings,
+    get_due_trackings,
     get_fresh_loop,
     get_loop_data_list,
     get_track_list,
@@ -53,6 +53,7 @@ from src.database import (
     get_user_session,
     stop_all_tracking_for_user_db,
     stop_tracking_by_id_db,
+    update_next_check_time,
     update_tracking_loop,
     update_user_session,
 )
@@ -600,17 +601,25 @@ def background_tracker():
     logging.info("Starting background tracker...")
     while True:
         try:
-            all_trackings = get_all_active_trackings()
-            if not all_trackings:
-                time.sleep(randint(60, 120))
+            due_trackings = get_due_trackings()
+            if not due_trackings:
+                time.sleep(60)  # Sleep for a minute if no tasks are due
                 continue
 
-            logging.info(f"Found {len(all_trackings)} active trackings.")
+            logging.info(f"Found {len(due_trackings)} due trackings to check.")
 
-            for tracking in all_trackings:
-                chat_id, train_number, train_id, route_id, url = tracking
+            for tracking in due_trackings:
+                (
+                    tracking_id,
+                    chat_id,
+                    train_number,
+                    train_id,
+                    route_id,
+                    url,
+                    departure_date,
+                    departure_time,
+                ) = tracking
 
-                # Fetch latest data from website
                 try:
                     r = make_request(url)
                     only_span_div_tag = SoupStrainer(["span", "div"])
@@ -621,14 +630,16 @@ def background_tracker():
                     logging.error(
                         f"Error fetching train data for url {url}: {e}"
                     )
-                    continue  # Skip to next tracking
+                    # Reschedule for a short time later
+                    next_check = datetime.now() + timedelta(minutes=5)
+                    update_next_check_time(tracking_id, next_check)
+                    continue
 
                 # Check for changes
                 fresh_ticket_dict = check_tickets_by_class(train_number, soup)
                 stored_ticket_dict = get_fresh_loop(chat_id, train_id)
 
                 if fresh_ticket_dict != stored_ticket_dict:
-                    # Notify user
                     markup_url = types.InlineKeyboardMarkup()
                     url_to_ticket = types.InlineKeyboardButton(
                         "На сайт", url=url
@@ -639,30 +650,50 @@ def background_tracker():
                         f"Обновление по {train_number}:\n{fresh_ticket_dict}",
                         reply_markup=markup_url,
                     )
-
-                    # Update database
                     json_ticket_dict = json.dumps(fresh_ticket_dict)
                     update_tracking_loop(json_ticket_dict, chat_id, train_id)
 
-                # Check if tracking should be stopped
-                if (
-                    check_depart_time(train_number, soup, train_id) < 900
-                ):  # 15 minutes
+                # Calculate next check time
+                now = datetime.now().date()
+                hours_until_departure = (
+                    (departure_date - now).total_seconds() / 3600
+                )
+
+                delay_minutes = 0
+                if hours_until_departure > 36:
+                    delay_minutes = randint(40, 60)
+                elif 24 <= hours_until_departure <= 36:
+                    delay_minutes = randint(20, 40)
+                elif 4 <= hours_until_departure < 24:
+                    delay_minutes = randint(10, 20)
+                elif 0 <= hours_until_departure < 4:
+                    delay_minutes = randint(5, 10)
+                else:
+                    # Train has departed, stop tracking
                     del_tracking_db(chat_id, train_id)
                     bot.send_message(
                         chat_id,
-                        f"Отслеживание завершёно по расписанию\
- отправления поезда {train_number}",
+                        f"Отслеживание завершёно по расписанию "
+                        f"отправления поезда {train_number}",
                     )
                     logging.info(
-                        f"Stopping tracking for train {train_number}\
- for user {chat_id}"
+                        f"Stopping tracking for train {train_number} "
+                        f"for user {chat_id} as it has departed."
                     )
+                    continue
+
+                next_check_at = datetime.now() + timedelta(
+                    minutes=delay_minutes
+                )
+                update_next_check_time(tracking_id, next_check_at)
+                logging.info(
+                    f"Rescheduled check for train {train_number} "
+                    f"(tracking_id: {tracking_id}) at {next_check_at}"
+                )
 
         except Exception as e:
             logging.error(f"Error in background_tracker: {e}", exc_info=True)
-
-        time.sleep(randint(60, 120))  # Sleep for 1-2 minutes
+            time.sleep(60)  # Sleep on error to avoid fast error loops
 
 
 @bot.callback_query_handler(

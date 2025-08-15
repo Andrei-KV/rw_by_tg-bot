@@ -201,6 +201,7 @@ def create_tables():
             chat_id BIGINT REFERENCES users(chat_id) ON DELETE CASCADE,
             train_id INTEGER REFERENCES trains(train_id) ON DELETE CASCADE,
             json_ticket_dict JSONB,
+            next_check_at TIMESTAMP WITH TIME ZONE,
             UNIQUE(chat_id, train_id)
         )
         """,
@@ -324,8 +325,8 @@ def add_tracking_db(chat_id, train_selected, ticket_dict, url):
     json_ticket_dict = json.dumps(ticket_dict)
 
     execute_db_query(
-        "INSERT INTO tracking (chat_id, train_id, json_ticket_dict) "
-        "VALUES (:chat_id, :train_id, :json_ticket_dict) "
+        "INSERT INTO tracking (chat_id, train_id, json_ticket_dict, next_check_at) "
+        "VALUES (:chat_id, :train_id, :json_ticket_dict, NOW()) "
         "ON CONFLICT (chat_id, train_id) DO NOTHING",
         {
             "chat_id": chat_id,
@@ -476,23 +477,37 @@ def check_user_exists(chat_id):
     return bool(result[0]) if result else False
 
 
-def get_all_active_trackings():
-    """Gets all active trackings from the database."""
+def get_due_trackings():
+    """Gets trackings that are due for a check."""
     rows = execute_db_query(
         """
         SELECT
+            t.tracking_id,
             t.chat_id,
             tr.train_number,
             t.train_id,
             tr.route_id,
-            r.url
+            r.url,
+            r.date,
+            t.time_depart
         FROM tracking t
         JOIN trains tr ON t.train_id = tr.train_id
         JOIN routes r ON tr.route_id = r.route_id
+        WHERE t.next_check_at <= NOW()
         """,
         fetchall=True,
     )
     return rows
+
+
+def update_next_check_time(tracking_id, next_check_at):
+    """Updates the next check time for a specific tracking entry."""
+    execute_db_query(
+        "UPDATE tracking SET next_check_at = :next_check_at "
+        "WHERE tracking_id = :tracking_id",
+        {"next_check_at": next_check_at, "tracking_id": tracking_id},
+        commit=True,
+    )
 
 
 def cleanup_expired_routes_db():
