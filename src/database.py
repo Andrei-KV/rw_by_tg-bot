@@ -159,6 +159,9 @@ def create_tables():
             updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
         )
         """,
+        """
+        ALTER TABLE tracking ADD COLUMN IF NOT EXISTS next_check_at TIMESTAMP WITH TIME ZONE;
+        """,
     )
     try:
         with db_pool.connect() as conn:
