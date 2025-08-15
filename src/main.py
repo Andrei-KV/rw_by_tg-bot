@@ -185,7 +185,7 @@ def with_command_intercept(func):
 
 # Создаётся объект бота, который умеет принимать сообщения от Telegram.
 app = flask.Flask(__name__)
-bot = telebot.TeleBot(settings.TOKEN, threaded=True)  # type: ignore
+bot = telebot.TeleBot(settings.TOKEN, threaded=False)  # type: ignore
 app_initialized = False  # Флаг, чтобы не выполнять инициализацию повторно
 
 # Обработка запроса от Telegram (webhook endpoint)
