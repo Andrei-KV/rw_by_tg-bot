@@ -41,3 +41,4 @@ MANIFEST
 *.py[co]
 *.swp
 *~
+example.py

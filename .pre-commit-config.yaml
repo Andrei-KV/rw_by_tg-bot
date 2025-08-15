@@ -9,7 +9,8 @@ exclude: |
       test\.py|
       tests_for_bot\.txt|
       test_bot\.sql|
-      telegram_bot\.py
+      telegram_bot\.py|
+      example\.py
   )$
 
 repos:

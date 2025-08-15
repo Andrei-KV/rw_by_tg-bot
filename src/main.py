@@ -12,7 +12,7 @@ import time
 
 # from collections import defaultdict
 # from copy import deepcopy
-from datetime import datetime  # timedelta
+from datetime import datetime, timedelta
 
 # from logging.handlers import RotatingFileHandler
 from random import randint
@@ -56,10 +56,9 @@ from src.database import (
     update_tracking_loop,
     update_user_session,
 )
-from src.utils import (  # get_proxies,
+from src.utils import (  # get_proxies,; SiteResponseError,
     FutureDateError,
     PastDateError,
-    SiteResponseError,
     check_depart_time,
     check_tickets_by_class,
     generate_calendar,
@@ -279,7 +278,7 @@ def get_city_from(message):
         answer = (
             "✏️ Ошибка в названии.\n"
             + "Повторите ввод\n"
-            + int(bool(examples)) * f"Варианты:\n {examples}"
+            + int(bool(examples)) * f"Варианты:\n\n{examples}"
         )
         logging.debug("Flag ctrl city in list")
         bot.send_message(chat_id, answer)
@@ -435,7 +434,9 @@ def get_trains_list(message):
 
             time_depart_tag = train_row.select_one('[data-sort="departure"]')
             time_depart = (
-                time_depart_tag.text.strip() if time_depart_tag else "Нет данных"
+                time_depart_tag.text.strip()
+                if time_depart_tag
+                else "Нет данных"
             )
 
             time_arriv_tag = train_row.select_one('[data-sort="arrival"]')
@@ -575,7 +576,11 @@ def select_train(callback):
             callback_data=f"{train_selected}_start_tracking",
         )
         markup.add(btn_track)
-
+        if not isinstance(ticket_dict, str):
+            res = ''
+            for i in ticket_dict.items():
+                res += f'{i[0]}: {i[1]}\n'
+            ticket_dict = res
         bot.send_message(
             chat_id=callback.message.chat.id,
             text=f"🚆 Поезд №{train_selected}\n{ticket_dict}",
@@ -648,9 +653,7 @@ def background_tracker():
                     continue
 
                 # Check for changes
-                fresh_ticket_dict = check_tickets_by_class(
-                    train_number, soup
-                )
+                fresh_ticket_dict = check_tickets_by_class(train_number, soup)
                 stored_ticket_dict = get_fresh_loop(chat_id, train_id)
 
                 if fresh_ticket_dict != stored_ticket_dict:
@@ -670,8 +673,8 @@ def background_tracker():
                 # Calculate next check time
                 now = datetime.now().date()
                 hours_until_departure = (
-                    (departure_date - now).total_seconds() / 3600
-                )
+                    departure_date - now
+                ).total_seconds() / 3600
 
                 delay_minutes = 0
                 if hours_until_departure > 36:
@@ -721,7 +724,11 @@ def start_tracking_train(callback):
     url = get_user_data(chat_id).get('url')
 
     if not url:
-        bot.send_message(chat_id, "Ошибка: URL маршрута не найден. Пожалуйста, начните заново с /start.")
+        bot.send_message(
+            chat_id,
+            "Ошибка: URL маршрута не найден. "
+            "Пожалуйста, начните заново с /start.",
+        )
         return
 
     try:
@@ -730,7 +737,8 @@ def start_tracking_train(callback):
         if not loop_data_list:
             bot.send_message(
                 chat_id,
-                "⚠️ Ошибка получения данных для отслеживания.\nПовторите ввод маршрута",
+                "⚠️ Ошибка получения данных для отслеживания.\n"
+                "Повторите ввод маршрута",
             )
             start(callback.message)
             return
@@ -840,7 +848,10 @@ def stop_track_train(message):
             markup.row(
                 types.InlineKeyboardButton(
                     f"{reply}",
-                    callback_data=f"{x[0]}:{x[1]}:{x[4].strftime('%Y-%m-%d')}_stop_tracking",
+                    callback_data=(
+                        f"{x[0]}:{x[1]}:"
+                        f"{x[4].strftime('%Y-%m-%d')}_stop_tracking"
+                    ),
                 )
             )
         bot.reply_to(message, "Выбрать удаляемый поезд: ", reply_markup=markup)

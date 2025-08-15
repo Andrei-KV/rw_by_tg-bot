@@ -3,7 +3,7 @@ import logging
 from datetime import datetime, timedelta
 from typing import Any, Literal, Sequence, overload
 
-import pg8000
+# import pg8000
 import sqlalchemy
 from google.cloud.sql.connector import Connector, IPTypes
 from sqlalchemy.engine import Row
@@ -41,8 +41,7 @@ def execute_db_query(
     fetchone: Literal[True],
     fetchall: Literal[False] = False,
     commit: bool = False,
-) -> Row[Any] | None:
-    ...
+) -> Row[Any] | None: ...
 
 
 @overload
@@ -53,8 +52,7 @@ def execute_db_query(
     fetchone: Literal[False] = False,
     fetchall: Literal[True],
     commit: bool = False,
-) -> Sequence[Row[Any]]:
-    ...
+) -> Sequence[Row[Any]]: ...
 
 
 @overload
@@ -65,8 +63,7 @@ def execute_db_query(
     fetchone: Literal[False] = False,
     fetchall: Literal[False] = False,
     commit: bool = True,
-) -> None:
-    ...
+) -> None: ...
 
 
 def execute_db_query(
@@ -160,7 +157,8 @@ def create_tables():
         )
         """,
         """
-        ALTER TABLE tracking ADD COLUMN IF NOT EXISTS next_check_at TIMESTAMP WITH TIME ZONE;
+        ALTER TABLE tracking ADD COLUMN IF NOT EXISTS
+        next_check_at TIMESTAMP WITH TIME ZONE;
         """,
     )
     try:
@@ -275,7 +273,8 @@ def add_tracking_db(chat_id, train_selected, ticket_dict, url):
     json_ticket_dict = json.dumps(ticket_dict)
 
     execute_db_query(
-        "INSERT INTO tracking (chat_id, train_id, json_ticket_dict, next_check_at) "
+        "INSERT INTO tracking "
+        "(chat_id, train_id, json_ticket_dict, next_check_at) "
         "VALUES (:chat_id, :train_id, :json_ticket_dict, NOW()) "
         "ON CONFLICT (chat_id, train_id) DO NOTHING",
         {
