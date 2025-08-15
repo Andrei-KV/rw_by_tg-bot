@@ -354,12 +354,19 @@ def get_fresh_loop(chat_id, train_id):
     )
     if result and result[0] is not None:
         json_data = result[0]
+        if isinstance(json_data, dict):
+            return json_data
         if isinstance(json_data, str):
-            if not json_data:  # Handle empty string case
+            try:
+                if not json_data:  # Handle empty string case
+                    return {}
+                return json.loads(json_data)
+            except json.JSONDecodeError:
+                logging.warning(
+                    f"Invalid JSON in tracking data for chat_id {chat_id}, "
+                    f"train_id {train_id}. Data: '{json_data}'"
+                )
                 return {}
-            return json.loads(json_data)
-        # If the DB returns a dict (from JSON/JSONB column), return it directly
-        return json_data
     return {}
 
 
