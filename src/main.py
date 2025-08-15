@@ -779,8 +779,8 @@ def show_track_list(message):
 
         reply_edit = []
         for x in track_list:
-            date_obj = datetime.strptime(x[4], "%Y-%m-%d")
-            f_date = date_obj.strftime("%d.%m.%y")
+            # x[4] is already a datetime.date object, no need for strptime
+            f_date = x[4].strftime("%d.%m.%y")
             reply_edit.append(
                 f"🚆 {x[1]} {x[2]}➡️{x[3]}\n🕒 {x[5]} {f_date} \n{'-'*5}"
             )
@@ -808,14 +808,14 @@ def stop_track_train(message):
     if track_list:
         markup = types.InlineKeyboardMarkup()
         for x in track_list:
-            date_obj = datetime.strptime(x[4], "%Y-%m-%d")
-            f_date = date_obj.strftime("%d.%m.%y")
+            # x[4] is already a datetime.date object, no need for strptime
+            f_date = x[4].strftime("%d.%m.%y")
             # Для отображения в сообщении
             reply = f"🚫 {x[1]} {x[2]}➡️{x[3]} 🕒 {x[5]} {f_date}"
             markup.row(
                 types.InlineKeyboardButton(
                     f"{reply}",
-                    callback_data=f"{x[0]}:{x[1]}:{x[4]}_stop_tracking",
+                    callback_data=f"{x[0]}:{x[1]}:{x[4].strftime('%Y-%m-%d')}_stop_tracking",
                 )
             )
         bot.reply_to(message, "Выбрать удаляемый поезд: ", reply_markup=markup)
