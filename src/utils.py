@@ -35,6 +35,7 @@ seats_type_dict = {
 
 
 def normalize_city_name(name):
+    logging.debug(f"Flag normalize_city_name {name}")
     name = name.strip().lower()
     try:
         index = all_station_list_lower.index(name)

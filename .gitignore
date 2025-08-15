@@ -41,5 +41,3 @@ MANIFEST
 *.py[co]
 *.swp
 *~
-cloudbuild.yaml
-example.py

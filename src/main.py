@@ -28,7 +28,6 @@ from bs4 import BeautifulSoup
 
 # Для парсинга страниц
 from bs4.filter import SoupStrainer
-from gevent import monkey
 from telebot import apihelper, types
 
 # Список станций
@@ -57,9 +56,10 @@ from src.database import (
     update_tracking_loop,
     update_user_session,
 )
-from src.utils import (  # get_proxies,; SiteResponseError,
+from src.utils import (  # get_proxies,
     FutureDateError,
     PastDateError,
+    SiteResponseError,
     check_depart_time,
     check_tickets_by_class,
     generate_calendar,
@@ -74,8 +74,6 @@ from src.utils import (  # get_proxies,; SiteResponseError,
 #     lambda: {}
 # )
 # user_data_lock = threading.Lock()
-
-monkey.patch_all()
 
 
 # Настройка логирования
@@ -99,6 +97,7 @@ setup_logging()
 
 def get_user_data(chat_id):
     """Gets user data from the database session."""
+    logging.debug(f"FLAG start 111 get_user_data {'flag'}")
     return get_user_session(chat_id)
 
 
@@ -207,6 +206,7 @@ def webhook():
         update = telebot.types.Update.de_json(json_str)
         logging.debug(f"FLAG Webhook получен! {update}")
         if update is not None:
+            logging.debug(f"update is not None {update}")
             # метод, который имитирует поведение polling, но вручную:
             bot.process_new_updates([update])  # только если не None
     except Exception as e:
@@ -264,7 +264,11 @@ def start(message):
 # Чтение города отправления. Проверка наличия в списке станций
 @with_command_intercept
 def get_city_from(message):
-
+    # if message.text.startswith('/stop'):
+    #     # Останов бота
+    #     bot.register_next_step_handler(message, stop)
+    #     return
+    logging.debug(f"Flag start get_city_from {message.text}")
     chat_id = message.chat.id
     city_from = normalize_city_name(message.text)
     if city_from not in all_station_list:
@@ -277,6 +281,7 @@ def get_city_from(message):
             + "Повторите ввод\n"
             + int(bool(examples)) * f"Варианты:\n {examples}"
         )
+        logging.debug("Flag ctrl city in list")
         bot.send_message(chat_id, answer)
         # Возврат при ошибке ввода
         bot.register_next_step_handler(message, get_city_from)
@@ -290,6 +295,11 @@ def get_city_from(message):
 # Чтение города прибытия. Проверка наличия в списке станций
 @with_command_intercept
 def get_city_to(message):
+    # if message.text.startswith('/stop'):
+    #     # Останов бота
+    #     bot.register_next_step_handler(message, stop)
+    #     return
+    logging.debug('FLAG start get_city_to')
     chat_id = message.chat.id
     city_to = normalize_city_name(message.text)
     if city_to not in all_station_list:
@@ -332,6 +342,7 @@ def get_city_to(message):
 # Чтение даты отправления
 @with_command_intercept
 def get_date(message):
+    logging.debug('FLAG start get_date')
     chat_id = message.chat.id
     try:
         date = normalize_date(message.text)
@@ -359,6 +370,7 @@ def get_trains_list(message):
     time.sleep(1)  # Optional delay
     bot.send_message(message.chat.id, "Идёт поиск 🔍")  # Send your custom text
     chat_id = message.chat.id
+    logging.debug(f"FLAG start 1 get_trains_list {''}")
     user_info = get_user_data(chat_id)
     if not user_info:
         logging.error(f"No user data for chat_id {chat_id}")
@@ -636,7 +648,9 @@ def background_tracker():
                     continue
 
                 # Check for changes
-                fresh_ticket_dict = check_tickets_by_class(train_number, soup)
+                fresh_ticket_dict = check_tickets_by_class(
+                    train_number, soup
+                )
                 stored_ticket_dict = get_fresh_loop(chat_id, train_id)
 
                 if fresh_ticket_dict != stored_ticket_dict:
@@ -701,42 +715,29 @@ def background_tracker():
 )
 @ensure_start
 def start_tracking_train(callback):
-
-    bot.answer_callback_query(callback.id)  # Для имитации ответа в Телеграм
-
+    bot.answer_callback_query(callback.id)
     train_tracking = callback.data.split("_")[0]
     chat_id = callback.message.chat.id
+    url = get_user_data(chat_id).get('url')
 
-    # Для отображения активности
-    bot.send_chat_action(chat_id, 'typing')  # Show typing indicator
-    time.sleep(1)  # Optional delay
+    if not url:
+        bot.send_message(chat_id, "Ошибка: URL маршрута не найден. Пожалуйста, начните заново с /start.")
+        return
 
-    url = get_user_data(chat_id)['url']
-
-    # Изменение статуса в БД
     try:
-        # Повторное получение инф-ции по билетам для внесения в таблицу отслеж.
-        r = make_request(url)
-        only_span_div_tag = SoupStrainer(["span", "div"])
-        soup = BeautifulSoup(r.text, "lxml", parse_only=only_span_div_tag)
-        ticket_dict = check_tickets_by_class(train_tracking, soup)
-
         loop_data_list = get_loop_data_list(chat_id, train_tracking, url)
 
         if not loop_data_list:
             bot.send_message(
                 chat_id,
-                "⚠️Ошибка получения данных.\nПовторите ввод маршрута",
+                "⚠️ Ошибка получения данных для отслеживания.\nПовторите ввод маршрута",
             )
             start(callback.message)
             return
 
-        # route_id = loop_data_list["route_id"]
-        # train_id = loop_data_list["train_id"]
         status_exist = loop_data_list["status_exist"]
         count = loop_data_list["count"]
 
-        # Проверка отслеживания поезда, чтобы не запустить излишний поток
         if status_exist:
             bot.send_message(
                 chat_id,
@@ -744,12 +745,21 @@ def start_tracking_train(callback):
             )
             return
 
-        # Проверка ограничения не более 5 отслеживаний для одного чата
         if count >= 5:
-            bot.send_message(chat_id, "Превышено число отслеживаний\n(max 5)")
+            bot.send_message(chat_id, "Превышено число отслеживаний (max 5).")
             return
 
-        # Вставка в список слежения
+        # Now that checks have passed, show typing indicator
+        bot.send_chat_action(chat_id, 'typing')
+        time.sleep(1)
+
+        # Fetch ticket info
+        r = make_request(url)
+        only_span_div_tag = SoupStrainer(["span", "div"])
+        soup = BeautifulSoup(r.text, "lxml", parse_only=only_span_div_tag)
+        ticket_dict = check_tickets_by_class(train_tracking, soup)
+
+        # Add to tracking list
         add_tracking_db(
             chat_id,
             train_tracking,
@@ -757,18 +767,16 @@ def start_tracking_train(callback):
             url,
         )
 
-    except Exception as e:
-        logging.error(f"Server request error: {e}")
         bot.send_message(
-            chat_id, "⚠️ Ошибка запроса на сервер.\nПовторите ввод маршрута"
+            chat_id, f"Отслеживание поезда {train_tracking} запущено."
         )
-        # Возвращаемся к началу
-        start(callback.message)
-        return
 
-    bot.send_message(
-        chat_id, f"Отслеживание поезда {train_tracking} запущено."
-    )
+    except Exception as e:
+        logging.error(f"Error in start_tracking_train: {e}", exc_info=True)
+        bot.send_message(
+            chat_id, "⚠️ Произошла ошибка при добавлении отслеживания."
+        )
+        start(callback.message)
 
 
 # =============================================================================
@@ -778,14 +786,13 @@ def start_tracking_train(callback):
 @bot.message_handler(commands=["show_track_list"])
 @ensure_start
 def show_track_list(message):
-    logging.info("FLAG XX show_track_list")
+
     # Для отображения активности
     bot.send_chat_action(message.chat.id, 'typing')  # Show typing indicator
     time.sleep(1)  # Optional delay
 
     reply = "Список отслеживания пуст"  # по умолчанию
     track_list = get_track_list(message.chat.id)
-    logging.info(f"FLAG XX show_track_list track-list  {track_list}")
     # Список кортежей
     # 0-tracking_id -> int(),
     # 1-t.train_number -> str(),
@@ -803,7 +810,6 @@ def show_track_list(message):
                 f"🚆 {x[1]} {x[2]}➡️{x[3]}\n🕒 {x[5]} {f_date} \n{'-'*5}"
             )
         reply = "\n".join(reply_edit)
-    logging.info(f"FLAG XX show_track_list reply  {reply}")
     bot.reply_to(message, f"{reply}")
 
 
@@ -812,7 +818,6 @@ def show_track_list(message):
 @ensure_start
 def stop_track_train(message):
     track_list = get_track_list(message.chat.id)
-    logging.info(f"FLAG XX stop_track_train track-list  {track_list}")
     # Список кортежей
     # 0-tracking_id -> int(),
     # 1-t.train_number -> str(),

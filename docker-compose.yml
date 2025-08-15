@@ -1,35 +1,27 @@
-
 services:
   bot:
     build: .
     command: gunicorn --worker-class gevent -c gunicorn_config.py -b 0.0.0.0:8080 --timeout 120 src.main:app
     env_file: .env
+    depends_on:
+      - db
     ports:
       - "8080:8080"
     volumes:
-      # Монтируем код для удобной разработки
       - .:/app
     networks:
       - botnet
-    # depends_on гарантирует, что db запустится раньше бота
-    depends_on:
-      - db
 
   db:
-
     image: postgres:16
     restart: always
-    # Сервис 'db' должен содержать только переменные для самой базы данных.
-    # Они будут взяты из файла .env, как и для сервиса bot.
     environment:
-      - POSTGRES_USER=${DB_USER}
-      - POSTGRES_PASSWORD=${DB_PASSWORD}
-      - POSTGRES_DB=${DB_NAME}
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 1765362
+      POSTGRES_DB: tracking_train
     ports:
-      # Пробрасываем порт 5432 контейнера на 5433 хоста
       - "5433:5432"
     volumes:
-      # Используем named volume для сохранения данных
       - pgdata:/var/lib/postgresql/data
     networks:
       - botnet

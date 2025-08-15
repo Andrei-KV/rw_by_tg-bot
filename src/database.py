@@ -1,6 +1,5 @@
 import json
 import logging
-import os
 from datetime import datetime, timedelta
 from typing import Any, Literal, Sequence, overload
 
@@ -11,49 +10,27 @@ from sqlalchemy.engine import Row
 
 from src.config import settings
 
-# Check if running in a local environment
-IS_LOCAL = os.getenv("ENV") == "local"
+# initialize Connector object
+connector = Connector()
 
-if IS_LOCAL:
-    # --- LOCAL DATABASE CONNECTION ---
-    # Assumes you are running a PostgreSQL container.
-    # The host should be the service name
-    # in your docker-compose.yml (e.g., 'db').
-    DB_HOST = os.getenv("DB_HOST", "db")
-    DB_PORT = int(os.getenv("DB_PORT", 5432))
 
-    # Create a standard database URL
-    local_db_url = (
-        f"postgresql+pg8000://{settings.DB_USER}:{settings.DB_PASSWORD}@"
-        f"{DB_HOST}:{DB_PORT}/{settings.DB_NAME}"
+def getconn():
+    conn = connector.connect(
+        settings.DB_INSTANCE_NAME,
+        "pg8000",
+        user=settings.DB_USER,
+        password=settings.DB_PASSWORD,
+        db=settings.DB_NAME,
+        ip_type=IPTypes.PUBLIC,
     )
+    return conn
 
-    # Create the SQLAlchemy engine
-    db_pool = sqlalchemy.create_engine(local_db_url)
-    logging.info(f"Connecting to local database at {DB_HOST}:{DB_PORT}...")
 
-else:
-    # --- GOOGLE CLOUD SQL CONNECTION (for production) ---
-    connector = Connector()
-
-    def getconn() -> pg8000.dbapi.Connection:
-        conn: pg8000.dbapi.Connection = connector.connect(
-            settings.DB_INSTANCE_NAME,
-            "pg8000",
-            user=settings.DB_USER,
-            password=settings.DB_PASSWORD,
-            db=settings.DB_NAME,
-            ip_type=IPTypes.PUBLIC,
-        )
-        return conn
-
-    db_pool = sqlalchemy.create_engine(
-        "postgresql+pg8000://",
-        creator=getconn,
-    )
-    logging.info(
-        f"Connecting to Cloud SQL instance {settings.DB_INSTANCE_NAME}..."
-    )
+# The Cloud SQL Python Connector can be used with SQLAlchemy
+db_pool = sqlalchemy.create_engine(
+    "postgresql+pg8000://",
+    creator=getconn,
+)
 
 
 @overload
@@ -64,7 +41,8 @@ def execute_db_query(
     fetchone: Literal[True],
     fetchall: Literal[False] = False,
     commit: bool = False,
-) -> Row[Any] | None: ...
+) -> Row[Any] | None:
+    ...
 
 
 @overload
@@ -75,7 +53,8 @@ def execute_db_query(
     fetchone: Literal[False] = False,
     fetchall: Literal[True],
     commit: bool = False,
-) -> Sequence[Row[Any]]: ...
+) -> Sequence[Row[Any]]:
+    ...
 
 
 @overload
@@ -86,40 +65,8 @@ def execute_db_query(
     fetchone: Literal[False] = False,
     fetchall: Literal[False] = False,
     commit: bool = True,
-) -> None: ...
-
-
-@overload
-def execute_db_query(
-    query: str,
-    params: dict | None = None,
-    *,
-    fetchone: Literal[True],
-    fetchall: Literal[False] = False,
-    commit: bool = False,
-) -> Row[Any] | None: ...
-
-
-@overload
-def execute_db_query(
-    query: str,
-    params: dict | None = None,
-    *,
-    fetchone: Literal[False] = False,
-    fetchall: Literal[True],
-    commit: bool = False,
-) -> Sequence[Row[Any]]: ...
-
-
-@overload
-def execute_db_query(
-    query: str,
-    params: dict | None = None,
-    *,
-    fetchone: Literal[False] = False,
-    fetchall: Literal[False] = False,
-    commit: bool = True,
-) -> None: ...
+) -> None:
+    ...
 
 
 def execute_db_query(
@@ -426,7 +373,6 @@ def get_fresh_loop(chat_id, train_id):
 
 def get_track_list(chat_id):
     """Gets the list of tracked trains for a user."""
-    logging.info(f"FLAG XX get_track_list {chat_id}")
     track_list = execute_db_query(
         """
         SELECT tracking_id, t.train_number,
@@ -439,7 +385,6 @@ def get_track_list(chat_id):
         {"chat_id": chat_id},
         fetchall=True,
     )
-    logging.info(f"FLAG XX get_track_list track_list {track_list}")
     return track_list
 
 
@@ -489,7 +434,7 @@ def get_due_trackings():
             tr.route_id,
             r.url,
             r.date,
-            t.time_depart
+            tr.time_depart
         FROM tracking t
         JOIN trains tr ON t.train_id = tr.train_id
         JOIN routes r ON tr.route_id = r.route_id
@@ -578,6 +523,7 @@ def get_departure_date_db(train_id):
 
 def get_user_session(chat_id):
     """Gets the session data for a user."""
+    logging.debug(f"FLAG start 11 get_user_session {chat_id}")
     result = execute_db_query(
         "SELECT data FROM user_sessions WHERE chat_id = :chat_id",
         {"chat_id": chat_id},
