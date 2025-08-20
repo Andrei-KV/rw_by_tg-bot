@@ -639,6 +639,15 @@ def background_tracker():
 
                 try:
                     r = make_request(url)
+                    if not r:
+                        logging.error(
+                            f"Failed to fetch data for {url} after multiple retries."
+                        )
+                        # Reschedule for a short time later
+                        next_check = datetime.now() + timedelta(minutes=15)
+                        update_next_check_time(tracking_id, next_check)
+                        continue
+
                     only_span_div_tag = SoupStrainer(["span", "div"])
                     soup = BeautifulSoup(
                         r.text, "lxml", parse_only=only_span_div_tag
@@ -647,8 +656,17 @@ def background_tracker():
                     logging.error(
                         f"Error fetching train data for url {url}: {e}"
                     )
+                    # Reschedule for a longer time later
+                    next_check = datetime.now() + timedelta(minutes=60)
+                    update_next_check_time(tracking_id, next_check)
+                    continue
+                except Exception as e:
+                    logging.error(
+                        f"An unexpected error occurred while processing tracking_id {tracking_id}: {e}",
+                        exc_info=True,
+                    )
                     # Reschedule for a short time later
-                    next_check = datetime.now() + timedelta(minutes=5)
+                    next_check = datetime.now() + timedelta(minutes=15)
                     update_next_check_time(tracking_id, next_check)
                     continue
 
@@ -709,7 +727,7 @@ def background_tracker():
                 )
 
         except Exception as e:
-            logging.error(f"Error in background_tracker: {e}", exc_info=True)
+            logging.error(f"Error in background_tracker main loop: {e}", exc_info=True)
             time.sleep(60)  # Sleep on error to avoid fast error loops
 
 
@@ -943,9 +961,11 @@ def process_selected_date(chat_id, date_str):
 def cleanup_expired_routes():
     while True:
         try:
+            logging.info("Starting expired routes cleanup...")
             cleanup_expired_routes_db()
+            logging.info("Finished expired routes cleanup.")
         except Exception as e:
-            logging.error(f"Error in cleanup_expired_routes: {e}")
+            logging.error(f"Error in cleanup_expired_routes: {e}", exc_info=True)
         # Проверяем каждые 2 часа
         time.sleep(2 * 60 * 60)
 
@@ -987,6 +1007,28 @@ def start_background_tasks():
         daemon=True,
     )
     tracker_thread.start()
+
+
+# =============================================================================
+# Админ-команды
+
+
+@bot.message_handler(commands=["cleanup"])
+def manual_cleanup(message):
+    """
+    Manually triggers the cleanup of expired routes.
+    Only accessible by the admin.
+    """
+    if message.chat.id == settings.ADMIN_CHAT_ID:
+        bot.send_message(message.chat.id, "🧹 Запускаю очистку...")
+        try:
+            cleanup_expired_routes_db()
+            bot.send_message(message.chat.id, "✅ Очистка завершена.")
+        except Exception as e:
+            logging.error(f"Manual cleanup failed: {e}", exc_info=True)
+            bot.send_message(message.chat.id, "❌ Ошибка во время очистки.")
+    else:
+        bot.send_message(message.chat.id, "⛔ У вас нет прав для этой команды.")
 
 
 # =============================================================================

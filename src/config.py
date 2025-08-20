@@ -31,6 +31,9 @@ class Settings:
         "PROXY_URL", ""
     )  # e.g. "http://user:pass@host:port"
 
+    # Admin
+    ADMIN_CHAT_ID: int = int(os.getenv("ADMIN_CHAT_ID", 0))
+
     def __init__(self):
         """
         Validates that required environment variables are set.

@@ -1,5 +1,6 @@
 import calendar
 import logging
+import time
 from datetime import datetime, timedelta
 
 import requests
@@ -256,8 +257,11 @@ def get_tickets_by_class(train_info):
     return tickets_by_class
 
 
-def make_request(url):
-    """Creates a requests session and makes a GET request."""
+def make_request(url, retries=3, backoff_factor=0.3):
+    """
+    Creates a requests session and makes a GET request with retries.
+    Implements exponential backoff for retries.
+    """
     session = requests.Session()
     session.headers.update(
         {
@@ -272,9 +276,25 @@ def make_request(url):
             "X-Requested-With": "XMLHttpRequest",
         }
     )
-    r = session.get(url, timeout=30)
-    r.raise_for_status()  # Raise an exception for bad status codes
-    return r
+    for i in range(retries):
+        try:
+            r = session.get(url, timeout=30)
+            r.raise_for_status()
+            return r
+        except requests.exceptions.RequestException as e:
+            if i < retries - 1:
+                sleep_time = backoff_factor * (2**i)
+                logging.warning(
+                    f"Request to {url} failed: {e}. "
+                    f"Retrying in {sleep_time:.2f} seconds..."
+                )
+                time.sleep(sleep_time)
+            else:
+                logging.error(
+                    f"Request to {url} failed after {retries} retries."
+                )
+                raise
+    return None  # Should not be reached
 
 
 def check_depart_time(train_number, soup, train_id):
