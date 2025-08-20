@@ -680,9 +680,18 @@ def background_tracker():
                         "На сайт", url=url
                     )
                     markup_url.row(url_to_ticket)
+
+                    if not isinstance(fresh_ticket_dict, str):
+                        res = ''
+                        for i in fresh_ticket_dict.items():
+                            res += f'{i[0]}: {i[1]}\n'
+                        fresh_ticket_dict_msg = res
+                    else:
+                        fresh_ticket_dict_msg = fresh_ticket_dict
+
                     bot.send_message(
                         chat_id,
-                        f"Обновление по {train_number}:\n{fresh_ticket_dict}",
+                        f"Обновление по {train_number}:\n{fresh_ticket_dict_msg}",
                         reply_markup=markup_url,
                     )
                     json_ticket_dict = json.dumps(fresh_ticket_dict)
