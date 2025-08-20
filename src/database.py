@@ -458,32 +458,71 @@ def update_next_check_time(tracking_id, next_check_at):
 
 
 def cleanup_expired_routes_db():
-    """Deletes expired routes from the database."""
-    yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
-    expired_routes = execute_db_query(
-        "SELECT route_id FROM routes WHERE date < :yesterday",
-        {"yesterday": yesterday},
+    """
+    Deletes routes and associated data for trains that have already departed.
+    A train is considered departed if its departure time is in the past.
+    """
+    now = datetime.now()
+    # Get all routes that might have expired trains
+    # We check routes from today and yesterday to be safe.
+    two_days_ago = (now - timedelta(days=2)).strftime('%Y-%m-%d')
+    potentially_expired_routes = execute_db_query(
+        "SELECT route_id, date FROM routes WHERE date >= :two_days_ago",
+        {"two_days_ago": two_days_ago},
         fetchall=True,
     )
-    if expired_routes:
-        route_ids = [r[0] for r in expired_routes]
+
+    if not potentially_expired_routes:
+        logging.info("No potentially expired routes to check.")
+        return
+
+    trains_to_delete = []
+    for route_id, route_date in potentially_expired_routes:
+        trains_on_route = execute_db_query(
+            "SELECT train_id, time_depart FROM trains WHERE route_id = :route_id",
+            {"route_id": route_id},
+            fetchall=True,
+        )
+        for train_id, time_depart in trains_on_route:
+            try:
+                # Combine date and time to create a datetime object
+                departure_datetime = datetime.combine(
+                    route_date,
+                    datetime.strptime(time_depart, "%H:%M").time(),
+                )
+                if departure_datetime < now:
+                    trains_to_delete.append(train_id)
+            except ValueError:
+                # Handle cases where time_depart might be in a wrong format
+                logging.warning(
+                    f"Could not parse time_depart '{time_depart}' for train_id {train_id}"
+                )
+                continue
+
+    if trains_to_delete:
+        # Delete from tracking, then trains.
+        # Routes will be cleaned up if they become empty.
         execute_db_query(
-            "DELETE FROM tracking WHERE train_id IN (SELECT train_id "
-            "FROM trains WHERE route_id = ANY(:route_ids))",
-            {"route_ids": route_ids},
+            "DELETE FROM tracking WHERE train_id = ANY(:train_ids)",
+            {"train_ids": trains_to_delete},
             commit=True,
         )
         execute_db_query(
-            "DELETE FROM trains WHERE route_id = ANY(:route_ids)",
-            {"route_ids": route_ids},
+            "DELETE FROM trains WHERE train_id = ANY(:train_ids)",
+            {"train_ids": trains_to_delete},
             commit=True,
         )
-        execute_db_query(
-            "DELETE FROM routes WHERE route_id = ANY(:route_ids)",
-            {"route_ids": route_ids},
-            commit=True,
-        )
-        logging.info(f"Deleted {len(expired_routes)} expired routes")
+        logging.info(f"Deleted {len(trains_to_delete)} expired trains.")
+
+    # Optional: Clean up routes that have no more trains associated with them
+    execute_db_query(
+        """
+        DELETE FROM routes
+        WHERE route_id NOT IN (SELECT DISTINCT route_id FROM trains)
+        """,
+        commit=True,
+    )
+    logging.info("Cleaned up routes with no associated trains.")
 
 
 def stop_tracking_by_id_db(tracking_id):
