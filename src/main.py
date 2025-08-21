@@ -117,6 +117,17 @@ def del_user_data(chat_id):
     delete_user_session(chat_id)
 
 
+def send_message_safely(chat_id, text, **kwargs):
+    """
+    Sends a message and handles potential ConnectionError exceptions.
+    """
+    try:
+        return bot.send_message(chat_id, text, **kwargs)
+    except requests.exceptions.ConnectionError as e:
+        logging.error(f"Failed to send message to chat_id {chat_id} due to ConnectionError: {e}")
+        return None
+
+
 # Check database connection on startup
 check_db_connection()
 
@@ -257,7 +268,6 @@ def start(message):
         add_user_db(chat_id)
     except Exception as e:
         logging.error(f"Error in start command: {str(e)}", exc_info=True)
-        raise
 
 
 # Чтение города отправления. Проверка наличия в списке станций
@@ -689,7 +699,7 @@ def background_tracker():
                     else:
                         fresh_ticket_dict_msg = fresh_ticket_dict
 
-                    bot.send_message(
+                    send_message_safely(
                         chat_id,
                         f"Обновление по {train_number}:\n{fresh_ticket_dict_msg}",
                         reply_markup=markup_url,
@@ -715,7 +725,7 @@ def background_tracker():
                 else:
                     # Train has departed, stop tracking
                     del_tracking_db(chat_id, train_id)
-                    bot.send_message(
+                    send_message_safely(
                         chat_id,
                         f"Отслеживание завершёно по расписанию "
                         f"отправления поезда {train_number}",
