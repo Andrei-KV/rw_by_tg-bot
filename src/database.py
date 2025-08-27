@@ -21,7 +21,6 @@ def getconn():
         user=settings.DB_USER,
         password=settings.DB_PASSWORD,
         db=settings.DB_NAME,
-        ip_type=IPTypes.PUBLIC,
     )
     return conn
 
