@@ -1,11 +1,11 @@
 steps:
 # Build the container image
 - name: 'gcr.io/cloud-builders/docker'
-  args: ['build', '-t', 'europe-west1-docker.pkg.dev/$PROJECT_ID/telegram-bot-repo/telegram-bot:latest', '.']
+  args: ['build', '-t', 'europe-central2-docker.pkg.dev/$PROJECT_ID/my-bot-images/rw-by-bot:latest', '.']
 
 # Push the container image to Artifact Registry
 - name: 'gcr.io/cloud-builders/docker'
-  args: ['push', 'europe-west1-docker.pkg.dev/$PROJECT_ID/telegram-bot-repo/telegram-bot:latest']
+  args: ['push', 'europe-central2-docker.pkg.dev/$PROJECT_ID/my-bot-images/rw-by-bot:latest']
 
 # Deploy container image to Cloud Run
 - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
@@ -13,19 +13,19 @@ steps:
   args:
   - 'run'
   - 'deploy'
-  - 'telegram-bot'
+  - 'rw-by-bot'
   - '--image'
-  - 'europe-west1-docker.pkg.dev/$PROJECT_ID/telegram-bot-repo/telegram-bot:latest'
+  - 'europe-central2-docker.pkg.dev/$PROJECT_ID/my-bot-images/rw-by-bot:latest'
   - '--region'
-  - 'europe-west1' # <-- Changed
+  - 'europe-central2'
   - '--platform'
   - 'managed'
   - '--allow-unauthenticated'
   - '--port'
   - '8080'
-  - '--set-secrets=TOKEN=TOKEN:latest,DB_USER=DB_USER:latest,DB_PASSWORD=DB_PASSWORD:latest,DB_NAME=DB_NAME:latest,DB_INSTANCE_NAME=DB_INSTANCE_NAME:latest,WEBHOOK_URL=WEBHOOK_URL:latest,STOP_CODE=STOP_CODE:latest,BOT_NAME=BOT_NAME:latest'
+  - '--set-secrets=TOKEN=TOKEN:latest,DB_USER=DB_USER:latest,DB_PASSWORD=DB_PASSWORD:latest,DB_NAME=DB_NAME:latest,DB_INSTANCE_NAME=DB_INSTANCE_NAME:latest,WEBHOOK_URL=WEBHOOK_URL:latest,ADMIN_CHAT_ID=ADMIN_CHAT_ID:latest'
   - '--add-cloudsql-instances'
-  - 'test-rw-by:europe-west1:telegram-bot-db'
+  - 'my-telegram-bot-project-468910:europe-central2:my-bot-db-server'
 
 images:
-- 'europe-west1-docker.pkg.dev/$PROJECT_ID/telegram-bot-repo/telegram-bot:latest'
+- 'europe-central2-docker.pkg.dev/$PROJECT_ID/my-bot-images/rw-by-bot:latest'
