@@ -5,6 +5,7 @@ import os
 
 # import queue
 import sys
+import pytz
 
 # Библиотека для параллельных потоков
 import threading
@@ -694,11 +695,13 @@ def background_tracker():
                     update_next_check_time(tracking_id, next_check)
                     continue
 
-                # Combine date and time for the 15-minute rule
-                departure_datetime = datetime.combine(
+                # Create a timezone-aware departure datetime
+                minsk_tz = pytz.timezone('Europe/Minsk')
+                naive_departure = datetime.combine(
                     departure_date,
                     datetime.strptime(departure_time, "%H:%M").time()
                 )
+                departure_datetime = minsk_tz.localize(naive_departure)
 
                 # Check for changes
                 fresh_ticket_dict = check_tickets_by_class(train_number, soup, departure_datetime)
@@ -731,7 +734,7 @@ def background_tracker():
                     update_tracking_loop(json_ticket_dict, chat_id, train_id)
 
                 # Check if the train has already departed
-                if departure_datetime < datetime.now():
+                if departure_datetime < datetime.now(pytz.utc):
                     # Train has departed, stop tracking
                     del_tracking_db(chat_id, train_id)
                     send_message_safely(
@@ -746,7 +749,7 @@ def background_tracker():
                     continue
 
                 # Calculate next check time based on how far in the future the departure is
-                time_until_departure = departure_datetime - datetime.now()
+                time_until_departure = departure_datetime - datetime.now(pytz.utc)
                 hours_until_departure = time_until_departure.total_seconds() / 3600
 
                 delay_minutes = 0

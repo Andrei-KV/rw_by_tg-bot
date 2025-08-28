@@ -20,6 +20,7 @@ dependencies = [
     "cloud-sql-python-connector (>=1.18.2,<2.0.0)",
     "gunicorn (>=23.0.0,<24.0.0)",
     "sqlalchemy (>=2.0.0,<3.0.0)",
+    "pytz (>=2024.1,<2025.0)",
     "pg8000 (>=1.30.0,<2.0.0)",
     "gevent (>=24.0.0,<25.0.0)"
 ]
