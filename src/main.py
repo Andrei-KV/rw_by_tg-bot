@@ -520,15 +520,10 @@ def show_train_list(message, url=None):
     )
 
 
-# Выбор конкретного поезда из списка, отображение наличия мест
-@bot.callback_query_handler(
-    func=lambda callback: callback.data.endswith("_selected")
-)
-@ensure_start
-def select_train(callback):
-    # Мнимый ответ в телеграм для исключения ошибки скорости
-    bot.answer_callback_query(callback.id)
-
+def process_train_selection(callback):
+    """
+    Handles the slow logic of train selection in a separate thread.
+    """
     train_selected = callback.data.split("_")[0]
     chat_id = callback.message.chat.id
 
@@ -552,10 +547,6 @@ def select_train(callback):
 
     # Вывод количества мест по классам или "Мест нет"
     ticket_dict = check_tickets_by_class(train_selected, soup, departure_datetime)
-
-    # Добавляем в список поездов, но здесь статус отслеживания пока что False
-    # Здесь, т.к. необходимо получить список мест для контроля изменений
-    # Добавить поезд в список отслеживания
 
     # Кнопка включения слежения за поездом
     markup = types.InlineKeyboardMarkup()
@@ -607,6 +598,20 @@ def select_train(callback):
             text=f"🚆 Поезд №{train_selected}\n{ticket_message}",
             reply_markup=markup,
         )
+
+
+# Выбор конкретного поезда из списка, отображение наличия мест
+@bot.callback_query_handler(
+    func=lambda callback: callback.data.endswith("_selected")
+)
+@ensure_start
+def select_train(callback):
+    # Answer the callback immediately to prevent the "query is too old" error
+    bot.answer_callback_query(callback.id)
+
+    # Start a new thread to handle the slow processing
+    thread = threading.Thread(target=process_train_selection, args=(callback,))
+    thread.start()
 
 
 # Обработка возврата к списку поездов, если поезд без нумерации мест
