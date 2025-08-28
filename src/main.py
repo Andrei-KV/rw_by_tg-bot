@@ -60,10 +60,10 @@ from src.database import (
 from src.utils import (  # get_proxies,; SiteResponseError,
     FutureDateError,
     PastDateError,
-    check_depart_time,
     check_tickets_by_class,
     generate_calendar,
     get_departure_datetime_from_soup,
+    has_departed,
     make_request,
     normalize_city_name,
     normalize_date,
@@ -574,7 +574,7 @@ def select_train(callback):
             reply_markup=markup,
         )
     # Проверка времени отправления
-    elif check_depart_time(train_selected, soup, train_id=None) <= 0:
+    elif has_departed(departure_datetime):
         btn_track = types.InlineKeyboardButton(
             "🔄 Назад к поездам",
             callback_data="re_get_trains_list",

@@ -309,26 +309,13 @@ def get_departure_datetime_from_soup(train_number, soup, route_date):
         return None
 
 
-def check_depart_time(train_number, soup, train_id):
-    # информация о наличии мест и классов вагонов
-    train_info = soup.select(
-        f'div.sch-table__row[data-train-number^="{train_number}"] \
-            div.sch-table__time.train-from-time'
-    )
-    logging.info(
-        f"FG check_depart_time (train_number, train_id, train_info) \n"
-        f"{train_number, ' ',  train_id, '\n', train_info}"
-    )
-
-    depart_time = get_departure_date_db(train_id) if train_id else None
-    today = datetime.today().date()
-
-    if not train_info and depart_time and (depart_time >= today):
-        raise SiteResponseError('Ошибка получения данных поезда с сайта')
-    elif not train_info and depart_time and depart_time < today:
-        result = 0
-    elif not train_info:
-        result = 0
-    else:
-        result = int(train_info[0]["data-value"])
-    return result
+def has_departed(departure_datetime):
+    """
+    Checks if a timezone-aware departure datetime is in the past.
+    Returns True if the train has departed, False otherwise.
+    """
+    if not departure_datetime:
+        # If we don't have a departure time, assume it hasn't departed
+        # to prevent accidentally removing it.
+        return False
+    return departure_datetime < datetime.now(pytz.utc)
