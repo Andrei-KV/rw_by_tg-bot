@@ -2,6 +2,7 @@ import json
 import logging
 from datetime import datetime, timedelta
 from typing import Any, Literal, Sequence, overload
+import pytz
 
 # import pg8000
 import sqlalchemy
@@ -461,10 +462,12 @@ def cleanup_expired_routes_db():
     Deletes routes and associated data for trains that have already departed.
     A train is considered departed if its departure time is in the past.
     """
-    now = datetime.now()
+    minsk_tz = pytz.timezone('Europe/Minsk')
+    now_utc = datetime.now(pytz.utc)
+
     # Get all routes that might have expired trains
     # We check routes from today and yesterday to be safe.
-    two_days_ago = (now - timedelta(days=2)).strftime('%Y-%m-%d')
+    two_days_ago = (now_utc - timedelta(days=2)).strftime('%Y-%m-%d')
     potentially_expired_routes = execute_db_query(
         "SELECT route_id, date FROM routes WHERE date >= :two_days_ago",
         {"two_days_ago": two_days_ago},
@@ -484,12 +487,16 @@ def cleanup_expired_routes_db():
         )
         for train_id, time_depart in trains_on_route:
             try:
-                # Combine date and time to create a datetime object
-                departure_datetime = datetime.combine(
+                # Create a naive datetime object first
+                naive_departure = datetime.combine(
                     route_date,
                     datetime.strptime(time_depart, "%H:%M").time(),
                 )
-                if departure_datetime < now:
+                # Make it timezone-aware
+                aware_departure = minsk_tz.localize(naive_departure)
+
+                # Compare the aware departure time with the current UTC time
+                if aware_departure < now_utc:
                     trains_to_delete.append(train_id)
             except ValueError:
                 # Handle cases where time_depart might be in a wrong format
