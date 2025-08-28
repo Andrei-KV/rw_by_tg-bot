@@ -1,6 +1,5 @@
 import calendar
 import logging
-import time
 from datetime import datetime, timedelta
 
 import requests
@@ -213,22 +212,31 @@ def normalize_date(date_str):
     )
 
 
-def check_tickets_by_class(train_number, soup):
+def check_tickets_by_class(train_number, soup, departure_datetime=None):
     train_info = soup.select(
         f'div.sch-table__row[data-train-number^="{train_number}"]'
     )
     if not train_info:
-        return "Ошибка получения информации о поезде"
+        return {"status": "Ошибка получения информации о поезде"}
 
     selling_allowed = train_info[0].get("data-ticket_selling_allowed")
 
+    no_seats_status = {"status": "Мест нет"}
+    if departure_datetime:
+        time_diff = departure_datetime - datetime.now()
+        if time_diff < timedelta(minutes=15):
+            no_seats_status = {"status": "Продажа онлайн закрыта"}
+
     if selling_allowed == "true":
-        return get_tickets_by_class(train_info)
+        tickets = get_tickets_by_class(train_info)
+        if not tickets:  # If get_tickets_by_class returns empty, it's also a "no seats" case
+            return no_seats_status
+        return tickets
     elif selling_allowed == "false":
-        return "Мест нет либо закрыта продажа"
+        return no_seats_status
     else:
         # This case might occur if the attribute is missing
-        return "Ошибка получения информации о поезде"
+        return {"status": "Ошибка получения информации о поезде"}
 
 
 def get_tickets_by_class(train_info):
@@ -257,11 +265,8 @@ def get_tickets_by_class(train_info):
     return tickets_by_class
 
 
-def make_request(url, retries=3, backoff_factor=0.3):
-    """
-    Creates a requests session and makes a GET request with retries.
-    Implements exponential backoff for retries.
-    """
+def make_request(url):
+    """Creates a requests session and makes a GET request."""
     session = requests.Session()
     session.headers.update(
         {
@@ -276,25 +281,31 @@ def make_request(url, retries=3, backoff_factor=0.3):
             "X-Requested-With": "XMLHttpRequest",
         }
     )
-    for i in range(retries):
-        try:
-            r = session.get(url, timeout=30)
-            r.raise_for_status()
-            return r
-        except requests.exceptions.RequestException as e:
-            if i < retries - 1:
-                sleep_time = backoff_factor * (2**i)
-                logging.warning(
-                    f"Request to {url} failed: {e}. "
-                    f"Retrying in {sleep_time:.2f} seconds..."
-                )
-                time.sleep(sleep_time)
-            else:
-                logging.error(
-                    f"Request to {url} failed after {retries} retries."
-                )
-                raise
-    return None  # Should not be reached
+    r = session.get(url, timeout=30)
+    r.raise_for_status()  # Raise an exception for bad status codes
+    return r
+
+
+def get_departure_datetime_from_soup(train_number, soup, route_date):
+    """Parses departure time from soup and combines with date to return a datetime object."""
+    try:
+        train_info = soup.select_one(
+            f'div.sch-table__row[data-train-number^="{train_number}"]'
+        )
+        if not train_info:
+            return None
+
+        time_str = train_info.select_one('div.sch-table__time.train-from-time').text.strip()
+        departure_time = datetime.strptime(time_str, "%H:%M").time()
+
+        # The date from the user session is a string 'YYYY-MM-DD'
+        if isinstance(route_date, str):
+            route_date = datetime.strptime(route_date, "%Y-%m-%d").date()
+
+        return datetime.combine(route_date, departure_time)
+    except (AttributeError, ValueError) as e:
+        logging.warning(f"Could not parse departure datetime for train {train_number} from soup: {e}")
+        return None
 
 
 def check_depart_time(train_number, soup, train_id):

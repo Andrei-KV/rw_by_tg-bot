@@ -62,6 +62,7 @@ from src.utils import (  # get_proxies,; SiteResponseError,
     check_depart_time,
     check_tickets_by_class,
     generate_calendar,
+    get_departure_datetime_from_soup,
     make_request,
     normalize_city_name,
     normalize_date,
@@ -544,8 +545,12 @@ def select_train(callback):
         start(callback.message)
         return
 
+    # Get departure datetime for the 15-minute rule
+    route_date = user_info.get("date")
+    departure_datetime = get_departure_datetime_from_soup(train_selected, soup, route_date)
+
     # Вывод количества мест по классам или "Мест нет"
-    ticket_dict = check_tickets_by_class(train_selected, soup)
+    ticket_dict = check_tickets_by_class(train_selected, soup, departure_datetime)
 
     # Добавляем в список поездов, но здесь статус отслеживания пока что False
     # Здесь, т.к. необходимо получить список мест для контроля изменений
@@ -555,7 +560,7 @@ def select_train(callback):
     markup = types.InlineKeyboardMarkup()
 
     # Если 'Без нумерованных мест' возврат на выбор поезда
-    if seats_type_dict["0"] in ticket_dict:
+    if "Без нумерации 🚶‍♂️" in ticket_dict:
         btn_track = types.InlineKeyboardButton(
             "🔄 Назад к поездам",
             callback_data="re_get_trains_list",
@@ -586,14 +591,19 @@ def select_train(callback):
             callback_data=f"{train_selected}_start_tracking",
         )
         markup.add(btn_track)
-        if not isinstance(ticket_dict, str):
+
+        ticket_message = ""
+        if "status" in ticket_dict:
+            ticket_message = ticket_dict["status"]
+        else:
             res = ''
             for i in ticket_dict.items():
                 res += f'{i[0]}: {i[1]}\n'
-            ticket_dict = res
+            ticket_message = res.strip() if res else "Мест нет"
+
         bot.send_message(
             chat_id=callback.message.chat.id,
-            text=f"🚆 Поезд №{train_selected}\n{ticket_dict}",
+            text=f"🚆 Поезд №{train_selected}\n{ticket_message}",
             reply_markup=markup,
         )
 
@@ -647,41 +657,51 @@ def background_tracker():
                     departure_time,
                 ) = tracking
 
-                try:
-                    r = make_request(url)
-                    if not r:
-                        logging.error(
-                            f"Failed to fetch data for {url} after multiple retries."
+                soup = None
+                for attempt in range(10):
+                    try:
+                        r = make_request(url)
+                        only_span_div_tag = SoupStrainer(["span", "div"])
+                        soup = BeautifulSoup(
+                            r.text, "lxml", parse_only=only_span_div_tag
                         )
-                        # Reschedule for a short time later
-                        next_check = datetime.now() + timedelta(minutes=15)
-                        update_next_check_time(tracking_id, next_check)
-                        continue
+                        # If request is successful, break the loop
+                        break
+                    except requests.exceptions.RequestException as e:
+                        logging.warning(
+                            f"Attempt {attempt + 1}/10 failed for URL {url}: {e}. "
+                            f"Retrying in {(attempt + 1) * 10} minutes."
+                        )
+                        if attempt < 9:  # Don't sleep on the last attempt
+                            time.sleep((attempt + 1) * 10 * 60)
+                    except Exception as e:
+                        logging.error(
+                            f"An unexpected error occurred while processing tracking_id {tracking_id}: {e}",
+                            exc_info=True,
+                        )
+                        # For unexpected errors, break the loop and reschedule for later
+                        soup = None  # Ensure soup is None
+                        break
 
-                    only_span_div_tag = SoupStrainer(["span", "div"])
-                    soup = BeautifulSoup(
-                        r.text, "lxml", parse_only=only_span_div_tag
-                    )
-                except requests.exceptions.RequestException as e:
+                # If all retries failed, soup will be None
+                if soup is None:
                     logging.error(
-                        f"Error fetching train data for url {url}: {e}"
+                        f"Failed to fetch data for {url} after 10 attempts. "
+                        "Skipping this check and rescheduling."
                     )
-                    # Reschedule for a longer time later
-                    next_check = datetime.now() + timedelta(minutes=60)
+                    # Reschedule for a much longer time later
+                    next_check = datetime.now() + timedelta(hours=2)
                     update_next_check_time(tracking_id, next_check)
                     continue
-                except Exception as e:
-                    logging.error(
-                        f"An unexpected error occurred while processing tracking_id {tracking_id}: {e}",
-                        exc_info=True,
-                    )
-                    # Reschedule for a short time later
-                    next_check = datetime.now() + timedelta(minutes=15)
-                    update_next_check_time(tracking_id, next_check)
-                    continue
+
+                # Combine date and time for the 15-minute rule
+                departure_datetime = datetime.combine(
+                    departure_date,
+                    datetime.strptime(departure_time, "%H:%M").time()
+                )
 
                 # Check for changes
-                fresh_ticket_dict = check_tickets_by_class(train_number, soup)
+                fresh_ticket_dict = check_tickets_by_class(train_number, soup, departure_datetime)
                 stored_ticket_dict = get_fresh_loop(chat_id, train_id)
 
                 if fresh_ticket_dict != stored_ticket_dict:
@@ -691,19 +711,22 @@ def background_tracker():
                     )
                     markup_url.row(url_to_ticket)
 
-                    if not isinstance(fresh_ticket_dict, str):
+                    ticket_message = ""
+                    if "status" in fresh_ticket_dict:
+                        ticket_message = fresh_ticket_dict["status"]
+                    else:
                         res = ''
                         for i in fresh_ticket_dict.items():
                             res += f'{i[0]}: {i[1]}\n'
-                        fresh_ticket_dict_msg = res
-                    else:
-                        fresh_ticket_dict_msg = fresh_ticket_dict
+                        ticket_message = res.strip() if res else "Места появились, но детали не удалось разобрать."
 
                     send_message_safely(
                         chat_id,
-                        f"Обновление по {train_number}:\n{fresh_ticket_dict_msg}",
+                        f"Обновление по {train_number}:\n{ticket_message}",
                         reply_markup=markup_url,
                     )
+
+                    # Save the new state to the database
                     json_ticket_dict = json.dumps(fresh_ticket_dict)
                     update_tracking_loop(json_ticket_dict, chat_id, train_id)
 
@@ -802,7 +825,12 @@ def start_tracking_train(callback):
         r = make_request(url)
         only_span_div_tag = SoupStrainer(["span", "div"])
         soup = BeautifulSoup(r.text, "lxml", parse_only=only_span_div_tag)
-        ticket_dict = check_tickets_by_class(train_tracking, soup)
+
+        # Get departure datetime for the 15-minute rule
+        route_date = get_user_data(chat_id).get("date")
+        departure_datetime = get_departure_datetime_from_soup(train_tracking, soup, route_date)
+
+        ticket_dict = check_tickets_by_class(train_tracking, soup, departure_datetime)
 
         # Add to tracking list
         add_tracking_db(
