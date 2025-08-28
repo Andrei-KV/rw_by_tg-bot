@@ -303,7 +303,10 @@ def get_departure_datetime_from_soup(train_number, soup, route_date):
         if isinstance(route_date, str):
             route_date = datetime.strptime(route_date, "%Y-%m-%d").date()
 
-        return datetime.combine(route_date, departure_time)
+        naive_departure = datetime.combine(route_date, departure_time)
+        minsk_tz = pytz.timezone('Europe/Minsk')
+        aware_departure = minsk_tz.localize(naive_departure)
+        return aware_departure
     except (AttributeError, ValueError) as e:
         logging.warning(f"Could not parse departure datetime for train {train_number} from soup: {e}")
         return None
