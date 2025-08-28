@@ -730,22 +730,8 @@ def background_tracker():
                     json_ticket_dict = json.dumps(fresh_ticket_dict)
                     update_tracking_loop(json_ticket_dict, chat_id, train_id)
 
-                # Calculate next check time
-                now = datetime.now().date()
-                hours_until_departure = (
-                    departure_date - now
-                ).total_seconds() / 3600
-
-                delay_minutes = 0
-                if hours_until_departure > 36:
-                    delay_minutes = randint(40, 60)
-                elif 24 <= hours_until_departure <= 36:
-                    delay_minutes = randint(20, 40)
-                elif 4 <= hours_until_departure < 24:
-                    delay_minutes = randint(10, 20)
-                elif 0 <= hours_until_departure < 4:
-                    delay_minutes = randint(5, 10)
-                else:
+                # Check if the train has already departed
+                if departure_datetime < datetime.now():
                     # Train has departed, stop tracking
                     del_tracking_db(chat_id, train_id)
                     send_message_safely(
@@ -758,6 +744,20 @@ def background_tracker():
                         f"for user {chat_id} as it has departed."
                     )
                     continue
+
+                # Calculate next check time based on how far in the future the departure is
+                time_until_departure = departure_datetime - datetime.now()
+                hours_until_departure = time_until_departure.total_seconds() / 3600
+
+                delay_minutes = 0
+                if hours_until_departure > 36:
+                    delay_minutes = randint(40, 60)
+                elif 24 <= hours_until_departure <= 36:
+                    delay_minutes = randint(20, 40)
+                elif 4 <= hours_until_departure < 24:
+                    delay_minutes = randint(10, 20)
+                else:  # 0 <= hours_until_departure < 4
+                    delay_minutes = randint(5, 10)
 
                 next_check_at = datetime.now() + timedelta(
                     minutes=delay_minutes
