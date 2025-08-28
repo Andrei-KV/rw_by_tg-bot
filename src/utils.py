@@ -1,6 +1,7 @@
 import calendar
 import logging
 from datetime import datetime, timedelta
+import pytz
 
 import requests
 from telebot import types
@@ -223,7 +224,7 @@ def check_tickets_by_class(train_number, soup, departure_datetime=None):
 
     no_seats_status = {"status": "Мест нет"}
     if departure_datetime:
-        time_diff = departure_datetime - datetime.now()
+        time_diff = departure_datetime - datetime.now(pytz.utc)
         if time_diff < timedelta(minutes=15):
             no_seats_status = {"status": "Продажа онлайн закрыта"}
 
