@@ -24,6 +24,10 @@ class SiteResponseError(Exception):
     pass
 
 
+class TrainNotFoundError(Exception):
+    pass
+
+
 seats_type_dict = {
     "0": "Без нумерации 🚶‍♂️",
     "1": "Общий 🚃",
@@ -218,7 +222,7 @@ def check_tickets_by_class(train_number, soup, departure_datetime=None):
         f'div.sch-table__row[data-train-number^="{train_number}"]'
     )
     if not train_info:
-        return {"status": "Ошибка получения информации о поезде"}
+        raise TrainNotFoundError(f"Train {train_number} not found in soup.")
 
     selling_allowed = train_info[0].get("data-ticket_selling_allowed")
 
@@ -237,7 +241,9 @@ def check_tickets_by_class(train_number, soup, departure_datetime=None):
         return no_seats_status
     else:
         # This case might occur if the attribute is missing
-        return {"status": "Ошибка получения информации о поезде"}
+        raise TrainNotFoundError(
+            f"Train {train_number} found, but ticket_selling_allowed attribute is missing."
+        )
 
 
 def get_tickets_by_class(train_info):
