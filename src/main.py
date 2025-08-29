@@ -60,6 +60,7 @@ from src.database import (
 from src.utils import (  # get_proxies,; SiteResponseError,
     FutureDateError,
     PastDateError,
+    TrainNotFoundError,
     check_tickets_by_class,
     generate_calendar,
     get_departure_datetime_from_soup,
@@ -709,7 +710,30 @@ def background_tracker():
                 departure_datetime = minsk_tz.localize(naive_departure)
 
                 # Check for changes
-                fresh_ticket_dict = check_tickets_by_class(train_number, soup, departure_datetime)
+                try:
+                    fresh_ticket_dict = check_tickets_by_class(train_number, soup, departure_datetime)
+                except TrainNotFoundError:
+                    current_hour = datetime.now(pytz.utc).astimezone(pytz.timezone('Europe/Minsk')).hour
+                    if 23 <= current_hour or current_hour < 7:
+                        # Night time, suppress error and let retry loop handle it
+                        logging.warning(
+                            f"Train {train_number} not found during night check. Suppressing notification and retrying."
+                        )
+                        # Continue to the next attempt in the retry loop
+                        continue
+                    else:
+                        # Daytime, this is a real error. Notify user and stop tracking.
+                        send_message_safely(
+                            chat_id,
+                            f"Обновление по {train_number}:\nОшибка получения информации о поезде"
+                        )
+                        del_tracking_db(chat_id, train_id)
+                        logging.error(
+                            f"Train {train_number} not found during day check. Stopped tracking."
+                        )
+                        # Break the retry loop and move to the next train
+                        break
+
                 stored_ticket_dict = get_fresh_loop(chat_id, train_id)
 
                 if fresh_ticket_dict != stored_ticket_dict:
