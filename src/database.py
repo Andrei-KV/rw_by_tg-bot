@@ -30,6 +30,7 @@ def getconn():
 db_pool = sqlalchemy.create_engine(
     "postgresql+pg8000://",
     creator=getconn,
+    pool_pre_ping=True,
 )
 
 
