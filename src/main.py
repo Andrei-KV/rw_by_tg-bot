@@ -696,6 +696,14 @@ def background_tracker():
                         f"Failed to fetch data for {url} after 10 attempts. "
                         "Skipping this check and rescheduling."
                     )
+
+                    # Notify the user about the persistent failure
+                    send_message_safely(
+                        chat_id,
+                        f"⚠️ Не удалось проверить поезд {train_number} после 10 попыток. "
+                        "Проверю еще раз через 2 часа. Отслеживание продолжается."
+                    )
+
                     # Reschedule for a much longer time later
                     next_check = datetime.now() + timedelta(hours=2)
                     update_next_check_time(tracking_id, next_check)
@@ -712,27 +720,14 @@ def background_tracker():
                 # Check for changes
                 try:
                     fresh_ticket_dict = check_tickets_by_class(train_number, soup, departure_datetime)
-                except TrainNotFoundError:
-                    current_hour = datetime.now(pytz.utc).astimezone(pytz.timezone('Europe/Minsk')).hour
-                    if 23 <= current_hour or current_hour < 7:
-                        # Night time, suppress error and let retry loop handle it
-                        logging.warning(
-                            f"Train {train_number} not found during night check. Suppressing notification and retrying."
-                        )
-                        # Continue to the next attempt in the retry loop
-                        continue
-                    else:
-                        # Daytime, this is a real error. Notify user and stop tracking.
-                        send_message_safely(
-                            chat_id,
-                            f"Обновление по {train_number}:\nОшибка получения информации о поезде"
-                        )
-                        del_tracking_db(chat_id, train_id)
-                        logging.error(
-                            f"Train {train_number} not found during day check. Stopped tracking."
-                        )
-                        # Break the retry loop and move to the next train
-                        break
+                except TrainNotFoundError as e:
+                    # This can happen if the site is blocking or the train is gone.
+                    # Log it and let the retry loop handle it.
+                    logging.warning(
+                        f"TrainNotFoundError for train {train_number} on attempt {attempt + 1}/10: {e}. "
+                        "Will be retried."
+                    )
+                    continue
 
                 stored_ticket_dict = get_fresh_loop(chat_id, train_id)
 
