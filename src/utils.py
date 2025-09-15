@@ -8,7 +8,7 @@ from telebot import types
 
 from all_stations_list import all_station_list, all_station_list_lower
 
-# from src.config import settings
+from src.config import settings
 from src.database import get_departure_date_db
 
 
@@ -288,7 +288,15 @@ def make_request(url):
             "X-Requested-With": "XMLHttpRequest",
         }
     )
-    r = session.get(url, timeout=30)
+
+    proxies = None
+    if settings.PROXY_URL:
+        proxies = {
+            "http": settings.PROXY_URL,
+            "https": settings.PROXY_URL,
+        }
+
+    r = session.get(url, timeout=30, proxies=proxies)
     r.raise_for_status()  # Raise an exception for bad status codes
     return r
 

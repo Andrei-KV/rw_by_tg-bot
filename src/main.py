@@ -376,17 +376,19 @@ def get_date(message):
 
 
 # Функция получения поездов по маршруту
-def get_trains_list(message):
-    # Для отображения активности
-    bot.send_chat_action(message.chat.id, 'typing')  # Show typing indicator
-    time.sleep(1)  # Optional delay
-    bot.send_message(message.chat.id, "Идёт поиск 🔍")  # Send your custom text
+def process_get_trains_list(message):
+    # For a more responsive feel, send the "typing" action from the main thread.
+    # The user already sees "Идёт поиск 🔍", so this might be redundant.
+    # bot.send_chat_action(message.chat.id, 'typing')
+    # time.sleep(1)
+
     chat_id = message.chat.id
     logging.debug(f"FLAG start 1 get_trains_list {''}")
     user_info = get_user_data(chat_id)
     if not user_info:
         logging.error(f"No user data for chat_id {chat_id}")
-        raise ValueError("User data not found")
+        # Cannot raise an exception in a thread, so just return
+        return
 
     try:
         q_from = quote(user_info["city_from"])
@@ -394,7 +396,8 @@ def get_trains_list(message):
         date = user_info["date"]
     except KeyError as e:
         logging.error(f"Missing key in user data: {e}")
-        raise ValueError(f"Incomplete user data: missing {e}")
+        # Cannot raise, so just return
+        return
 
     # Получение новой страницы "soup"
     url = f"https://pass.rw.by/ru/route/?from={q_from}&to={q_to}&date={date}"
@@ -483,6 +486,16 @@ def get_trains_list(message):
         )
         start(message)
         return
+
+
+def get_trains_list(message):
+    # This function is now fast. It just sends a message and starts a thread.
+    bot.send_chat_action(message.chat.id, 'typing')
+    bot.send_message(message.chat.id, "Идёт поиск 🔍")
+
+    # Start a new thread to handle the slow processing
+    thread = threading.Thread(target=process_get_trains_list, args=(message,))
+    thread.start()
 
 
 @ensure_start
