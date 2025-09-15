@@ -681,6 +681,9 @@ def background_tracker():
                 for attempt in range(10):
                     try:
                         r = make_request(url)
+                        # Add diagnostic logging
+                        logging.debug(f"Response text for URL {url}: {r.text[:500]}")
+
                         only_span_div_tag = SoupStrainer(["span", "div"])
                         soup = BeautifulSoup(
                             r.text, "lxml", parse_only=only_span_div_tag
