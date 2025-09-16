@@ -23,7 +23,7 @@ steps:
   - '--allow-unauthenticated'
   - '--port'
   - '8080'
-  - '--set-secrets=TOKEN=TOKEN:latest,DB_USER=DB_USER:latest,DB_PASSWORD=DB_PASSWORD:latest,DB_NAME=DB_NAME:latest,DB_INSTANCE_NAME=DB_INSTANCE_NAME:latest,WEBHOOK_URL=WEBHOOK_URL:latest,ADMIN_CHAT_ID=ADMIN_CHAT_ID:latest'
+  - '--set-secrets=TOKEN=TOKEN:latest,DB_USER=DB_USER:latest,DB_PASSWORD=DB_PASSWORD:latest,DB_NAME=DB_NAME:latest,DB_INSTANCE_NAME=DB_INSTANCE_NAME:latest,WEBHOOK_URL=WEBHOOK_URL:latest,ADMIN_CHAT_ID=ADMIN_CHAT_ID:latest,PROXY_URL=PROXY_URL:latest'
   - '--add-cloudsql-instances'
   - 'my-telegram-bot-project-468910:europe-central2:my-bot-db-server'
 

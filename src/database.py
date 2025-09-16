@@ -27,9 +27,20 @@ def getconn():
 
 
 # The Cloud SQL Python Connector can be used with SQLAlchemy
+# For more info on connection pooling, see:
+# https://cloud.google.com/sql/docs/postgres/connect-run#additional-parameters
 db_pool = sqlalchemy.create_engine(
     "postgresql+pg8000://",
     creator=getconn,
+    # pool_size=5 is the default.
+    pool_size=5,
+    # max_overflow=10 is the default.
+    max_overflow=10,
+    # pool_timeout=30 is the default.
+    pool_timeout=30,
+    # pool_recycle is the number of seconds a connection can be idle.
+    # Set this to a value less than the database's timeout settings.
+    pool_recycle=1800,  # 30 minutes
     pool_pre_ping=True,
 )
 
