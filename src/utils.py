@@ -274,6 +274,9 @@ def get_tickets_by_class(train_info):
 
 def make_request(url):
     """Creates a requests session and makes a GET request."""
+    # Diagnostic logging to check if the proxy URL is being loaded
+    logging.info(f"Attempting request with PROXY_URL: '{settings.PROXY_URL}'")
+
     session = requests.Session()
     session.headers.update(
         {
