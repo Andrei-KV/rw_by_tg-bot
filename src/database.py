@@ -2,45 +2,42 @@ import json
 import logging
 from datetime import datetime, timedelta
 from typing import Any, Literal, Sequence, overload
+
 import pytz
 
 # import pg8000
 import sqlalchemy
-from google.cloud.sql.connector import Connector, IPTypes
+
+# from google.cloud.sql.connector import Connector, IPTypes
 from sqlalchemy.engine import Row
 
 from src.config import settings
 
 # initialize Connector object
-connector = Connector()
+# connector = Connector()
 
 
-def getconn():
-    conn = connector.connect(
-        settings.DB_INSTANCE_NAME,
-        "pg8000",
-        user=settings.DB_USER,
-        password=settings.DB_PASSWORD,
-        db=settings.DB_NAME,
-    )
-    return conn
+# def getconn():
+#     conn = connector.connect(
+#         settings.DB_INSTANCE_NAME,
+#         "pg8000",
+#         user=settings.DB_USER,
+#         password=settings.DB_PASSWORD,
+#         db=settings.DB_NAME,
+#     )
+#     return conn
 
 
 # The Cloud SQL Python Connector can be used with SQLAlchemy
 # For more info on connection pooling, see:
 # https://cloud.google.com/sql/docs/postgres/connect-run#additional-parameters
 db_pool = sqlalchemy.create_engine(
-    "postgresql+pg8000://",
-    creator=getconn,
-    # pool_size=5 is the default.
+    f"postgresql+psycopg2://{settings.DB_USER}:{settings.DB_PASSWORD}@"
+    f"{settings.DB_HOST}:{settings.DB_PORT}/{settings.DB_NAME}",
     pool_size=5,
-    # max_overflow=10 is the default.
     max_overflow=10,
-    # pool_timeout=30 is the default.
     pool_timeout=30,
-    # pool_recycle is the number of seconds a connection can be idle.
-    # Set this to a value less than the database's timeout settings.
-    pool_recycle=1800,  # 30 minutes
+    pool_recycle=1800,
     pool_pre_ping=True,
 )
 

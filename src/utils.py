@@ -1,15 +1,15 @@
 import calendar
 import logging
 from datetime import datetime, timedelta
-import pytz
 
+import pytz
 import requests
 from telebot import types
 
 from all_stations_list import all_station_list, all_station_list_lower
-
 from src.config import settings
-from src.database import get_departure_date_db
+
+# from src.database import get_departure_date_db
 
 
 class PastDateError(ValueError):
@@ -234,7 +234,9 @@ def check_tickets_by_class(train_number, soup, departure_datetime=None):
 
     if selling_allowed == "true":
         tickets = get_tickets_by_class(train_info)
-        if not tickets:  # If get_tickets_by_class returns empty, it's also a "no seats" case
+        if (
+            not tickets
+        ):  # If get_tickets_by_class returns empty, it's also a "no seats" case
             return no_seats_status
         return tickets
     elif selling_allowed == "false":
@@ -313,7 +315,9 @@ def get_departure_datetime_from_soup(train_number, soup, route_date):
         if not train_info:
             return None
 
-        time_str = train_info.select_one('div.sch-table__time.train-from-time').text.strip()
+        time_str = train_info.select_one(
+            'div.sch-table__time.train-from-time'
+        ).text.strip()
         departure_time = datetime.strptime(time_str, "%H:%M").time()
 
         # The date from the user session is a string 'YYYY-MM-DD'
@@ -325,7 +329,9 @@ def get_departure_datetime_from_soup(train_number, soup, route_date):
         aware_departure = minsk_tz.localize(naive_departure)
         return aware_departure
     except (AttributeError, ValueError) as e:
-        logging.warning(f"Could not parse departure datetime for train {train_number} from soup: {e}")
+        logging.warning(
+            f"Could not parse departure datetime for train {train_number} from soup: {e}"
+        )
         return None
 
 

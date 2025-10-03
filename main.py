@@ -2,10 +2,10 @@
 import json
 import logging
 import os
+import subprocess
 
 # import queue
 import sys
-import pytz
 
 # Библиотека для параллельных потоков
 import threading
@@ -21,6 +21,7 @@ from urllib.parse import quote
 
 # import sqlite3
 import flask
+import pytz
 import requests
 
 # Импорт для бота
@@ -29,6 +30,7 @@ from bs4 import BeautifulSoup
 
 # Для парсинга страниц
 from bs4.filter import SoupStrainer
+from dotenv import load_dotenv
 from telebot import apihelper, types
 
 # Список станций
@@ -57,7 +59,7 @@ from src.database import (
     update_tracking_loop,
     update_user_session,
 )
-from src.utils import (  # get_proxies,; SiteResponseError,
+from src.utils import (  # get_proxies,; SiteResponseError,; seats_type_dict,
     FutureDateError,
     PastDateError,
     TrainNotFoundError,
@@ -68,9 +70,9 @@ from src.utils import (  # get_proxies,; SiteResponseError,
     make_request,
     normalize_city_name,
     normalize_date,
-    seats_type_dict,
 )
 
+load_dotenv()
 # Remove the in-memory user_data dictionary and locks
 # user_data = defaultdict(
 #     lambda: {}
@@ -90,8 +92,10 @@ def setup_logging():
 
     # Явно указываем stdout (обязательно для Cloud Run)
     console_handler = logging.StreamHandler(stream=sys.stdout)
+    file_handler = logging.FileHandler("train_bot.log", encoding="utf-8")
     console_handler.setFormatter(formatter)
     logger.addHandler(console_handler)
+    logger.addHandler(file_handler)
 
 
 setup_logging()
@@ -127,7 +131,10 @@ def send_message_safely(chat_id, text, **kwargs):
     try:
         return bot.send_message(chat_id, text, **kwargs)
     except requests.exceptions.ConnectionError as e:
-        logging.error(f"Failed to send message to chat_id {chat_id} due to ConnectionError: {e}")
+        logging.error(
+            f"Failed to send message to chat_id {chat_id} "
+            f"due to ConnectionError: {e}"
+        )
         return None
 
 
@@ -377,7 +384,8 @@ def get_date(message):
 
 # Функция получения поездов по маршруту
 def process_get_trains_list(message):
-    # For a more responsive feel, send the "typing" action from the main thread.
+    # For a more responsive feel, send the
+    # "typing" action from the main thread.
     # The user already sees "Идёт поиск 🔍", so this might be redundant.
     # bot.send_chat_action(message.chat.id, 'typing')
     # time.sleep(1)
@@ -557,10 +565,14 @@ def process_train_selection(callback):
 
     # Get departure datetime for the 15-minute rule
     route_date = user_info.get("date")
-    departure_datetime = get_departure_datetime_from_soup(train_selected, soup, route_date)
+    departure_datetime = get_departure_datetime_from_soup(
+        train_selected, soup, route_date
+    )
 
     # Вывод количества мест по классам или "Мест нет"
-    ticket_dict = check_tickets_by_class(train_selected, soup, departure_datetime)
+    ticket_dict = check_tickets_by_class(
+        train_selected, soup, departure_datetime
+    )
 
     # Кнопка включения слежения за поездом
     markup = types.InlineKeyboardMarkup()
@@ -682,7 +694,9 @@ def background_tracker():
                     try:
                         r = make_request(url)
                         # Add diagnostic logging
-                        logging.debug(f"Response text for URL {url}: {r.text[:500]}")
+                        logging.debug(
+                            f"Response text for URL {url}: {r.text[:500]}"
+                        )
 
                         only_span_div_tag = SoupStrainer(["span", "div"])
                         soup = BeautifulSoup(
@@ -699,7 +713,8 @@ def background_tracker():
                             time.sleep((attempt + 1) * 10 * 60)
                     except Exception as e:
                         logging.error(
-                            f"An unexpected error occurred while processing tracking_id {tracking_id}: {e}",
+                            f"An unexpected error occurred while processing "
+                            f"tracking_id {tracking_id}: {e}",
                             exc_info=True,
                         )
                         # For unexpected errors, break the loop and reschedule for later
@@ -717,7 +732,7 @@ def background_tracker():
                     send_message_safely(
                         chat_id,
                         f"⚠️ Не удалось проверить поезд {train_number} после 10 попыток. "
-                        "Проверю еще раз через 2 часа. Отслеживание продолжается."
+                        "Проверю еще раз через 2 часа. Отслеживание продолжается.",
                     )
 
                     # Reschedule for a much longer time later
@@ -729,13 +744,15 @@ def background_tracker():
                 minsk_tz = pytz.timezone('Europe/Minsk')
                 naive_departure = datetime.combine(
                     departure_date,
-                    datetime.strptime(departure_time, "%H:%M").time()
+                    datetime.strptime(departure_time, "%H:%M").time(),
                 )
                 departure_datetime = minsk_tz.localize(naive_departure)
 
                 # Check for changes
                 try:
-                    fresh_ticket_dict = check_tickets_by_class(train_number, soup, departure_datetime)
+                    fresh_ticket_dict = check_tickets_by_class(
+                        train_number, soup, departure_datetime
+                    )
                 except TrainNotFoundError as e:
                     # This can happen if the site is blocking or the train is gone.
                     # Log it and let the retry loop handle it.
@@ -761,7 +778,11 @@ def background_tracker():
                         res = ''
                         for i in fresh_ticket_dict.items():
                             res += f'{i[0]}: {i[1]}\n'
-                        ticket_message = res.strip() if res else "Места появились, но детали не удалось разобрать."
+                        ticket_message = (
+                            res.strip()
+                            if res
+                            else "Места появились, но детали не удалось разобрать."
+                        )
 
                     send_message_safely(
                         chat_id,
@@ -789,8 +810,12 @@ def background_tracker():
                     continue
 
                 # Calculate next check time based on how far in the future the departure is
-                time_until_departure = departure_datetime - datetime.now(pytz.utc)
-                hours_until_departure = time_until_departure.total_seconds() / 3600
+                time_until_departure = departure_datetime - datetime.now(
+                    pytz.utc
+                )
+                hours_until_departure = (
+                    time_until_departure.total_seconds() / 3600
+                )
 
                 delay_minutes = 0
                 if hours_until_departure > 36:
@@ -812,7 +837,9 @@ def background_tracker():
                 )
 
         except Exception as e:
-            logging.error(f"Error in background_tracker main loop: {e}", exc_info=True)
+            logging.error(
+                f"Error in background_tracker main loop: {e}", exc_info=True
+            )
             time.sleep(60)  # Sleep on error to avoid fast error loops
 
 
@@ -871,9 +898,13 @@ def start_tracking_train(callback):
 
         # Get departure datetime for the 15-minute rule
         route_date = get_user_data(chat_id).get("date")
-        departure_datetime = get_departure_datetime_from_soup(train_tracking, soup, route_date)
+        departure_datetime = get_departure_datetime_from_soup(
+            train_tracking, soup, route_date
+        )
 
-        ticket_dict = check_tickets_by_class(train_tracking, soup, departure_datetime)
+        ticket_dict = check_tickets_by_class(
+            train_tracking, soup, departure_datetime
+        )
 
         # Add to tracking list
         add_tracking_db(
@@ -1055,7 +1086,9 @@ def cleanup_expired_routes():
             cleanup_expired_routes_db()
             logging.info("Finished expired routes cleanup.")
         except Exception as e:
-            logging.error(f"Error in cleanup_expired_routes: {e}", exc_info=True)
+            logging.error(
+                f"Error in cleanup_expired_routes: {e}", exc_info=True
+            )
         # Проверяем каждые 2 часа
         time.sleep(2 * 60 * 60)
 
@@ -1118,7 +1151,9 @@ def manual_cleanup(message):
             logging.error(f"Manual cleanup failed: {e}", exc_info=True)
             bot.send_message(message.chat.id, "❌ Ошибка во время очистки.")
     else:
-        bot.send_message(message.chat.id, "⛔ У вас нет прав для этой команды.")
+        bot.send_message(
+            message.chat.id, "⛔ У вас нет прав для этой команды."
+        )
 
 
 # =============================================================================
@@ -1208,76 +1243,151 @@ def exit_admin(message):
 # Чтобы всё сработало:
 # webhook должен быть установлен заранее
 # фоновые задачи нужно запускать внутри @app.on_event("startup")
-# if __name__ == "__main__":
-#     # Запуск существующих отслеживаний
-#     restore_all_trackings()
-#     # Проверка устаревших маршрутов и отслеживание потоков
-#     start_background_tasks()
 
-#     try:
-#         try:
-#             bot.remove_webhook()  # Попытка удалить существующий webhook
-#             time.sleep(2)  # Пауза для обработки запроса сервером Telegram
-#             success = bot.set_webhook(url=f"{webhook_url}/{token}")
-#             if success:
-#                 logging.info(f"Webhook установлен: {webhook_url}")
-#             else:
-#                 logging.error("Ошибка установки webhook")
-#             # app.run(host='0.0.0.0', port=web_port) # Для разработки
-#             # Для деплоя запускается через Gunicorn
-
-#         except apihelper.ApiTelegramException as e:
-#             # Игнорирование ошибки "webhook не установлен"
-#             if "webhook is not set" not in str(e):
-#                 logging.error(f"Webhook deletion failed: {e}")
-#             else:
-#                 raise  # Проброс других ошибок API
-
-#         # Ошибка запроса
-#     except requests.exceptions.ReadTimeout as e:
-#         logging.error(f"Timeout error: {e}.")
-
-#     # Остальные ошибки
-#     except Exception as e:
-#         logging.error(f"Attempt failed: {str(e)}")
+current_webhook_url = None
 
 
-def initialize_app():
-    global app_initialized
-    if app_initialized:
-        return
-    app_initialized = True
+def set_telegram_webhook(url):
+    """Устанавливает webhook Telegram."""
+    global current_webhook_url
 
-    logging.info("🔧 Инициализация приложения")
-    # Create database tables if they don't exist
-    create_tables()
-
+    token = os.getenv("TOKEN")
     try:
-        # Проверка вебхука для разных воркеров
-        webhook_info = bot.get_webhook_info()
-        if webhook_info.url != f"{settings.WEBHOOK_URL}/{settings.TOKEN}":
-
-            bot.remove_webhook()
-            time.sleep(5)
-            success = bot.set_webhook(
-                url=f"{settings.WEBHOOK_URL}/{settings.TOKEN}"
-            )
-            if success:
-                logging.info(f"✅ Webhook установлен: {settings.WEBHOOK_URL}")
-            else:
-                logging.error("❌ Ошибка установки webhook")
-
+        bot.remove_webhook()
+        time.sleep(2)
+        success = bot.set_webhook(url=f"{url}/{token}")
+        if success:
+            current_webhook_url = url
+            logging.info(f"Webhook обновлён: {url}/{token}")
+        else:
+            logging.error("Ошибка установки webhook")
     except apihelper.ApiTelegramException as e:
         if "webhook is not set" not in str(e):
             logging.error(f"Webhook deletion failed: {e}")
-        else:
-            raise
-    except requests.exceptions.ReadTimeout as e:
-        logging.error(f"Timeout error: {e}.")
-    except Exception as e:
-        logging.error(f"Unexpected error during init: {e}")
 
+
+def run_localtunnel(port=8000):
+    """Запускает localtunnel в цикле и обновляет webhook при изменении URL."""
+    # global current_webhook_url
+
+    while True:
+        try:
+            logging.info("Запуск localtunnel...")
+            proc = subprocess.Popen(
+                ["npx", "localtunnel", "--port", str(port)],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+
+            for line in proc.stdout:
+                logging.debug(f"[localtunnel] {line.strip()}")
+                if "url is:" in line:
+                    url = line.split("url is:")[-1].strip()
+                    logging.info(f"LocalTunnel URL: {url}")
+
+                    # Если URL изменился → обновляем webhook
+                    if url != current_webhook_url:
+                        set_telegram_webhook(url)
+
+            # если процесс завершился → перезапускаем
+            proc.wait()
+            logging.warning(
+                "Localtunnel завершился. Перезапуск через 5 секунд..."
+            )
+            time.sleep(5)
+
+        except Exception as e:
+            logging.error(f"Ошибка localtunnel: {e}")
+            time.sleep(5)
+
+
+# Как это работает
+# run_localtunnel запускает npx localtunnel --port 8000 через subprocess.Popen.
+# Читает вывод (stdout) построчно и ловит момент, когда появляется строка с url is:.
+# Возвращает URL и сам процесс (proc), чтобы при выходе из Python можно было его убить.
+# Webhook Telegram устанавливается на https://something.loca.lt/{TOKEN}.
+# Если localtunnel упадёт → функция снова его запустит.
+
+if __name__ == "__main__":
+
+    # Проверка устаревших маршрутов и отслеживание потоков
     start_background_tasks()
 
+    # Запускаем localtunnel в отдельном потоке
+    threading.Thread(target=run_localtunnel, daemon=True).start()
 
-initialize_app()
+    web_port = int(os.getenv("WEB_PORT", 8000))
+    # Create database tables if they don't exist
+    create_tables()
+    try:
+        try:
+            # # webhook_url = os.getenv("WEBHOOK_URL")
+            # webhook_url, lt_proc = run_localtunnel(port=8000)
+            # token = os.getenv("TOKEN")
+            # web_port = 8000
+            # bot.remove_webhook()  # Попытка удалить существующий webhook
+            # time.sleep(2)  # Пауза для обработки запроса сервером Telegram
+            # success = bot.set_webhook(url=f"{webhook_url}/{token}")
+            # if success:
+            #     logging.info(f"Webhook установлен: {webhook_url}")
+            # else:
+            #     logging.error("Ошибка установки webhook")
+            app.run(host='0.0.0.0', port=web_port)  # Для разработки
+            # Для деплоя запускается через Gunicorn
+
+        except apihelper.ApiTelegramException as e:
+            # Игнорирование ошибки "webhook не установлен"
+            if "webhook is not set" not in str(e):
+                logging.error(f"Webhook deletion failed: {e}")
+            else:
+                raise  # Проброс других ошибок API
+
+        # Ошибка запроса
+    except requests.exceptions.ReadTimeout as e:
+        logging.error(f"Timeout error: {e}.")
+
+    # Остальные ошибки
+    except Exception as e:
+        logging.error(f"Attempt failed: {str(e)}")
+
+
+# def initialize_app():
+#     global app_initialized
+#     if app_initialized:
+#         return
+#     app_initialized = True
+
+#     logging.info("🔧 Инициализация приложения")
+#     # Create database tables if they don't exist
+#     create_tables()
+
+#     try:
+#         # Проверка вебхука для разных воркеров
+#         webhook_info = bot.get_webhook_info()
+#         if webhook_info.url != f"{settings.WEBHOOK_URL}/{settings.TOKEN}":
+
+#             bot.remove_webhook()
+#             time.sleep(5)
+#             success = bot.set_webhook(
+#                 url=f"{settings.WEBHOOK_URL}/{settings.TOKEN}"
+#             )
+#             if success:
+#                 logging.info(f"✅ Webhook установлен: {settings.WEBHOOK_URL}")
+#             else:
+#                 logging.error("❌ Ошибка установки webhook")
+
+#     except apihelper.ApiTelegramException as e:
+#         if "webhook is not set" not in str(e):
+#             logging.error(f"Webhook deletion failed: {e}")
+#         else:
+#             raise
+#     except requests.exceptions.ReadTimeout as e:
+#         logging.error(f"Timeout error: {e}.")
+#     except Exception as e:
+#         logging.error(f"Unexpected error during init: {e}")
+
+#     start_background_tasks()
+
+
+# initialize_app()

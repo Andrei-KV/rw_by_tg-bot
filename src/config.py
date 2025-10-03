@@ -1,6 +1,10 @@
 import logging
 import os
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 
 class Settings:
     """
@@ -10,17 +14,19 @@ class Settings:
 
     # Telegram
     TOKEN: str = os.getenv("TOKEN", "")
-    STOP_CODE: str = os.getenv("STOP_CODE", "stop_bot")
-    BOT_NAME: str = os.getenv("BOT_NAME", "rw_by_bot")
-    WEBHOOK_URL: str = os.getenv("WEBHOOK_URL", "")
-    WEB_PORT: int = int(os.getenv("WEB_PORT", 8080))
+    STOP_CODE: str = os.getenv("STOP_CODE", "")
+    BOT_NAME: str = os.getenv("BOT_NAME", "@TicketCatchingBot")
+    WEBHOOK_URL: str = os.getenv(
+        "WEBHOOK_URL", "https://famous-clubs-battle.loca.lt"
+    )
+    WEB_PORT: int = int(os.getenv("WEB_PORT", 8000))
 
     # Database
     DB_USER: str = os.getenv("DB_USER", "postgres")
-    DB_PASSWORD: str = os.getenv("DB_PASSWORD", "postgres")
+    DB_PASSWORD: str = os.getenv("DB_PASSWORD", "1765362")
     DB_HOST: str = os.getenv("DB_HOST", "localhost")
     DB_PORT: str = os.getenv("DB_PORT", "5432")
-    DB_NAME: str = os.getenv("DB_NAME", "rw_by")
+    DB_NAME: str = os.getenv("DB_NAME", "rw_by_local")
 
     # Cloud SQL Connector
     # e.g. 'project:region:instance'
