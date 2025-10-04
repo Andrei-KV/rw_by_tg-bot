@@ -1,0 +1,30 @@
+version: "3.12"
+
+services:
+  rw-by-db:
+    image: postgres:16
+    container_name: rw-by-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: rw_user
+      POSTGRES_PASSWORD: rw_pass
+      POSTGRES_DB: rw_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - rw_by_db_data:/var/lib/postgresql/data
+
+  rw-by-bot:
+    build: .
+    container_name: rw-by-bot
+    restart: unless-stopped
+    env_file:
+      - .env.docker
+    depends_on:
+      - rw-by-db
+    ports:
+      - "8000:8000"
+    command: python main.py
+
+volumes:
+  rw_by_db_data:
