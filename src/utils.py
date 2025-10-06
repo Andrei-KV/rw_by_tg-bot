@@ -7,7 +7,8 @@ import requests
 from telebot import types
 
 from all_stations_list import all_station_list, all_station_list_lower
-from src.config import settings
+
+# from src.config import settings
 
 # from src.database import get_departure_date_db
 
@@ -276,8 +277,7 @@ def get_tickets_by_class(train_info):
 
 def make_request(url):
     """Creates a requests session and makes a GET request."""
-    # Diagnostic logging to check if the proxy URL is being loaded
-    logging.info(f"Attempting request with PROXY_URL: '{settings.PROXY_URL}'")
+    logging.info(f"Attempting request with URL: '{url}'")
 
     session = requests.Session()
     session.headers.update(
@@ -294,14 +294,7 @@ def make_request(url):
         }
     )
 
-    proxies = None
-    if settings.PROXY_URL:
-        proxies = {
-            "http": settings.PROXY_URL,
-            "https": settings.PROXY_URL,
-        }
-
-    r = session.get(url, timeout=30, proxies=proxies)
+    r = session.get(url, timeout=30)
     r.raise_for_status()  # Raise an exception for bad status codes
     return r
 

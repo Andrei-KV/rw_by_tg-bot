@@ -1,4 +1,4 @@
-version: "3.12"
+version: "3.9"
 
 services:
   rw-by-db:
@@ -6,16 +6,22 @@ services:
     container_name: rw-by-db
     restart: unless-stopped
     environment:
-      POSTGRES_USER: rw_user
-      POSTGRES_PASSWORD: rw_pass
-      POSTGRES_DB: rw_db
-    ports:
-      - "5433:5432"
+      POSTGRES_USER: "${DB_USER}"
+      POSTGRES_PASSWORD: "${DB_PASSWORD}"
+      POSTGRES_DB: "${DB_NAME}"
     volumes:
       - rw_by_db_data:/var/lib/postgresql/data
+    networks:
+      - rw-by-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME} || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   rw-by-bot:
     build: .
+    image: rw-by-bot:latest
     container_name: rw-by-bot
     restart: unless-stopped
     env_file:
@@ -24,7 +30,14 @@ services:
       - rw-by-db
     ports:
       - "8000:8000"
-    command: python main.py
+    volumes:
+      - ./tmp:/tmp  # опционально — чтобы читать /tmp/webhook_url или логи
+    networks:
+      - rw-by-network
 
 volumes:
   rw_by_db_data:
+
+networks:
+  rw-by-network:
+    driver: bridge

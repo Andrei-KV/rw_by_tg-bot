@@ -32,11 +32,6 @@ class Settings:
     # e.g. 'project:region:instance'
     DB_INSTANCE_NAME: str = os.getenv("DB_INSTANCE_NAME", "")
 
-    # Optional Proxy URL
-    PROXY_URL: str = os.getenv(
-        "PROXY_URL", ""
-    )  # e.g. "http://user:pass@host:port"
-
     # Admin
     ADMIN_CHAT_ID: int = int(os.getenv("ADMIN_CHAT_ID", 0))
 

@@ -1,96 +1,43 @@
-
-# # Базовый образ: Python 3.12
-# FROM python:3.12-slim
-
-# # Отключаем .pyc файлы и буферизацию вывода
-# ENV PYTHONDONTWRITEBYTECODE=1
-# ENV PYTHONUNBUFFERED=1
-
-# # Установка зависимостей для PostgreSQL
-# RUN apt-get update && \
-#     apt-get install -y --no-install-recommends --reinstall \
-#     ca-certificates \
-#     libpq-dev \
-#     gcc \
-#     && update-ca-certificates \
-#     && apt-get clean \
-#     && rm -rf /var/lib/apt/lists/*
-
-
-
-# # Устанавливаем Poetry
-# RUN pip install poetry
-
-# # Копируем только файлы зависимостей
-# COPY pyproject.toml poetry.lock* /app/
-
-# # Устанавливаем рабочую директорию
-# # Следующие команды будут отталкиваться от неё
-# WORKDIR /app
-
-
-# # Устанавливаем зависимости в system site-packages
-# RUN poetry config virtualenvs.create false \
-#   && poetry install --no-root
-
-
-# # Теперь копируем весь остальной код проекта
-# COPY . /app
-
-
-# # RUN adduser ...: Создаёт пользователя ,
-# # который будет работать внутри контейнера.
-# # Это рекомендуется для безопасности, чтобы не запускать контейнер от имени root.
-
-# # USER appuser: Говорит Docker запускать контейнер от имени этого пользователя.
-
-
-# # Создаём пользователя (без прав root)
-# RUN adduser --disabled-password --gecos "" appuser && chown -R appuser /app
-# USER appuser
-
-# # Порт, на котором слушает Flask
-# EXPOSE 8080
-
-# # Для деплоя Flask-приложение запускается через Gunicorn
-# CMD ["gunicorn", "--worker-class", "gevent", "-c", "/app/gunicorn_config.py", "--timeout", "120", "-b", "0.0.0.0:8080", "src.main:app"]
-
-
-
-
-# ДЛЯ ЛОКАЛЬНОЙ РАБОТЫ
-# Используем официальный образ Python
+# Dockerfile
 FROM python:3.12-slim
 
-# Устанавливаем system зависимости
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends --reinstall \
-    ca-certificates \
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq-dev \
+    postgresql-client \
     gcc \
     curl \
     nodejs \
     npm \
     build-essential \
-    && update-ca-certificates \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/*
 
-# Устанавливаем Poetry
+# Install poetry
 RUN pip install --no-cache-dir poetry
 
-# Копируем проект
 WORKDIR /app
-COPY pyproject.toml poetry.lock ./
-RUN poetry install --no-root
 
-COPY . .
+# Copy poetry files first (cache)
+COPY pyproject.toml poetry.lock* /app/
 
-# Устанавливаем localtunnel глобально
+# Install app deps into system python (no venv)
+RUN poetry config virtualenvs.create false \
+ && poetry install --no-root --no-interaction
+
+# Copy code
+COPY . /app
+
+# Install localtunnel globally for npx/lt
 RUN npm install -g localtunnel
 
-# Экспонируем порт
+# Entrypoint (wait for DB etc)
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
 EXPOSE 8000
 
-# Запуск main.py
-CMD ["poetry", "run", "python", "main.py"]
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+CMD ["python", "main.py"]

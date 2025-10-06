@@ -228,7 +228,12 @@ def webhook():
         if update is not None:
             logging.debug(f"update is not None {update}")
             # метод, который имитирует поведение polling, но вручную:
-            bot.process_new_updates([update])  # только если не None
+            # bot.process_new_updates([update])  # только если не None
+
+            # Для ускоренной работы в докер
+            threading.Thread(
+                target=bot.process_new_updates, args=([update],), daemon=True
+            ).start()
     except Exception as e:
         logging.warning(f"Ошибка обработки webhook: {e}")
     return "ok", 200  # Telegram требует подтверждение
